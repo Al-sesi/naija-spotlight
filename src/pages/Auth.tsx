@@ -18,11 +18,13 @@ const authSchema = z.object({
 
 export default function Auth() {
   const navigate = useNavigate();
-  const { signIn, signUp, user, session } = useAuth();
+  const { signIn, signUp, verifyOtp, resendOtp, user, session } = useAuth();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({ email: "", password: "", fullName: "" });
-  const [showVerificationMessage, setShowVerificationMessage] = useState(false);
-
+  const [otp, setOtp] = useState("");
+  const [showOtpInput, setShowOtpInput] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+  
   // Check if user is logged in and email is verified
   const isEmailConfirmed = session?.user?.email_confirmed_at != null;
 
@@ -31,6 +33,16 @@ export default function Auth() {
       navigate("/");
     }
   }, [user, isEmailConfirmed, navigate]);
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (resendCooldown > 0) {
+      interval = setInterval(() => {
+        setResendCooldown((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [resendCooldown]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,6 +57,7 @@ export default function Auth() {
     setLoading(false);
 
     if (error) {
+      console.error("Sign in error:", error);
       toast.error(error.message);
     } else {
       toast.success("Welcome back!");
@@ -60,47 +73,104 @@ export default function Auth() {
     }
 
     setLoading(true);
+    console.log("Attempting sign up for:", formData.email);
     const { error } = await signUp(formData.email, formData.password, formData.fullName);
     setLoading(false);
 
     if (error) {
+      console.error("Sign up error:", error);
       if (error.message.includes("already registered")) {
         toast.error("This email is already registered. Please sign in instead.");
       } else {
         toast.error(error.message);
       }
     } else {
-      setShowVerificationMessage(true);
-      toast.success("Please check your email to verify your account!");
+      console.log("Sign up successful, showing OTP input");
+      setShowOtpInput(true);
+      toast.success("Please check your email for the OTP verification code!");
+      setResendCooldown(60); // Start cooldown
     }
   };
 
-  // If user is logged in but email is not verified, show verification message
-  if (user && !isEmailConfirmed) {
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (otp.length < 6) {
+      toast.error("Please enter a valid 6-digit OTP");
+      return;
+    }
+
+    setLoading(true);
+    const { error } = await verifyOtp(formData.email, otp, 'signup');
+    setLoading(false);
+
+    if (error) {
+      console.error("OTP verification error:", error);
+      toast.error(error.message);
+    } else {
+      toast.success("Email verified successfully!");
+      navigate("/");
+    }
+  };
+
+  const handleResendOtp = async () => {
+    if (resendCooldown > 0) return;
+    
+    setLoading(true);
+    const { error } = await resendOtp(formData.email);
+    setLoading(false);
+
+    if (error) {
+      console.error("Resend OTP error:", error);
+      toast.error(error.message);
+    } else {
+      toast.success("Verification code resent! Please check your email.");
+      setResendCooldown(60);
+    }
+  };
+
+  // If waiting for OTP
+  if (showOtpInput) {
     return (
       <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center px-4 py-12">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary mx-auto mb-4">
-              <Rocket className="h-6 w-6 text-primary-foreground" />
+              <CheckCircle className="h-6 w-6 text-primary-foreground" />
             </div>
-            <CardTitle className="text-2xl font-display">Verify Your Email</CardTitle>
-            <CardDescription>Almost there! Please verify your email to continue.</CardDescription>
+            <CardTitle className="text-2xl font-display">Enter Verification Code</CardTitle>
+            <CardDescription>
+              We've sent a 6-digit code to <strong>{formData.email}</strong>.
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <Alert className="bg-accent/10 border-accent">
-              <CheckCircle className="h-4 w-4 text-accent-foreground" />
-              <AlertDescription className="text-sm">
-                We've sent a verification email to <strong>{user.email}</strong>. 
-                Please check your inbox and click the link to verify your account.
-              </AlertDescription>
-            </Alert>
-            <p className="text-sm text-muted-foreground text-center">
-              After verifying, refresh this page or sign in again to access all features.
-            </p>
-            <Button variant="outline" className="w-full" onClick={() => window.location.reload()}>
-              I've Verified - Refresh Page
-            </Button>
+            <form onSubmit={handleVerifyOtp} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="otp">Verification Code</Label>
+                <Input
+                  id="otp"
+                  placeholder="123456"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value)}
+                  maxLength={6}
+                  required
+                />
+              </div>
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? "Verifying..." : "Verify Email"}
+              </Button>
+            </form>
+            <div className="text-center">
+              <Button 
+                variant="link" 
+                onClick={handleResendOtp} 
+                disabled={loading || resendCooldown > 0}
+                className="text-sm text-muted-foreground"
+              >
+                {resendCooldown > 0 
+                  ? `Resend code in ${resendCooldown}s` 
+                  : "Didn't receive code? Resend"}
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
