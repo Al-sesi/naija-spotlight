@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, Filter, Sparkles } from "lucide-react";
+import { Search, Filter, Briefcase, GraduationCap, Zap, Users, Award, PartyPopper } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -7,6 +7,16 @@ import { useOpportunities } from "@/hooks/useOpportunities";
 import { FilterSidebar } from "@/components/opportunities/FilterSidebar";
 import { OpportunityGrid } from "@/components/opportunities/OpportunityGrid";
 import { OpportunityType } from "@/lib/constants";
+import { cn } from "@/lib/utils";
+
+const quickCategories = [
+  { type: "government", label: "Recruitment", icon: Briefcase },
+  { type: "scholarship", label: "Scholarships", icon: GraduationCap },
+  { type: "ngo", label: "Grants", icon: Award },
+  { type: "tech", label: "Tech Events", icon: Zap },
+  { type: "social", label: "Social Events", icon: PartyPopper },
+  { type: "career", label: "Career", icon: Users },
+];
 
 export default function Index() {
   const [search, setSearch] = useState("");
@@ -28,42 +38,67 @@ export default function Index() {
 
   const activeFilterCount = selectedTypes.length + selectedStates.length;
 
+  const handleQuickFilter = (type: OpportunityType) => {
+    if (selectedTypes.includes(type)) {
+      setSelectedTypes(selectedTypes.filter(t => t !== type));
+    } else {
+      setSelectedTypes([type]);
+    }
+  };
+
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen gradient-hero">
       {/* Hero Section */}
-      <section className="relative gradient-hero py-16 md:py-24">
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDM0djItSDI0di0yaDEyek0zNiAyNHYySDI0di0yaDEyeiIvPjwvZz48L2c+PC9zdmc+')] opacity-50" />
-        <div className="container relative">
-          <div className="max-w-3xl mx-auto text-center text-primary-foreground">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary-foreground/10 backdrop-blur-sm mb-6">
-              <Sparkles className="h-4 w-4" />
-              <span className="text-sm font-medium">Your Gateway to Opportunities</span>
-            </div>
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-display font-bold mb-4 leading-tight">
+      <section className="py-8 md:py-12 border-b border-border/30">
+        <div className="container">
+          <div className="max-w-3xl mx-auto text-center mb-6 md:mb-8">
+            <h1 className="text-2xl md:text-4xl lg:text-5xl font-display font-bold mb-3 md:mb-4 leading-tight text-foreground">
               Discover Opportunities <br className="hidden md:block" />
               Across Nigeria
             </h1>
-            <p className="text-lg md:text-xl opacity-90 mb-8 max-w-2xl mx-auto">
-              Find government initiatives, NGO grants, tech events, and career opportunities—all in one place.
+            <p className="text-sm md:text-lg text-muted-foreground max-w-2xl mx-auto">
+              Find verified scholarships, government initiatives, grants, tech events, and more—all in one place.
             </p>
+          </div>
 
-            {/* Search Bar */}
-            <div className="relative max-w-xl mx-auto">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input
-                placeholder="Search opportunities, providers, keywords..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="h-14 pl-12 pr-4 text-base bg-background/95 backdrop-blur border-0 shadow-lg text-foreground placeholder:text-muted-foreground"
-              />
-            </div>
+          {/* Search Bar */}
+          <div className="relative max-w-xl mx-auto mb-6">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 md:h-5 md:w-5 text-muted-foreground" />
+            <Input
+              placeholder="Search opportunities..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="h-11 md:h-12 pl-11 md:pl-12 pr-4 text-sm md:text-base bg-card border-border shadow-sm placeholder:text-muted-foreground"
+            />
+          </div>
+
+          {/* Quick Category Chips */}
+          <div className="flex flex-wrap justify-center gap-2 md:gap-3">
+            {quickCategories.map((cat) => {
+              const isActive = selectedTypes.includes(cat.type as OpportunityType);
+              return (
+                <Button
+                  key={cat.type}
+                  variant={isActive ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => handleQuickFilter(cat.type as OpportunityType)}
+                  className={cn(
+                    "text-xs md:text-sm gap-1.5 h-8 md:h-9",
+                    !isActive && "bg-card hover:bg-muted"
+                  )}
+                >
+                  <cat.icon className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                  {cat.label}
+                </Button>
+              );
+            })}
           </div>
         </div>
       </section>
 
       {/* Main Content */}
-      <section className="container py-8 md:py-12">
-        <div className="flex gap-8">
+      <section className="container py-6 md:py-8">
+        <div className="flex gap-6 lg:gap-8">
           {/* Desktop Filter Sidebar */}
           <div className="hidden lg:block w-64 shrink-0">
             <FilterSidebar
@@ -76,12 +111,12 @@ export default function Index() {
           </div>
 
           {/* Feed */}
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             {/* Mobile Filter Button */}
             <div className="lg:hidden mb-4">
               <Sheet open={filterOpen} onOpenChange={setFilterOpen}>
                 <SheetTrigger asChild>
-                  <Button variant="outline" className="w-full justify-between">
+                  <Button variant="outline" className="w-full justify-between bg-card text-sm">
                     <span className="flex items-center gap-2">
                       <Filter className="h-4 w-4" />
                       Filters
@@ -93,8 +128,8 @@ export default function Index() {
                     )}
                   </Button>
                 </SheetTrigger>
-                <SheetContent side="left" className="w-80 bg-background">
-                  <div className="mt-6">
+                <SheetContent side="left" className="w-80 bg-background p-4">
+                  <div className="mt-4">
                     <FilterSidebar
                       selectedTypes={selectedTypes}
                       selectedStates={selectedStates}
@@ -108,8 +143,8 @@ export default function Index() {
             </div>
 
             {/* Results Header */}
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="font-display text-xl font-semibold">
+            <div className="flex items-center justify-between mb-4 md:mb-6">
+              <h2 className="font-display text-lg md:text-xl font-semibold text-foreground">
                 {opportunities?.length ?? 0} Opportunities
               </h2>
             </div>

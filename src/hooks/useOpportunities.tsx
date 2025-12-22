@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { OpportunityType, NigerianState } from "@/lib/constants";
+import { OpportunityType } from "@/lib/constants";
 
 export interface Opportunity {
   id: string;
@@ -14,6 +14,7 @@ export interface Opportunity {
   state: string;
   is_verified: boolean;
   is_remote: boolean;
+  level: string | null;
   created_at: string;
 }
 

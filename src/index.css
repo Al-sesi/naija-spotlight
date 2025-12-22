@@ -2,114 +2,116 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap');
 
 @layer base {
   :root {
-    /* Nigerian-inspired green and charcoal palette */
-    --background: 150 10% 98%;
-    --foreground: 160 10% 10%;
+    /* NAIJALIFT - Clean Light Green & Forest Green palette */
+    --background: 138 50% 97%;
+    --foreground: 150 20% 15%;
 
     --card: 0 0% 100%;
-    --card-foreground: 160 10% 10%;
+    --card-foreground: 150 20% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 160 10% 10%;
+    --popover-foreground: 150 20% 15%;
 
-    /* Deep Nigerian green */
-    --primary: 145 63% 32%;
+    /* Forest Green - Nigerian identity */
+    --primary: 147 76% 27%;
     --primary-foreground: 0 0% 100%;
 
-    /* Charcoal */
-    --secondary: 160 8% 20%;
-    --secondary-foreground: 0 0% 98%;
+    /* Charcoal for secondary */
+    --secondary: 150 10% 92%;
+    --secondary-foreground: 150 20% 15%;
 
-    --muted: 150 10% 94%;
-    --muted-foreground: 160 5% 45%;
+    --muted: 138 30% 94%;
+    --muted-foreground: 150 10% 45%;
 
     /* Gold accent */
     --accent: 43 96% 56%;
-    --accent-foreground: 160 10% 10%;
+    --accent-foreground: 150 20% 15%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 150 10% 90%;
-    --input: 150 10% 90%;
-    --ring: 145 63% 32%;
+    --border: 138 20% 88%;
+    --input: 138 20% 88%;
+    --ring: 147 76% 27%;
 
     --radius: 0.75rem;
 
     /* Category colors */
-    --category-government: 145 63% 32%;
+    --category-government: 147 76% 27%;
     --category-ngo: 262 83% 58%;
     --category-tech: 217 91% 60%;
     --category-career: 43 96% 56%;
+    --category-scholarship: 280 65% 55%;
+    --category-social: 340 75% 55%;
 
     /* Status colors */
     --status-saved: 217 91% 60%;
-    --status-applied: 145 63% 42%;
+    --status-applied: 147 76% 35%;
     --status-shortlisted: 43 96% 56%;
     --status-rejected: 0 84% 60%;
 
     /* Gradients */
-    --gradient-hero: linear-gradient(135deg, hsl(145 63% 32%) 0%, hsl(160 40% 25%) 100%);
-    --gradient-card: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(150 10% 98%) 100%);
-    --gradient-accent: linear-gradient(135deg, hsl(43 96% 56%) 0%, hsl(38 92% 50%) 100%);
+    --gradient-hero: linear-gradient(135deg, hsl(138 50% 97%) 0%, hsl(147 40% 92%) 100%);
+    --gradient-card: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(138 30% 98%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(147 76% 27%) 0%, hsl(147 70% 35%) 100%);
 
     /* Shadows */
-    --shadow-sm: 0 1px 2px 0 hsl(160 10% 10% / 0.05);
-    --shadow-md: 0 4px 6px -1px hsl(160 10% 10% / 0.1), 0 2px 4px -2px hsl(160 10% 10% / 0.1);
-    --shadow-lg: 0 10px 15px -3px hsl(160 10% 10% / 0.1), 0 4px 6px -4px hsl(160 10% 10% / 0.1);
-    --shadow-glow: 0 0 20px hsl(145 63% 32% / 0.3);
+    --shadow-sm: 0 1px 2px 0 hsl(150 20% 15% / 0.05);
+    --shadow-md: 0 4px 6px -1px hsl(150 20% 15% / 0.08), 0 2px 4px -2px hsl(150 20% 15% / 0.08);
+    --shadow-lg: 0 10px 15px -3px hsl(150 20% 15% / 0.08), 0 4px 6px -4px hsl(150 20% 15% / 0.08);
+    --shadow-glow: 0 0 20px hsl(147 76% 27% / 0.2);
 
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 150 20% 15%;
+    --sidebar-primary: 147 76% 27%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 138 30% 94%;
+    --sidebar-accent-foreground: 150 20% 15%;
+    --sidebar-border: 138 20% 88%;
+    --sidebar-ring: 147 76% 27%;
   }
 
   .dark {
-    --background: 160 10% 8%;
-    --foreground: 150 10% 95%;
+    --background: 150 15% 8%;
+    --foreground: 138 30% 95%;
 
-    --card: 160 10% 12%;
-    --card-foreground: 150 10% 95%;
+    --card: 150 15% 12%;
+    --card-foreground: 138 30% 95%;
 
-    --popover: 160 10% 12%;
-    --popover-foreground: 150 10% 95%;
+    --popover: 150 15% 12%;
+    --popover-foreground: 138 30% 95%;
 
-    --primary: 145 63% 42%;
+    --primary: 147 76% 40%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 160 8% 25%;
-    --secondary-foreground: 150 10% 95%;
+    --secondary: 150 10% 18%;
+    --secondary-foreground: 138 30% 95%;
 
-    --muted: 160 8% 18%;
-    --muted-foreground: 150 5% 60%;
+    --muted: 150 10% 16%;
+    --muted-foreground: 138 10% 60%;
 
     --accent: 43 96% 56%;
-    --accent-foreground: 160 10% 10%;
+    --accent-foreground: 150 20% 15%;
 
     --destructive: 0 62% 50%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 160 8% 20%;
-    --input: 160 8% 20%;
-    --ring: 145 63% 42%;
+    --border: 150 10% 18%;
+    --input: 150 10% 18%;
+    --ring: 147 76% 40%;
 
-    --sidebar-background: 160 10% 10%;
-    --sidebar-foreground: 150 10% 90%;
-    --sidebar-primary: 145 63% 42%;
+    --sidebar-background: 150 15% 10%;
+    --sidebar-foreground: 138 30% 90%;
+    --sidebar-primary: 147 76% 40%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 160 8% 18%;
-    --sidebar-accent-foreground: 150 10% 90%;
-    --sidebar-border: 160 8% 20%;
-    --sidebar-ring: 145 63% 42%;
+    --sidebar-accent: 150 10% 16%;
+    --sidebar-accent-foreground: 138 30% 90%;
+    --sidebar-border: 150 10% 18%;
+    --sidebar-ring: 147 76% 40%;
   }
 }
 

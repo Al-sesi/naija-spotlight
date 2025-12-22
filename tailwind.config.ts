@@ -7,15 +7,15 @@ export default {
   theme: {
     container: {
       center: true,
-      padding: "1.5rem",
+      padding: "1rem",
       screens: {
         "2xl": "1400px",
       },
     },
     extend: {
       fontFamily: {
-        sans: ["Plus Jakarta Sans", "system-ui", "sans-serif"],
-        display: ["Space Grotesk", "system-ui", "sans-serif"],
+        sans: ["Inter", "system-ui", "-apple-system", "sans-serif"],
+        display: ["Plus Jakarta Sans", "system-ui", "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -66,6 +66,8 @@ export default {
           ngo: "hsl(var(--category-ngo))",
           tech: "hsl(var(--category-tech))",
           career: "hsl(var(--category-career))",
+          scholarship: "hsl(var(--category-scholarship))",
+          social: "hsl(var(--category-social))",
         },
         status: {
           saved: "hsl(var(--status-saved))",

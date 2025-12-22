@@ -42,10 +42,12 @@ export const NIGERIAN_STATES = [
 ] as const;
 
 export const OPPORTUNITY_TYPES = [
-  { value: "government", label: "Government", color: "bg-category-government" },
+  { value: "government", label: "Recruitment", color: "bg-category-government" },
   { value: "ngo", label: "NGO Grants", color: "bg-category-ngo" },
   { value: "tech", label: "Tech Events", color: "bg-category-tech" },
   { value: "career", label: "Career", color: "bg-category-career" },
+  { value: "scholarship", label: "Scholarships", color: "bg-category-scholarship" },
+  { value: "social", label: "Social Events", color: "bg-category-social" },
 ] as const;
 
 export const APPLICATION_STATUSES = [

@@ -53,36 +53,36 @@ export function FilterSidebar({
 
   return (
     <aside className={cn("w-full", className)}>
-      <div className="sticky top-24">
+      <div className="sticky top-20 bg-card rounded-xl border border-border p-4">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="font-display text-lg font-semibold">Filters</h2>
+          <h2 className="font-display text-base md:text-lg font-semibold">Filters</h2>
           {hasFilters && (
             <Button 
               variant="ghost" 
               size="sm" 
               onClick={onClearFilters}
-              className="text-muted-foreground hover:text-foreground"
+              className="text-muted-foreground hover:text-foreground text-xs"
             >
-              <X className="h-4 w-4 mr-1" />
+              <X className="h-3.5 w-3.5 mr-1" />
               Clear
             </Button>
           )}
         </div>
 
         {/* State Search */}
-        <div className="mb-6">
+        <div className="mb-5">
           <Label className="text-sm font-medium mb-2 block">Search by State</Label>
           <Select
             value={selectedStates.length === 1 ? selectedStates[0] : undefined}
             onValueChange={handleStateSelect}
           >
-            <SelectTrigger className="w-full bg-background">
+            <SelectTrigger className="w-full bg-background text-sm">
               <SelectValue placeholder="Select a state" />
             </SelectTrigger>
             <SelectContent className="bg-popover max-h-[300px]">
               <ScrollArea className="h-[280px]">
                 {NIGERIAN_STATES.map((state) => (
-                  <SelectItem key={state} value={state} className="cursor-pointer">
+                  <SelectItem key={state} value={state} className="cursor-pointer text-sm">
                     {state}
                   </SelectItem>
                 ))}
@@ -97,7 +97,7 @@ export function FilterSidebar({
                   variant="secondary"
                   size="sm"
                   onClick={() => handleStateSelect(state)}
-                  className="h-7 text-xs"
+                  className="h-6 text-xs px-2"
                 >
                   {state}
                   <X className="h-3 w-3 ml-1" />
@@ -112,7 +112,7 @@ export function FilterSidebar({
         {/* Opportunity Type */}
         <div>
           <Label className="text-sm font-medium mb-3 block">Opportunity Type</Label>
-          <div className="space-y-3">
+          <div className="space-y-2.5">
             {OPPORTUNITY_TYPES.map((type) => (
               <div key={type.value} className="flex items-center space-x-2">
                 <Checkbox
@@ -126,11 +126,13 @@ export function FilterSidebar({
                 >
                   <span 
                     className={cn(
-                      "w-2.5 h-2.5 rounded-full",
+                      "w-2 h-2 rounded-full",
                       type.value === "government" && "bg-category-government",
                       type.value === "ngo" && "bg-category-ngo",
                       type.value === "tech" && "bg-category-tech",
-                      type.value === "career" && "bg-category-career"
+                      type.value === "career" && "bg-category-career",
+                      type.value === "scholarship" && "bg-category-scholarship",
+                      type.value === "social" && "bg-category-social"
                     )}
                   />
                   {type.label}
