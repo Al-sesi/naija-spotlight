@@ -51,6 +51,7 @@ export type Database = {
           id: string
           is_remote: boolean | null
           is_verified: boolean | null
+          level: string | null
           link: string
           provider: string
           state: string
@@ -66,6 +67,7 @@ export type Database = {
           id?: string
           is_remote?: boolean | null
           is_verified?: boolean | null
+          level?: string | null
           link: string
           provider: string
           state?: string
@@ -81,6 +83,7 @@ export type Database = {
           id?: string
           is_remote?: boolean | null
           is_verified?: boolean | null
+          level?: string | null
           link?: string
           provider?: string
           state?: string
@@ -214,7 +217,13 @@ export type Database = {
     Enums: {
       app_role: "admin" | "moderator" | "user"
       application_status: "saved" | "applied" | "shortlisted" | "rejected"
-      opportunity_type: "government" | "ngo" | "tech" | "career"
+      opportunity_type:
+        | "government"
+        | "ngo"
+        | "tech"
+        | "career"
+        | "scholarship"
+        | "social"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -344,7 +353,14 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "moderator", "user"],
       application_status: ["saved", "applied", "shortlisted", "rejected"],
-      opportunity_type: ["government", "ngo", "tech", "career"],
+      opportunity_type: [
+        "government",
+        "ngo",
+        "tech",
+        "career",
+        "scholarship",
+        "social",
+      ],
     },
   },
 } as const
