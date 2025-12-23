@@ -87,12 +87,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error };
   };
 
+  const verifyOtp = async (email: string, token: string, type: 'signup' | 'recovery' | 'magiclink' | 'email') => {
+    const { error } = await supabase.auth.verifyOtp({
+      email,
+      token,
+      type,
+    });
+    return { error };
+  };
+
+  const resendOtp = async (email: string) => {
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email,
+    });
+    return { error };
+  };
+
   const signOut = async () => {
     await supabase.auth.signOut();
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, isAdmin, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, isAdmin, signIn, signUp, verifyOtp, resendOtp, signOut }}>
       {children}
     </AuthContext.Provider>
   );

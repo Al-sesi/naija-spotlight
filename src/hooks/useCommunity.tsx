@@ -8,6 +8,7 @@ export interface CommunityPost {
   content: string;
   likes_count: number;
   created_at: string;
+  status: 'pending' | 'approved' | 'rejected';
   profile?: {
     full_name: string | null;
     email: string | null;
@@ -24,6 +25,7 @@ export function useCommunityPosts() {
       const { data: posts, error } = await supabase
         .from("community_posts")
         .select("*")
+        .eq("status", "approved")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
