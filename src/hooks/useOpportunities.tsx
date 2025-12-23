@@ -100,3 +100,24 @@ export function useDeleteOpportunity() {
     },
   });
 }
+
+export function useUpdateOpportunity() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, ...updates }: { id: string } & Partial<Opportunity>) => {
+      const { data, error } = await supabase
+        .from("opportunities")
+        .update(updates)
+        .eq("id", id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["opportunities"] });
+    },
+  });
+}

@@ -188,14 +188,6 @@ export default function Auth() {
           <CardDescription>Sign in to save and track opportunities</CardDescription>
         </CardHeader>
         <CardContent>
-          {showVerificationMessage && (
-            <Alert className="mb-4 bg-primary/10 border-primary">
-              <AlertCircle className="h-4 w-4 text-primary" />
-              <AlertDescription className="text-sm">
-                Check your email for a verification link from NAIJALIFT. You must verify your email before you can apply.
-              </AlertDescription>
-            </Alert>
-          )}
           
           <Tabs defaultValue="signin" className="w-full">
             <TabsList className="grid w-full grid-cols-2 mb-6">
