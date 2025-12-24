@@ -4,7 +4,7 @@ import { formatDistanceToNow, format } from "date-fns";
 import { 
   Shield, Plus, Link as LinkIcon, Users, MessageSquare, CheckCircle, XCircle, 
   Trash2, ToggleLeft, Home, FileText, Bell, UserCheck, Menu, X,
-  Megaphone, ChevronRight
+  Megaphone, ChevronRight, Calendar
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -107,8 +107,8 @@ export default function OgaHouse() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.title || !form.provider || !form.category || !form.link) {
-      toast.error("Please fill in all required fields");
+    if (!form.title || !form.provider || !form.category || !form.link || !form.deadline) {
+      toast.error("Please fill in all required fields including deadline");
       return;
     }
 
@@ -133,6 +133,25 @@ export default function OgaHouse() {
       });
     } catch {
       toast.error("Failed to add opportunity");
+    }
+  };
+
+  const handleExtendDeadline = async (id: string, currentDeadline: string | null) => {
+    const newDeadline = prompt("Enter new deadline (YYYY-MM-DD):", currentDeadline ? currentDeadline.split('T')[0] : '');
+    if (!newDeadline) return;
+    
+    // Validate the date format
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateRegex.test(newDeadline)) {
+      toast.error("Invalid date format. Please use YYYY-MM-DD");
+      return;
+    }
+
+    try {
+      await updateOpportunity.mutateAsync({ id, deadline: new Date(newDeadline).toISOString() });
+      toast.success("Deadline extended successfully!");
+    } catch {
+      toast.error("Failed to extend deadline");
     }
   };
 
@@ -200,6 +219,7 @@ export default function OgaHouse() {
           opportunities={opportunities || []} 
           onDelete={handleDeleteOpportunity} 
           onToggleVerified={handleToggleVerified}
+          onExtendDeadline={handleExtendDeadline}
         />;
       case "posts":
         return <ReviewPosts 
@@ -484,8 +504,9 @@ function AddOpportunityForm({
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="deadline" className="text-sm">Deadline</Label>
-              <Input id="deadline" type="date" value={form.deadline} onChange={(e) => setForm({ ...form, deadline: e.target.value })} className="text-sm" />
+              <Label htmlFor="deadline" className="text-sm">Deadline *</Label>
+              <Input id="deadline" type="date" value={form.deadline} onChange={(e) => setForm({ ...form, deadline: e.target.value })} className="text-sm" required />
+              <p className="text-xs text-muted-foreground">Required. Opportunities expire 7 days after deadline.</p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="event_date" className="text-sm">Event Date</Label>
@@ -517,12 +538,16 @@ function AddOpportunityForm({
 function ManageOpportunities({ 
   opportunities, 
   onDelete, 
-  onToggleVerified 
+  onToggleVerified,
+  onExtendDeadline
 }: { 
   opportunities: any[]; 
   onDelete: (id: string) => void; 
   onToggleVerified: (id: string, current: boolean) => void;
+  onExtendDeadline: (id: string, currentDeadline: string | null) => void;
 }) {
+  const now = new Date();
+  
   return (
     <Card>
       <CardHeader>
@@ -539,42 +564,70 @@ function ManageOpportunities({
                 <TableRow>
                   <TableHead>Title</TableHead>
                   <TableHead>Category</TableHead>
+                  <TableHead>Deadline</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {opportunities.map((opp) => (
-                  <TableRow key={opp.id}>
-                    <TableCell className="font-medium max-w-[200px] truncate">{opp.title}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="capitalize">{opp.category}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={opp.is_verified ? "default" : "secondary"} className={opp.is_verified ? "bg-emerald-600" : ""}>
-                        {opp.is_verified ? "Verified" : "Unverified"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right space-x-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => onToggleVerified(opp.id, !!opp.is_verified)}
-                        title={opp.is_verified ? "Unverify" : "Verify"}
-                      >
-                        <ToggleLeft className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-destructive hover:text-destructive"
-                        onClick={() => onDelete(opp.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {opportunities.map((opp) => {
+                  const deadline = opp.deadline ? new Date(opp.deadline) : null;
+                  const isExpired = deadline ? deadline < now : false;
+                  
+                  return (
+                    <TableRow key={opp.id} className={isExpired ? "opacity-60" : ""}>
+                      <TableCell className="font-medium max-w-[200px] truncate">{opp.title}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="capitalize">{opp.category}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        {deadline ? (
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm">{format(deadline, "MMM d, yyyy")}</span>
+                            {isExpired && (
+                              <Badge variant="secondary" className="text-xs bg-muted text-muted-foreground">Expired</Badge>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground text-sm">No deadline</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={opp.is_verified ? "default" : "secondary"} className={opp.is_verified ? "bg-emerald-600" : ""}>
+                          {opp.is_verified ? "Verified" : "Unverified"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right space-x-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onExtendDeadline(opp.id, opp.deadline)}
+                          title="Extend Deadline"
+                          className="text-xs"
+                        >
+                          <Calendar className="h-3.5 w-3.5 mr-1" />
+                          Extend
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => onToggleVerified(opp.id, !!opp.is_verified)}
+                          title={opp.is_verified ? "Unverify" : "Verify"}
+                        >
+                          <ToggleLeft className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-destructive hover:text-destructive"
+                          onClick={() => onDelete(opp.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </div>
