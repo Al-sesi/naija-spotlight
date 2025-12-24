@@ -1,39 +1,47 @@
-import { Link } from "react-router-dom";
-import { CheckCircle, ArrowRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { CheckCircle } from "lucide-react";
 
 export default function VerificationSuccess() {
   return (
-    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center px-4 py-12">
-      <Card className="w-full max-w-md text-center">
-        <CardHeader>
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 mx-auto mb-4">
-            <CheckCircle className="h-10 w-10 text-primary" />
+    <div className="min-h-screen bg-gradient-to-b from-background to-muted/30 flex items-center justify-center px-4">
+      <div className="w-full max-w-md text-center space-y-6">
+        {/* Success Icon */}
+        <div className="flex items-center justify-center">
+          <div className="h-24 w-24 rounded-full bg-emerald-600/10 flex items-center justify-center animate-fade-up">
+            <CheckCircle className="h-14 w-14 text-emerald-600" strokeWidth={1.5} />
           </div>
-          <CardTitle className="text-2xl font-display">Email Successfully Verified!</CardTitle>
-          <CardDescription className="text-base">
-            Welcome to NAIJALIFT! Your 30-day free trial has begun. You now have access to all verified opportunities.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="p-4 rounded-lg bg-muted/50 text-sm text-muted-foreground">
-            <p className="font-medium text-foreground mb-1">What's included in your trial:</p>
-            <ul className="text-left space-y-1">
-              <li>✓ Access to verified opportunities</li>
-              <li>✓ Save and track applications</li>
-              <li>✓ Email & SMS notifications</li>
-              <li>✓ Community access</li>
-            </ul>
-          </div>
-          <Link to="/auth">
-            <Button className="w-full" size="lg">
-              Login Now
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          </Link>
-        </CardContent>
-      </Card>
+        </div>
+
+        {/* Main Message */}
+        <div className="space-y-3 animate-fade-up" style={{ animationDelay: "0.1s" }}>
+          <h1 className="text-3xl md:text-4xl font-display font-bold text-foreground">
+            Email Verified Successfully!
+          </h1>
+          <p className="text-muted-foreground text-lg">
+            Your account is now active in the{" "}
+            <span className="font-semibold text-emerald-600">NAIJALIFT Beta</span>.
+          </p>
+        </div>
+
+        {/* Instruction Card */}
+        <div 
+          className="bg-card border border-border rounded-xl p-6 shadow-sm animate-fade-up"
+          style={{ animationDelay: "0.2s" }}
+        >
+          <p className="text-muted-foreground">
+            You can now close this tab and return to the app to log in.
+          </p>
+        </div>
+
+        {/* Footer Branding */}
+        <div className="pt-8 animate-fade-up" style={{ animationDelay: "0.3s" }}>
+          <p className="text-sm text-muted-foreground">
+            Welcome to <span className="font-semibold">NAIJALIFT</span>
+          </p>
+          <p className="text-xs text-muted-foreground/70 mt-1">
+            First of its kind in Nigeria
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
