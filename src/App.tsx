@@ -10,6 +10,7 @@ import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Community from "./pages/Community";
 import Admin from "./pages/Admin";
+import OgaHouse from "./pages/OgaHouse";
 import NotFound from "./pages/NotFound";
 import VerificationSuccess from "./pages/VerificationSuccess";
 
@@ -30,6 +31,7 @@ const App = () => (
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/community" element={<Community />} />
               <Route path="/admin" element={<Admin />} />
+              <Route path="/ogahouse" element={<OgaHouse />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Layout>
