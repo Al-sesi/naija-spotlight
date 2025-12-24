@@ -1,7 +1,8 @@
 import { Opportunity } from "@/hooks/useOpportunities";
 import { OpportunityCard } from "./OpportunityCard";
 import { Skeleton } from "@/components/ui/skeleton";
-import { SearchX } from "lucide-react";
+import { SearchX, Clock, Sparkles } from "lucide-react";
+import { isPast, parseISO } from "date-fns";
 
 interface OpportunityGridProps {
   opportunities: Opportunity[] | undefined;
@@ -49,15 +50,90 @@ export function OpportunityGrid({ opportunities, isLoading }: OpportunityGridPro
     );
   }
 
+  // Separate active and expired opportunities
+  const now = new Date();
+  const activeOpportunities = opportunities.filter(opp => {
+    if (!opp.deadline) return true; // No deadline = active
+    return !isPast(parseISO(opp.deadline));
+  });
+  
+  const expiredOpportunities = opportunities.filter(opp => {
+    if (!opp.deadline) return false;
+    return isPast(parseISO(opp.deadline));
+  });
+
+  // If no active opportunities exist
+  if (activeOpportunities.length === 0 && expiredOpportunities.length > 0) {
+    return (
+      <div className="space-y-8">
+        {/* Friendly empty state for active section */}
+        <div className="flex flex-col items-center justify-center py-12 text-center bg-gradient-to-b from-primary/5 to-transparent rounded-lg border border-dashed border-primary/20">
+          <div className="rounded-full bg-primary/10 p-4 mb-4">
+            <Sparkles className="h-8 w-8 text-primary" />
+          </div>
+          <h3 className="text-lg font-semibold mb-2 text-foreground">
+            We are currently verifying new opportunities for you.
+          </h3>
+          <p className="text-muted-foreground text-sm max-w-md">
+            Check back shortly! New opportunities are added regularly.
+          </p>
+        </div>
+
+        {/* Expired section */}
+        {expiredOpportunities.length > 0 && (
+          <div>
+            <div className="flex items-center gap-2 mb-4 text-muted-foreground">
+              <Clock className="h-4 w-4" />
+              <h3 className="text-sm font-medium">Past Opportunities ({expiredOpportunities.length})</h3>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
+              {expiredOpportunities.map((opportunity, index) => (
+                <OpportunityCard 
+                  key={opportunity.id} 
+                  opportunity={opportunity} 
+                  style={{ animationDelay: `${index * 0.05}s` }}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
-      {opportunities.map((opportunity, index) => (
-        <OpportunityCard 
-          key={opportunity.id} 
-          opportunity={opportunity} 
-          style={{ animationDelay: `${index * 0.05}s` }}
-        />
-      ))}
+    <div className="space-y-8">
+      {/* Active opportunities */}
+      {activeOpportunities.length > 0 && (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
+          {activeOpportunities.map((opportunity, index) => (
+            <OpportunityCard 
+              key={opportunity.id} 
+              opportunity={opportunity} 
+              style={{ animationDelay: `${index * 0.05}s` }}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Expired opportunities section */}
+      {expiredOpportunities.length > 0 && (
+        <div>
+          <div className="flex items-center gap-2 mb-4 text-muted-foreground">
+            <Clock className="h-4 w-4" />
+            <h3 className="text-sm font-medium">Past Opportunities ({expiredOpportunities.length})</h3>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
+            {expiredOpportunities.map((opportunity, index) => (
+              <OpportunityCard 
+                key={opportunity.id} 
+                opportunity={opportunity} 
+                style={{ animationDelay: `${index * 0.05}s` }}
+              />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
