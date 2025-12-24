@@ -13,6 +13,8 @@ import Admin from "./pages/Admin";
 import OgaHouse from "./pages/OgaHouse";
 import NotFound from "./pages/NotFound";
 import VerificationSuccess from "./pages/VerificationSuccess";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 
 const queryClient = new QueryClient();
 
@@ -28,6 +30,8 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/verification-success" element={<VerificationSuccess />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/community" element={<Community />} />
               <Route path="/admin" element={<Admin />} />

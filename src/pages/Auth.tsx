@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { z } from "zod";
-import { Mail, Lock, User, ArrowRight, Rocket } from "lucide-react";
+import { Mail, Lock, User, ArrowRight, Rocket, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,18 +9,25 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { Separator } from "@/components/ui/separator";
 
 const authSchema = z.object({
-  email: z.string().email("Please enter a valid email"),
+  email: z.string().trim().email("Please enter a valid email").max(255, "Email must be less than 255 characters"),
   password: z.string().min(6, "Password must be at least 6 characters"),
+});
+
+const emailSchema = z.object({
+  email: z.string().trim().email("Please enter a valid email").max(255, "Email must be less than 255 characters"),
 });
 
 export default function Auth() {
   const navigate = useNavigate();
-  const { signIn, signUp, user, session } = useAuth();
+  const { signIn, signUp, signInWithMagicLink, user, session } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [magicLinkLoading, setMagicLinkLoading] = useState(false);
   const [formData, setFormData] = useState({ email: "", password: "", fullName: "" });
   const [signupSuccess, setSignupSuccess] = useState(false);
+  const [magicLinkSent, setMagicLinkSent] = useState(false);
   
   const isEmailConfirmed = session?.user?.email_confirmed_at != null;
 
@@ -74,6 +81,57 @@ export default function Auth() {
       toast.success("Please check your email for the verification link!");
     }
   };
+
+  const handleMagicLink = async () => {
+    const result = emailSchema.safeParse({ email: formData.email });
+    if (!result.success) {
+      toast.error(result.error.errors[0].message);
+      return;
+    }
+
+    setMagicLinkLoading(true);
+    const { error } = await signInWithMagicLink(formData.email);
+    setMagicLinkLoading(false);
+
+    if (error) {
+      console.error("Magic link error:", error);
+      toast.error(error.message || "Failed to send magic link. Please try again.");
+    } else {
+      setMagicLinkSent(true);
+    }
+  };
+
+  // Show success message after magic link sent
+  if (magicLinkSent) {
+    return (
+      <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center px-4 py-12">
+        <Card className="w-full max-w-md text-center">
+          <CardHeader>
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary mx-auto mb-4">
+              <Sparkles className="h-6 w-6 text-primary-foreground" />
+            </div>
+            <CardTitle className="text-2xl font-display">Magic Link Sent!</CardTitle>
+            <CardDescription className="text-base">
+              We've sent a magic link to <strong>{formData.email}</strong>.
+              Click the link in your email to sign in instantly.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button 
+              variant="outline" 
+              className="w-full"
+              onClick={() => {
+                setMagicLinkSent(false);
+                setFormData({ ...formData, email: "" });
+              }}
+            >
+              Try Another Email
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   // Show success message after signup
   if (signupSuccess) {
@@ -140,7 +198,15 @@ export default function Auth() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="signin-password" className="text-sm">Password</Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="signin-password" className="text-sm">Password</Label>
+                    <Link 
+                      to="/forgot-password" 
+                      className="text-xs text-muted-foreground hover:text-primary transition-colors"
+                    >
+                      Forgot Password?
+                    </Link>
+                  </div>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
@@ -159,6 +225,27 @@ export default function Auth() {
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </form>
+
+              <div className="relative my-6">
+                <Separator />
+                <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-2 text-xs text-muted-foreground">
+                  or
+                </span>
+              </div>
+
+              <Button 
+                type="button" 
+                variant="outline" 
+                className="w-full"
+                onClick={handleMagicLink}
+                disabled={magicLinkLoading || !formData.email}
+              >
+                <Sparkles className="mr-2 h-4 w-4" />
+                {magicLinkLoading ? "Sending..." : "Sign in with Magic Link"}
+              </Button>
+              <p className="text-xs text-center text-muted-foreground mt-2">
+                Enter your email above, then click to receive a passwordless sign-in link
+              </p>
             </TabsContent>
 
             <TabsContent value="signup">
