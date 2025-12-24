@@ -86,13 +86,7 @@ export default function OgaHouse() {
     }
   }, [siteAlert]);
 
-  // Access control - redirect if not the admin email
-  useEffect(() => {
-    if (!loading && (!user || user.email !== ADMIN_EMAIL)) {
-      navigate("/", { replace: true });
-    }
-  }, [user, loading, navigate]);
-
+  // Show loading state while auth is loading
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -101,8 +95,14 @@ export default function OgaHouse() {
     );
   }
 
+  // Access control - redirect if not the admin email
   if (!user || user.email !== ADMIN_EMAIL) {
-    return null;
+    navigate("/", { replace: true });
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-lg text-muted-foreground">Access denied. Redirecting...</div>
+      </div>
+    );
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
