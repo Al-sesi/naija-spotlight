@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { Search, Filter, Briefcase, GraduationCap, Zap, Users, Award, PartyPopper } from "lucide-react";
+import { Search, Filter, Briefcase, GraduationCap, Zap, Users, Award, PartyPopper, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useOpportunities } from "@/hooks/useOpportunities";
+import { useSiteAlert } from "@/hooks/useSiteAlert";
 import { FilterSidebar } from "@/components/opportunities/FilterSidebar";
 import { OpportunityGrid } from "@/components/opportunities/OpportunityGrid";
 import { OpportunityType } from "@/lib/constants";
@@ -23,12 +24,15 @@ export default function Index() {
   const [selectedTypes, setSelectedTypes] = useState<OpportunityType[]>([]);
   const [selectedStates, setSelectedStates] = useState<string[]>([]);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [alertDismissed, setAlertDismissed] = useState(false);
 
   const { data: opportunities, isLoading } = useOpportunities({
     types: selectedTypes,
     states: selectedStates,
     search,
   });
+  
+  const { data: siteAlert } = useSiteAlert();
 
   const clearFilters = () => {
     setSelectedTypes([]);
@@ -48,6 +52,23 @@ export default function Index() {
 
   return (
     <div className="min-h-screen gradient-hero">
+      {/* Site Alert Banner */}
+      {siteAlert?.is_active && siteAlert.message && !alertDismissed && (
+        <div className={cn(
+          "py-3 px-4 text-center text-sm font-medium relative",
+          siteAlert.type === "info" && "bg-blue-500 text-white",
+          siteAlert.type === "warning" && "bg-amber-500 text-white",
+          siteAlert.type === "success" && "bg-emerald-600 text-white"
+        )}>
+          <span>{siteAlert.message}</span>
+          <button 
+            onClick={() => setAlertDismissed(true)}
+            className="absolute right-4 top-1/2 -translate-y-1/2 hover:opacity-70"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
       {/* Hero Section */}
       <section className="py-8 md:py-12 border-b border-border/30">
         <div className="container">
