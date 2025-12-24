@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { Layout } from "@/components/layout/Layout";
+import { VerificationRedirectGuard } from "@/components/auth/VerificationRedirectGuard";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
@@ -25,6 +26,7 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
+          <VerificationRedirectGuard />
           <Layout>
             <Routes>
               <Route path="/" element={<Index />} />
@@ -46,3 +48,4 @@ const App = () => (
 );
 
 export default App;
+
