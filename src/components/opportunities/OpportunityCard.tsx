@@ -131,12 +131,17 @@ export function OpportunityCard({ opportunity, style }: OpportunityCardProps) {
           >
             {categoryStyle.label}
           </Badge>
-          <div className="flex items-center gap-1.5">
+          <div className="flex flex-col items-end gap-1">
             {opportunity.is_verified && (
-              <div className="flex items-center gap-1 text-primary">
+              <div className="flex items-center gap-1 text-primary" title="Premium Feature: Verified by Naijalift (Free for Beta Users)">
                 <BadgeCheck className="h-4 w-4 fill-primary text-primary-foreground" />
                 <span className="text-xs font-medium hidden sm:inline">Verified</span>
               </div>
+            )}
+            {opportunity.is_verified && (
+              <span className="text-[10px] text-muted-foreground hidden lg:block">
+                Free for Beta ✨
+              </span>
             )}
           </div>
         </div>

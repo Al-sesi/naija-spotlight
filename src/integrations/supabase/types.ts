@@ -44,6 +44,54 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_preferences: {
+        Row: {
+          created_at: string
+          email_government: boolean
+          email_grants: boolean
+          email_scholarships: boolean
+          email_social_tech: boolean
+          id: string
+          phone_number: string | null
+          sms_government: boolean
+          sms_grants: boolean
+          sms_scholarships: boolean
+          sms_social_tech: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email_government?: boolean
+          email_grants?: boolean
+          email_scholarships?: boolean
+          email_social_tech?: boolean
+          id?: string
+          phone_number?: string | null
+          sms_government?: boolean
+          sms_grants?: boolean
+          sms_scholarships?: boolean
+          sms_social_tech?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email_government?: boolean
+          email_grants?: boolean
+          email_scholarships?: boolean
+          email_social_tech?: boolean
+          id?: string
+          phone_number?: string | null
+          sms_government?: boolean
+          sms_grants?: boolean
+          sms_scholarships?: boolean
+          sms_social_tech?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       opportunities: {
         Row: {
           category: Database["public"]["Enums"]["opportunity_type"]
@@ -131,6 +179,7 @@ export type Database = {
           email: string | null
           full_name: string | null
           id: string
+          trial_ends_at: string | null
           updated_at: string | null
         }
         Insert: {
@@ -139,6 +188,7 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id: string
+          trial_ends_at?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -147,7 +197,47 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id?: string
+          trial_ends_at?: string | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      subscriptions: {
+        Row: {
+          billing_cycle: string
+          category: Database["public"]["Enums"]["subscription_category"]
+          created_at: string
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          price_naira: number
+          started_at: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          billing_cycle?: string
+          category: Database["public"]["Enums"]["subscription_category"]
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          price_naira?: number
+          started_at?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          billing_cycle?: string
+          category?: Database["public"]["Enums"]["subscription_category"]
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          price_naira?: number
+          started_at?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -227,6 +317,11 @@ export type Database = {
         | "career"
         | "scholarship"
         | "social"
+      subscription_category:
+        | "scholarship"
+        | "government"
+        | "grant"
+        | "social_tech"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -363,6 +458,12 @@ export const Constants = {
         "career",
         "scholarship",
         "social",
+      ],
+      subscription_category: [
+        "scholarship",
+        "government",
+        "grant",
+        "social_tech",
       ],
     },
   },
