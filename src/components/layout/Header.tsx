@@ -34,6 +34,9 @@ export function Header() {
             <Rocket className="h-4 w-4 md:h-5 md:w-5 text-primary-foreground" />
           </div>
           <span className="font-display text-lg md:text-xl font-bold text-foreground">NAIJALIFT</span>
+          <span className="px-1.5 py-0.5 text-[10px] font-semibold uppercase rounded bg-primary/10 text-primary border border-primary/20">
+            Beta
+          </span>
         </Link>
 
         {/* Desktop Navigation */}

@@ -1,13 +1,12 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
-import { Mail, Lock, User, ArrowRight, Rocket, CheckCircle, AlertCircle } from "lucide-react";
+import { Mail, Lock, User, ArrowRight, Rocket } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
@@ -18,14 +17,11 @@ const authSchema = z.object({
 
 export default function Auth() {
   const navigate = useNavigate();
-  const { signIn, signUp, verifyOtp, resendOtp, user, session } = useAuth();
+  const { signIn, signUp, user, session } = useAuth();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({ email: "", password: "", fullName: "" });
-  const [otp, setOtp] = useState("");
-  const [showOtpInput, setShowOtpInput] = useState(false);
-  const [resendCooldown, setResendCooldown] = useState(0);
+  const [signupSuccess, setSignupSuccess] = useState(false);
   
-  // Check if user is logged in and email is verified
   const isEmailConfirmed = session?.user?.email_confirmed_at != null;
 
   useEffect(() => {
@@ -33,16 +29,6 @@ export default function Auth() {
       navigate("/");
     }
   }, [user, isEmailConfirmed, navigate]);
-
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (resendCooldown > 0) {
-      interval = setInterval(() => {
-        setResendCooldown((prev) => prev - 1);
-      }, 1000);
-    }
-    return () => clearInterval(interval);
-  }, [resendCooldown]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,7 +59,6 @@ export default function Auth() {
     }
 
     setLoading(true);
-    console.log("Attempting sign up for:", formData.email);
     const { error } = await signUp(formData.email, formData.password, formData.fullName);
     setLoading(false);
 
@@ -85,92 +70,34 @@ export default function Auth() {
         toast.error(error.message);
       }
     } else {
-      console.log("Sign up successful, showing OTP input");
-      setShowOtpInput(true);
-      toast.success("Please check your email for the OTP verification code!");
-      setResendCooldown(60); // Start cooldown
+      setSignupSuccess(true);
+      toast.success("Please check your email for the verification link!");
     }
   };
 
-  const handleVerifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (otp.length < 6) {
-      toast.error("Please enter a valid 6-digit OTP");
-      return;
-    }
-
-    setLoading(true);
-    const { error } = await verifyOtp(formData.email, otp, 'signup');
-    setLoading(false);
-
-    if (error) {
-      console.error("OTP verification error:", error);
-      toast.error(error.message);
-    } else {
-      toast.success("Email verified successfully!");
-      navigate("/");
-    }
-  };
-
-  const handleResendOtp = async () => {
-    if (resendCooldown > 0) return;
-    
-    setLoading(true);
-    const { error } = await resendOtp(formData.email);
-    setLoading(false);
-
-    if (error) {
-      console.error("Resend OTP error:", error);
-      toast.error(error.message);
-    } else {
-      toast.success("Verification code resent! Please check your email.");
-      setResendCooldown(60);
-    }
-  };
-
-  // If waiting for OTP
-  if (showOtpInput) {
+  // Show success message after signup
+  if (signupSuccess) {
     return (
       <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center px-4 py-12">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
+        <Card className="w-full max-w-md text-center">
+          <CardHeader>
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary mx-auto mb-4">
-              <CheckCircle className="h-6 w-6 text-primary-foreground" />
+              <Mail className="h-6 w-6 text-primary-foreground" />
             </div>
-            <CardTitle className="text-2xl font-display">Enter Verification Code</CardTitle>
-            <CardDescription>
-              We've sent a 6-digit code to <strong>{formData.email}</strong>.
+            <CardTitle className="text-2xl font-display">Check Your Email</CardTitle>
+            <CardDescription className="text-base">
+              We've sent a verification link to <strong>{formData.email}</strong>.
+              Click the link to verify your email and start your 30-day free trial.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <form onSubmit={handleVerifyOtp} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="otp">Verification Code</Label>
-                <Input
-                  id="otp"
-                  placeholder="123456"
-                  value={otp}
-                  onChange={(e) => setOtp(e.target.value)}
-                  maxLength={6}
-                  required
-                />
-              </div>
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "Verifying..." : "Verify Email"}
-              </Button>
-            </form>
-            <div className="text-center">
-              <Button 
-                variant="link" 
-                onClick={handleResendOtp} 
-                disabled={loading || resendCooldown > 0}
-                className="text-sm text-muted-foreground"
-              >
-                {resendCooldown > 0 
-                  ? `Resend code in ${resendCooldown}s` 
-                  : "Didn't receive code? Resend"}
-              </Button>
-            </div>
+          <CardContent>
+            <Button 
+              variant="outline" 
+              className="w-full"
+              onClick={() => setSignupSuccess(false)}
+            >
+              Back to Sign In
+            </Button>
           </CardContent>
         </Card>
       </div>

@@ -9,8 +9,6 @@ interface AuthContextType {
   isAdmin: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>;
-  verifyOtp: (email: string, token: string, type: 'signup' | 'recovery' | 'magiclink' | 'email') => Promise<{ error: Error | null }>;
-  resendOtp: (email: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
 }
 
@@ -72,46 +70,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signUp = async (email: string, password: string, fullName: string) => {
-    // First sign up the user with password
-    const { error: signUpError } = await supabase.auth.signUp({
+    const redirectUrl = `${window.location.origin}/verification-success`;
+    
+    const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: {
           full_name: fullName,
         },
+        emailRedirectTo: redirectUrl,
       },
     });
     
-    if (signUpError) return { error: signUpError };
-    
-    // Then send OTP for email verification
-    const { error: otpError } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        shouldCreateUser: false, // User already created above
-      },
-    });
-    
-    return { error: otpError };
-  };
-
-  const verifyOtp = async (email: string, token: string, type: 'signup' | 'recovery' | 'magiclink' | 'email') => {
-    const { error } = await supabase.auth.verifyOtp({
-      email,
-      token,
-      type: 'email', // Use 'email' type for OTP sent via signInWithOtp
-    });
-    return { error };
-  };
-
-  const resendOtp = async (email: string) => {
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        shouldCreateUser: false,
-      },
-    });
     return { error };
   };
 
@@ -120,7 +91,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, isAdmin, signIn, signUp, verifyOtp, resendOtp, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, isAdmin, signIn, signUp, signOut }}>
       {children}
     </AuthContext.Provider>
   );

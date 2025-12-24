@@ -11,6 +11,7 @@ import Dashboard from "./pages/Dashboard";
 import Community from "./pages/Community";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
+import VerificationSuccess from "./pages/VerificationSuccess";
 
 const queryClient = new QueryClient();
 
@@ -25,6 +26,7 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
+              <Route path="/verification-success" element={<VerificationSuccess />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/community" element={<Community />} />
               <Route path="/admin" element={<Admin />} />
