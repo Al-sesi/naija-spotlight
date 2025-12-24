@@ -6,7 +6,7 @@ export function Footer() {
       <div className="container py-6">
         <Separator className="mb-4" />
         <p className="text-center text-xs text-muted-foreground">
-          ALL RIGHTS RESERVED. AL SESI TECHNOLOGIES.
+          ALL RIGHTS RESERVED. NAIJALIFT.
         </p>
       </div>
     </footer>
