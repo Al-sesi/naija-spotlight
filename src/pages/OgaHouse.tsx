@@ -434,8 +434,32 @@ function AddOpportunityForm({
   onSubmit, 
   isLoading 
 }: { 
-  form: any; 
-  setForm: (f: any) => void; 
+  form: {
+    title: string;
+    provider: string;
+    category: OpportunityType | "";
+    description: string;
+    link: string;
+    deadline: string;
+    event_date: string;
+    state: string;
+    is_verified: boolean;
+    is_remote: boolean;
+    level: string;
+  }; 
+  setForm: (f: {
+    title: string;
+    provider: string;
+    category: OpportunityType | "";
+    description: string;
+    link: string;
+    deadline: string;
+    event_date: string;
+    state: string;
+    is_verified: boolean;
+    is_remote: boolean;
+    level: string;
+  }) => void; 
   onSubmit: (e: React.FormEvent) => void; 
   isLoading: boolean;
 }) {
@@ -541,7 +565,7 @@ function ManageOpportunities({
   onToggleVerified,
   onExtendDeadline
 }: { 
-  opportunities: any[]; 
+  opportunities: unknown[]; 
   onDelete: (id: string) => void; 
   onToggleVerified: (id: string, current: boolean) => void;
   onExtendDeadline: (id: string, currentDeadline: string | null) => void;
@@ -646,7 +670,7 @@ function ReviewPosts({
   approvePending,
   rejectPending
 }: { 
-  posts: any[]; 
+  posts: unknown[]; 
   isLoading: boolean; 
   onApprove: (id: string) => void; 
   onReject: (id: string) => void;
@@ -727,7 +751,7 @@ function ReviewPosts({
 }
 
 // User Management Component
-function UserManagement({ users, isLoading }: { users: any[]; isLoading: boolean }) {
+function UserManagement({ users, isLoading }: { users: unknown[]; isLoading: boolean }) {
   return (
     <Card>
       <CardHeader>
@@ -824,7 +848,7 @@ function SiteAlerts({
   isLoading 
 }: { 
   form: { message: string; is_active: boolean; type: "info" | "warning" | "success" }; 
-  setForm: (f: any) => void; 
+  setForm: (f: { message: string; is_active: boolean; type: "info" | "warning" | "success" }) => void; 
   onSubmit: (e: React.FormEvent) => void; 
   isLoading: boolean;
 }) {
