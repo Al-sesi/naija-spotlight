@@ -26,7 +26,7 @@ export default function Community() {
     try {
       await createPost.mutateAsync(newPost.trim());
       setNewPost("");
-      toast.success("Post shared!");
+      toast.success("Your post has been submitted and is pending review by the Naijalift Admin team.");
     } catch {
       toast.error("Failed to create post");
     }

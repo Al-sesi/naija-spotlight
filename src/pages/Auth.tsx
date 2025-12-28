@@ -1,31 +1,34 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { z } from "zod";
-import { Mail, Lock, User, ArrowRight, Rocket, CheckCircle, AlertCircle } from "lucide-react";
+import { Mail, Lock, User, ArrowRight, Rocket, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { Separator } from "@/components/ui/separator";
 
 const authSchema = z.object({
-  email: z.string().email("Please enter a valid email"),
+  email: z.string().trim().email("Please enter a valid email").max(255, "Email must be less than 255 characters"),
   password: z.string().min(6, "Password must be at least 6 characters"),
+});
+
+const emailSchema = z.object({
+  email: z.string().trim().email("Please enter a valid email").max(255, "Email must be less than 255 characters"),
 });
 
 export default function Auth() {
   const navigate = useNavigate();
-  const { signIn, signUp, verifyOtp, resendOtp, user, session } = useAuth();
+  const { signIn, signUp, signInWithMagicLink, user, session } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [magicLinkLoading, setMagicLinkLoading] = useState(false);
   const [formData, setFormData] = useState({ email: "", password: "", fullName: "" });
-  const [otp, setOtp] = useState("");
-  const [showOtpInput, setShowOtpInput] = useState(false);
-  const [resendCooldown, setResendCooldown] = useState(0);
+  const [signupSuccess, setSignupSuccess] = useState(false);
+  const [magicLinkSent, setMagicLinkSent] = useState(false);
   
-  // Check if user is logged in and email is verified
   const isEmailConfirmed = session?.user?.email_confirmed_at != null;
 
   useEffect(() => {
@@ -33,16 +36,6 @@ export default function Auth() {
       navigate("/");
     }
   }, [user, isEmailConfirmed, navigate]);
-
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (resendCooldown > 0) {
-      interval = setInterval(() => {
-        setResendCooldown((prev) => prev - 1);
-      }, 1000);
-    }
-    return () => clearInterval(interval);
-  }, [resendCooldown]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,7 +66,6 @@ export default function Auth() {
     }
 
     setLoading(true);
-    console.log("Attempting sign up for:", formData.email);
     const { error } = await signUp(formData.email, formData.password, formData.fullName);
     setLoading(false);
 
@@ -85,92 +77,85 @@ export default function Auth() {
         toast.error(error.message);
       }
     } else {
-      console.log("Sign up successful, showing OTP input");
-      setShowOtpInput(true);
-      toast.success("Please check your email for the OTP verification code!");
-      setResendCooldown(60); // Start cooldown
+      setSignupSuccess(true);
+      toast.success("Please check your email for the verification link!");
     }
   };
 
-  const handleVerifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (otp.length < 6) {
-      toast.error("Please enter a valid 6-digit OTP");
+  const handleMagicLink = async () => {
+    const result = emailSchema.safeParse({ email: formData.email });
+    if (!result.success) {
+      toast.error(result.error.errors[0].message);
       return;
     }
 
-    setLoading(true);
-    const { error } = await verifyOtp(formData.email, otp, 'signup');
-    setLoading(false);
+    setMagicLinkLoading(true);
+    const { error } = await signInWithMagicLink(formData.email);
+    setMagicLinkLoading(false);
 
     if (error) {
-      console.error("OTP verification error:", error);
-      toast.error(error.message);
+      console.error("Magic link error:", error);
+      toast.error(error.message || "Failed to send magic link. Please try again.");
     } else {
-      toast.success("Email verified successfully!");
-      navigate("/");
+      setMagicLinkSent(true);
     }
   };
 
-  const handleResendOtp = async () => {
-    if (resendCooldown > 0) return;
-    
-    setLoading(true);
-    const { error } = await resendOtp(formData.email);
-    setLoading(false);
-
-    if (error) {
-      console.error("Resend OTP error:", error);
-      toast.error(error.message);
-    } else {
-      toast.success("Verification code resent! Please check your email.");
-      setResendCooldown(60);
-    }
-  };
-
-  // If waiting for OTP
-  if (showOtpInput) {
+  // Show success message after magic link sent
+  if (magicLinkSent) {
     return (
       <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center px-4 py-12">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
+        <Card className="w-full max-w-md text-center">
+          <CardHeader>
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary mx-auto mb-4">
-              <CheckCircle className="h-6 w-6 text-primary-foreground" />
+              <Sparkles className="h-6 w-6 text-primary-foreground" />
             </div>
-            <CardTitle className="text-2xl font-display">Enter Verification Code</CardTitle>
-            <CardDescription>
-              We've sent a 6-digit code to <strong>{formData.email}</strong>.
+            <CardTitle className="text-2xl font-display">Magic Link Sent!</CardTitle>
+            <CardDescription className="text-base">
+              We've sent a magic link to <strong>{formData.email}</strong>.
+              Click the link in your email to sign in instantly.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <form onSubmit={handleVerifyOtp} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="otp">Verification Code</Label>
-                <Input
-                  id="otp"
-                  placeholder="123456"
-                  value={otp}
-                  onChange={(e) => setOtp(e.target.value)}
-                  maxLength={6}
-                  required
-                />
-              </div>
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "Verifying..." : "Verify Email"}
-              </Button>
-            </form>
-            <div className="text-center">
-              <Button 
-                variant="link" 
-                onClick={handleResendOtp} 
-                disabled={loading || resendCooldown > 0}
-                className="text-sm text-muted-foreground"
-              >
-                {resendCooldown > 0 
-                  ? `Resend code in ${resendCooldown}s` 
-                  : "Didn't receive code? Resend"}
-              </Button>
+          <CardContent>
+            <Button 
+              variant="outline" 
+              className="w-full"
+              onClick={() => {
+                setMagicLinkSent(false);
+                setFormData({ ...formData, email: "" });
+              }}
+            >
+              Try Another Email
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Show success message after signup
+  if (signupSuccess) {
+    return (
+      <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center px-4 py-12">
+        <Card className="w-full max-w-md text-center">
+          <CardHeader>
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary mx-auto mb-4">
+              <Mail className="h-6 w-6 text-primary-foreground" />
             </div>
+            <CardTitle className="text-2xl font-display">Check Your Email</CardTitle>
+            <CardDescription className="text-base">
+              We've sent a verification link to <strong>{formData.email}</strong>.
+              Click the link to verify your email and start your 30-day free trial.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button 
+              variant="outline" 
+              className="w-full"
+              onClick={() => setSignupSuccess(false)}
+            >
+              Back to Sign In
+            </Button>
           </CardContent>
         </Card>
       </div>
@@ -188,14 +173,6 @@ export default function Auth() {
           <CardDescription>Sign in to save and track opportunities</CardDescription>
         </CardHeader>
         <CardContent>
-          {showVerificationMessage && (
-            <Alert className="mb-4 bg-primary/10 border-primary">
-              <AlertCircle className="h-4 w-4 text-primary" />
-              <AlertDescription className="text-sm">
-                Check your email for a verification link from NAIJALIFT. You must verify your email before you can apply.
-              </AlertDescription>
-            </Alert>
-          )}
           
           <Tabs defaultValue="signin" className="w-full">
             <TabsList className="grid w-full grid-cols-2 mb-6">
@@ -221,7 +198,15 @@ export default function Auth() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="signin-password" className="text-sm">Password</Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="signin-password" className="text-sm">Password</Label>
+                    <Link 
+                      to="/forgot-password" 
+                      className="text-xs text-muted-foreground hover:text-primary transition-colors"
+                    >
+                      Forgot Password?
+                    </Link>
+                  </div>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
@@ -240,6 +225,27 @@ export default function Auth() {
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </form>
+
+              <div className="relative my-6">
+                <Separator />
+                <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-2 text-xs text-muted-foreground">
+                  or
+                </span>
+              </div>
+
+              <Button 
+                type="button" 
+                variant="outline" 
+                className="w-full"
+                onClick={handleMagicLink}
+                disabled={magicLinkLoading || !formData.email}
+              >
+                <Sparkles className="mr-2 h-4 w-4" />
+                {magicLinkLoading ? "Sending..." : "Sign in with Magic Link"}
+              </Button>
+              <p className="text-xs text-center text-muted-foreground mt-2">
+                Enter your email above, then click to receive a passwordless sign-in link
+              </p>
             </TabsContent>
 
             <TabsContent value="signup">

@@ -31,7 +31,7 @@ export function useOpportunities(filters: OpportunityFilters) {
       let query = supabase
         .from("opportunities")
         .select("*")
-        .order("created_at", { ascending: false });
+        .order("deadline", { ascending: true, nullsFirst: false });
 
       if (filters.types.length > 0) {
         query = query.in("category", filters.types);
@@ -58,7 +58,37 @@ export function useOpportunities(filters: OpportunityFilters) {
 
       const { data, error } = await query;
       if (error) throw error;
-      return data as Opportunity[];
+      
+      // Smart sorting: active (future deadline) at top, expired at bottom
+      const now = new Date();
+      const sorted = (data as Opportunity[]).sort((a, b) => {
+        const aDeadline = a.deadline ? new Date(a.deadline) : null;
+        const bDeadline = b.deadline ? new Date(b.deadline) : null;
+        
+        const aExpired = aDeadline ? aDeadline < now : false;
+        const bExpired = bDeadline ? bDeadline < now : false;
+        
+        // Active opportunities first, expired at the bottom
+        if (aExpired !== bExpired) {
+          return aExpired ? 1 : -1;
+        }
+        
+        // Within same group, sort by deadline (soonest first for active, most recent for expired)
+        if (aDeadline && bDeadline) {
+          return aExpired 
+            ? bDeadline.getTime() - aDeadline.getTime() // Expired: most recently expired first
+            : aDeadline.getTime() - bDeadline.getTime(); // Active: soonest deadline first
+        }
+        
+        // Opportunities with deadlines come before those without
+        if (aDeadline && !bDeadline) return -1;
+        if (!aDeadline && bDeadline) return 1;
+        
+        // Fallback to created_at for opportunities without deadlines
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      });
+      
+      return sorted;
     },
   });
 }
@@ -94,6 +124,27 @@ export function useDeleteOpportunity() {
         .eq("id", id);
       
       if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["opportunities"] });
+    },
+  });
+}
+
+export function useUpdateOpportunity() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, ...updates }: { id: string } & Partial<Opportunity>) => {
+      const { data, error } = await supabase
+        .from("opportunities")
+        .update(updates)
+        .eq("id", id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["opportunities"] });
