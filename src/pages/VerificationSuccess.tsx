@@ -18,7 +18,8 @@ export default function VerificationSuccess() {
       canonical.rel = "canonical";
       document.head.appendChild(canonical);
     }
-    canonical.href = `${window.location.origin}/verification-success`;
+    const siteUrl = import.meta.env.VITE_SITE_URL || window.location.origin;
+    canonical.href = `${siteUrl}/verification-success`;
   }, []);
 
   return (
