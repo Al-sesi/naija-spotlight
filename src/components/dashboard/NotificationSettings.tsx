@@ -1,11 +1,14 @@
-import { Bell, Mail, MessageSquare, GraduationCap, Building2, HandCoins, Calendar } from "lucide-react";
+import { useState } from "react";
+import { Bell, Mail, MessageSquare, GraduationCap, Building2, HandCoins, Calendar, Lock } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useNotificationPreferences, useUpdateNotificationPreferences } from "@/hooks/useNotificationPreferences";
-import { useState, useEffect } from "react";
+import { useIsPremium } from "@/hooks/useSubscription";
+import { UpgradeModal } from "@/components/subscription/UpgradeModal";
+import { useEffect } from "react";
 
 const CATEGORIES = [
   { 
@@ -41,7 +44,9 @@ const CATEGORIES = [
 export function NotificationSettings() {
   const { data: preferences, isLoading } = useNotificationPreferences();
   const updatePreferences = useUpdateNotificationPreferences();
+  const { isPremium, isLoading: isPremiumLoading } = useIsPremium();
   const [phoneNumber, setPhoneNumber] = useState("");
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   useEffect(() => {
     if (preferences?.phone_number) {
@@ -50,6 +55,12 @@ export function NotificationSettings() {
   }, [preferences]);
 
   const handleToggle = (type: "email" | "sms", category: string, checked: boolean) => {
+    // If trying to enable SMS and not premium, show upgrade modal
+    if (type === "sms" && checked && !isPremium) {
+      setShowUpgradeModal(true);
+      return;
+    }
+    
     const key = `${type}_${category}` as keyof typeof preferences;
     updatePreferences.mutate({ [key]: checked });
   };
@@ -60,7 +71,7 @@ export function NotificationSettings() {
     }
   };
 
-  if (isLoading) {
+  if (isLoading || isPremiumLoading) {
     return (
       <Card>
         <CardContent className="py-8">
@@ -84,13 +95,27 @@ export function NotificationSettings() {
           <CardDescription>
             Choose which categories you want to receive alerts for. Toggle on to get notified when new opportunities are posted.
           </CardDescription>
-          <Badge variant="secondary" className="w-fit bg-primary/10 text-primary border-0">
-            🎉 Free during Beta Phase!
-          </Badge>
+          {isPremium ? (
+            <Badge className="w-fit bg-gradient-to-r from-amber-500 to-amber-600 text-white border-0">
+              ✨ Premium Lifter
+            </Badge>
+          ) : (
+            <Badge variant="secondary" className="w-fit bg-primary/10 text-primary border-0">
+              🎉 Free during Beta Phase!
+            </Badge>
+          )}
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Phone Number for SMS */}
-          <div className="space-y-2 p-4 rounded-lg bg-muted/50">
+          <div className="space-y-2 p-4 rounded-lg bg-muted/50 relative">
+            {!isPremium && (
+              <div className="absolute top-2 right-2">
+                <Badge variant="outline" className="text-xs gap-1 border-amber-500/50 text-amber-600">
+                  <Lock className="h-3 w-3" />
+                  Premium
+                </Badge>
+              </div>
+            )}
             <Label htmlFor="phone" className="flex items-center gap-2">
               <MessageSquare className="h-4 w-4" />
               Phone Number (for SMS alerts)
@@ -103,9 +128,15 @@ export function NotificationSettings() {
                 onChange={(e) => setPhoneNumber(e.target.value)}
                 onBlur={handlePhoneUpdate}
                 className="max-w-xs"
+                disabled={!isPremium}
               />
             </div>
-            <p className="text-xs text-muted-foreground">Enter your Nigerian phone number to receive SMS alerts</p>
+            <p className="text-xs text-muted-foreground">
+              {isPremium 
+                ? "Enter your Nigerian phone number to receive SMS alerts"
+                : "Upgrade to Premium to receive SMS alerts for new opportunities"
+              }
+            </p>
           </div>
 
           {/* Category Toggles */}
@@ -148,12 +179,14 @@ export function NotificationSettings() {
                         <Label htmlFor={`sms-${category.key}`} className="flex items-center gap-2 text-sm cursor-pointer">
                           <MessageSquare className="h-4 w-4 text-muted-foreground" />
                           SMS Alerts
+                          {!isPremium && <Lock className="h-3 w-3 text-amber-500" />}
                         </Label>
                         <Switch
                           id={`sms-${category.key}`}
-                          checked={!!smsEnabled}
+                          checked={isPremium ? !!smsEnabled : false}
                           onCheckedChange={(checked) => handleToggle("sms", category.key, checked)}
-                          disabled={updatePreferences.isPending}
+                          disabled={updatePreferences.isPending || !isPremium}
+                          className={!isPremium ? "opacity-50" : ""}
                         />
                       </div>
                     </div>
@@ -163,20 +196,33 @@ export function NotificationSettings() {
             })}
           </div>
 
-          {/* Pricing Info */}
-          <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
-            <CardContent className="pt-4">
-              <p className="text-sm font-medium mb-2">💡 Coming Soon: Premium Subscriptions</p>
-              <div className="text-xs text-muted-foreground space-y-1">
-                <p>• 1 Category: ₦197/month</p>
-                <p>• Multiple Categories: ₦197 × Number of categories</p>
-                <p>• Yearly: Save 10% on annual plans</p>
-              </div>
-              <Badge className="mt-3 bg-primary text-primary-foreground">Currently Free for All Beta Users!</Badge>
-            </CardContent>
-          </Card>
+          {/* Pricing Info - Only show for non-premium users */}
+          {!isPremium && (
+            <Card className="bg-gradient-to-br from-amber-50 to-amber-100/50 dark:from-amber-950/30 dark:to-amber-900/20 border-amber-200 dark:border-amber-800">
+              <CardContent className="pt-4">
+                <p className="text-sm font-medium mb-2">✨ Upgrade to Premium Lifter</p>
+                <div className="text-xs text-muted-foreground space-y-1">
+                  <p>• SMS Alerts for new opportunities</p>
+                  <p>• Verified badge on your profile</p>
+                  <p>• Priority support & early access</p>
+                </div>
+                <div className="flex items-center gap-2 mt-3">
+                  <Badge className="bg-gradient-to-r from-amber-500 to-amber-600 text-white border-0">
+                    ₦197/month
+                  </Badge>
+                  <span className="text-xs text-muted-foreground">• 30 days free trial</span>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </CardContent>
       </Card>
+
+      <UpgradeModal 
+        open={showUpgradeModal} 
+        onOpenChange={setShowUpgradeModal}
+        feature="SMS Alerts"
+      />
     </div>
   );
 }

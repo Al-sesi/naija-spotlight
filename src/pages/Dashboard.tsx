@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { format, parseISO } from "date-fns";
-import { Bookmark, ExternalLink, MapPin, Trash2, Bell, LayoutDashboard } from "lucide-react";
+import { Bookmark, ExternalLink, MapPin, Trash2, Bell, LayoutDashboard, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +12,7 @@ import { APPLICATION_STATUSES, ApplicationStatus } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { NotificationSettings } from "@/components/dashboard/NotificationSettings";
 import { TrialCounter } from "@/components/dashboard/TrialCounter";
+import { BillingSettings } from "@/components/dashboard/BillingSettings";
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -45,7 +46,7 @@ export default function Dashboard() {
       </div>
 
       <Tabs defaultValue="applications" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2 max-w-md">
+        <TabsList className="grid w-full grid-cols-3 max-w-lg">
           <TabsTrigger value="applications" className="flex items-center gap-2">
             <LayoutDashboard className="h-4 w-4" />
             Applications
@@ -53,6 +54,10 @@ export default function Dashboard() {
           <TabsTrigger value="notifications" className="flex items-center gap-2">
             <Bell className="h-4 w-4" />
             Notifications
+          </TabsTrigger>
+          <TabsTrigger value="billing" className="flex items-center gap-2">
+            <CreditCard className="h-4 w-4" />
+            Billing
           </TabsTrigger>
         </TabsList>
 
@@ -140,6 +145,10 @@ export default function Dashboard() {
 
         <TabsContent value="notifications">
           <NotificationSettings />
+        </TabsContent>
+
+        <TabsContent value="billing">
+          <BillingSettings />
         </TabsContent>
       </Tabs>
     </div>

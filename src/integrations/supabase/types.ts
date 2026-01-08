@@ -179,6 +179,12 @@ export type Database = {
           email: string | null
           full_name: string | null
           id: string
+          paystack_customer_code: string | null
+          paystack_subscription_code: string | null
+          plan_type: string | null
+          subscription_ends_at: string | null
+          subscription_started_at: string | null
+          subscription_status: string
           trial_ends_at: string | null
           updated_at: string | null
         }
@@ -188,6 +194,12 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id: string
+          paystack_customer_code?: string | null
+          paystack_subscription_code?: string | null
+          plan_type?: string | null
+          subscription_ends_at?: string | null
+          subscription_started_at?: string | null
+          subscription_status?: string
           trial_ends_at?: string | null
           updated_at?: string | null
         }
@@ -197,6 +209,12 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id?: string
+          paystack_customer_code?: string | null
+          paystack_subscription_code?: string | null
+          plan_type?: string | null
+          subscription_ends_at?: string | null
+          subscription_started_at?: string | null
+          subscription_status?: string
           trial_ends_at?: string | null
           updated_at?: string | null
         }
@@ -333,6 +351,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_premium_user: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
