@@ -73,8 +73,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signUp = async (email: string, password: string, fullName: string) => {
-    // CRITICAL: Always use production URL for email verification links
-    const redirectUrl = "https://naija-spotlight.vercel.app/verification-success";
+    // CRITICAL: Always use production Vercel URL for email verification links
+    const redirectUrl = "https://naijalift.vercel.app/verification-success";
     
     const { error } = await supabase.auth.signUp({
       email,
@@ -95,8 +95,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const resetPassword = async (email: string) => {
-    // CRITICAL: Always use production URL for password reset links
-    const redirectUrl = "https://naija-spotlight.vercel.app/reset-password";
+    // CRITICAL: Always use production Vercel URL for password reset links
+    const redirectUrl = "https://naijalift.vercel.app/reset-password";
     
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: redirectUrl,
@@ -114,8 +114,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signInWithMagicLink = async (email: string) => {
-    // CRITICAL: Always use production URL for magic link
-    const redirectUrl = "https://naija-spotlight.vercel.app/";
+    // CRITICAL: Always use production Vercel URL for magic link
+    const redirectUrl = "https://naijalift.vercel.app/";
     
     const { error } = await supabase.auth.signInWithOtp({
       email,
