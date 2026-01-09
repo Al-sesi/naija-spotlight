@@ -1,13 +1,13 @@
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "./types";
 
-// CRITICAL: Hardcoded correct Supabase project - prevents "snap back" to old project
-const CORRECT_PROJECT_ID = "hsubtuxyizwusoizffdv";
-const SUPABASE_URL = `https://${CORRECT_PROJECT_ID}.supabase.co`;
-const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhzdWJ0dXh5aXp3dXNvaXpmZmR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYzMDg4MzksImV4cCI6MjA4MTg4NDgzOX0.MQgzWmanNY_w8-jmMHEeldIJdqmsgsjOr66eZ-8FTuI";
+// CRITICAL: Hardcoded NEW Supabase project credentials - prevents "snap back"
+const CORRECT_PROJECT_ID = "vdliauwtxklhlkltqqua";
+const SUPABASE_URL = "https://vdliauwtxklhlkltqqua.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZkbGlhdXd0eGtsaGxrbHRxcXVhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjczNzI3NTgsImV4cCI6MjA4Mjk0ODc1OH0.OQVOHYxBwOx55jC5wC-8uLYanbs-4cf0IJCBsZ3picQ";
 
 // OLD project ID to detect and clear stale sessions
-const OLD_PROJECT_ID = "vdliauwtxklhlkltqqua";
+const OLD_PROJECT_ID = "hsubtuxyizwusoizffdv";
 
 // Clear any localStorage keys from old Supabase project to prevent session conflicts
 function clearOldProjectSessions() {
