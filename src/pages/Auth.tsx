@@ -73,6 +73,12 @@ export default function Auth() {
       console.error("Sign up error:", error);
       if (error.message.includes("already registered")) {
         toast.error("This email is already registered. Please sign in instead.");
+      } else if (error.message.toLowerCase().includes("email delivery is temporarily unavailable")) {
+        toast.error(error.message);
+      } else if (error.message.toLowerCase().includes("error sending confirmation email")) {
+        toast.error(
+          "We couldn't send the verification email right now. Please try again shortly. If you're the site owner, configure Custom SMTP + a verified From address in the backend email settings."
+        );
       } else {
         toast.error(error.message);
       }
