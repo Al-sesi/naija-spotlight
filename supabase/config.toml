@@ -2,3 +2,12 @@ project_id = "hsubtuxyizwusoizffdv"
 
 [functions.cleanup-expired-opportunities]
 verify_jwt = false
+
+[functions.paystack-webhook]
+verify_jwt = false
+
+[functions.paystack-initialize]
+verify_jwt = false
+
+[functions.paystack-cancel]
+verify_jwt = false

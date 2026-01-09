@@ -20,7 +20,7 @@ export default function VerificationSuccess() {
       canonical.rel = "canonical";
       document.head.appendChild(canonical);
     }
-    canonical.href = `${window.location.origin}/verification-success`;
+    canonical.href = "https://naijalift.vercel.app/verification-success";
   }, []);
 
   return (
