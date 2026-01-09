@@ -59,7 +59,7 @@ serve(async (req) => {
         amount: amount,
         currency: "NGN",
         plan: plan || undefined, // Paystack plan code for recurring
-        callback_url: `${Deno.env.get("SUPABASE_URL")?.replace('.supabase.co', '')}/payment-callback`,
+        callback_url: "https://naijalift.vercel.app/payment-callback",
         metadata: {
           user_id: user.id,
           plan_type: "premium_lifter",
