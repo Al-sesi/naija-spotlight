@@ -106,10 +106,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (err: any) {
       console.error("Signup error:", err);
       
+      const errorMessage = err.message?.toLowerCase() || "";
+      const errorStatus = err.status || err.code;
+
       // Handle SMTP/Email errors specifically
-      if (err.message?.includes("error sending confirmation email") || err.status === 422) {
+      if (
+        errorMessage.includes("error sending confirmation email") || 
+        errorMessage.includes("rate limit") ||
+        errorStatus === 429 ||
+        errorStatus === 422
+      ) {
         return { 
-          error: new Error("We couldn't send the verification email. Please try again later or contact support if this persists.") 
+          error: new Error("We couldn't send the verification email. This usually happens due to high traffic or limits. Please try again in an hour.") 
         };
       }
       

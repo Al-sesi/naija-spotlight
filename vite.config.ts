@@ -14,10 +14,6 @@ export default defineConfig(({ mode }) => ({
     // while keeping the auto-generated client file untouched.
     alias: [
       {
-        find: "@/integrations/supabase/client",
-        replacement: path.resolve(__dirname, "./src/integrations/supabase/client-runtime.ts"),
-      },
-      {
         find: "@",
         replacement: path.resolve(__dirname, "./src"),
       },
