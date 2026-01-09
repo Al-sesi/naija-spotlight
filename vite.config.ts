@@ -10,8 +10,18 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [react()].filter(Boolean),
   resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "./src"),
-    },
+    // IMPORTANT: Force the app to use env-driven backend config (Vercel/prod URL),
+    // while keeping the auto-generated client file untouched.
+    alias: [
+      {
+        find: "@/integrations/supabase/client",
+        replacement: path.resolve(__dirname, "./src/integrations/supabase/client-runtime.ts"),
+      },
+      {
+        find: "@",
+        replacement: path.resolve(__dirname, "./src"),
+      },
+    ],
   },
 }));
+
