@@ -12,7 +12,11 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseUrl = "https://vdliauwtxklhlkltqqua.supabase.co";
+    // NOTE: This key should ideally come from environment variables for security, 
+    // but ensuring it's updated here as requested to remove old references.
+    // However, Edge Functions usually inject these automatically. 
+    // If you are deploying this function, ensure SUPABASE_SERVICE_ROLE_KEY is set in Supabase Dashboard.
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     
     const supabase = createClient(supabaseUrl, supabaseServiceKey);

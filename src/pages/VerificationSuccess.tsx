@@ -1,11 +1,13 @@
 import { useEffect } from "react";
-import { CheckCircle } from "lucide-react";
+import { Link } from "react-router-dom";
+import { CheckCircle, ArrowLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export default function VerificationSuccess() {
   useEffect(() => {
     const title = "Email Verified | NAIJALIFT";
     const description =
-      "Your NAIJALIFT account is now active. You may now close this window and log in from the main site.";
+      "Email Verified! Your account is now active. Please return to the login page to access your account.";
 
     document.title = title;
 
@@ -18,22 +20,33 @@ export default function VerificationSuccess() {
       canonical.rel = "canonical";
       document.head.appendChild(canonical);
     }
-    const siteUrl = import.meta.env.VITE_SITE_URL || window.location.origin;
-    canonical.href = `${siteUrl}/verification-success`;
+    canonical.href = `${window.location.origin}/verification-success`;
   }, []);
 
   return (
     <main className="min-h-screen bg-background flex items-center justify-center px-4">
-      <section className="w-full max-w-md text-center space-y-4">
-        <div className="mx-auto h-24 w-24 rounded-full bg-primary/10 flex items-center justify-center">
+      <section className="w-full max-w-md text-center space-y-6">
+        <div className="mx-auto h-24 w-24 rounded-full bg-primary/10 flex items-center justify-center animate-in zoom-in duration-500">
           <CheckCircle className="h-14 w-14 text-primary" strokeWidth={1.5} aria-hidden="true" />
         </div>
 
-        <h1 className="text-3xl md:text-4xl font-display font-bold text-foreground">Email Verified</h1>
+        <div className="space-y-2">
+          <h1 className="text-3xl md:text-4xl font-display font-bold text-foreground">
+            Email Verified!
+          </h1>
+          <p className="text-muted-foreground text-base md:text-lg px-4">
+            Your account is now active. Please return to the login page to access your account.
+          </p>
+        </div>
 
-        <p className="text-muted-foreground text-base md:text-lg">
-          Your NAIJALIFT account is now active. You may now close this window and log in from the main site.
-        </p>
+        <div className="pt-4">
+          <Button asChild size="lg" className="w-full sm:w-auto font-semibold">
+            <Link to="/auth">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Login
+            </Link>
+          </Button>
+        </div>
       </section>
     </main>
   );

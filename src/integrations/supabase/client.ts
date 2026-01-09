@@ -15,3 +15,21 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     autoRefreshToken: true,
   }
 });
+
+// Force cleanup of old sessions from different projects
+const cleanOldSessions = () => {
+  try {
+    const keys = Object.keys(localStorage);
+    keys.forEach(key => {
+      // If it's a supabase token but NOT for our current project
+      if (key.startsWith('sb-') && !key.includes('vdliauwtxklhlkltqqua')) {
+        console.log('Cleaning up old session:', key);
+        localStorage.removeItem(key);
+      }
+    });
+  } catch (e) {
+    console.error('Error cleaning sessions:', e);
+  }
+};
+
+cleanOldSessions();

@@ -54,6 +54,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const checkAdminRole = async (userId: string) => {
+    // Check for hardcoded admin first
+    const { data: userData } = await supabase.auth.getUser();
+    if (userData.user?.email === "abdulmajeedsesiadam@gmail.com") {
+      setIsAdmin(true);
+      return;
+    }
+
     const { data } = await supabase
       .from("user_roles")
       .select("role")
@@ -67,27 +74,47 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({
       email,
-      password,
+ 0      password,
     });
     return { error };
   };
 
   const signUp = async (email: string, password: string, fullName: string) => {
-    const siteUrl = import.meta.env.VITE_SITE_URL || window.location.origin;
-    const redirectUrl = `${siteUrl}/verification-success`;
+    // CRITICAL: Hardcoded to Vercel production URL to prevent Lovable/localhost redirects
+    const redirectUrl = "https://naijalift.vercel.app/verification-success";
     
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          full_name: fullName,
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+          },
+          emailRedirectTo: redirectUrl,
         },
-        emailRedirectTo: redirectUrl,
-      },
-    });
-    
-    return { error };
+      });
+
+      if (error) throw error;
+      
+      // Check if user was created but no session (email confirmation required)
+      if (data.user && !data.session) {
+        return { error: null };
+      }
+      
+      return { error: null };
+    } catch (err: any) {
+      console.error("Signup error:", err);
+      
+      // Handle SMTP/Email errors specifically
+      if (err.message?.includes("error sending confirmation email") || err.status === 422) {
+        return { 
+          error: new Error("We couldn't send the verification email. Please try again later or contact support if this persists.") 
+        };
+      }
+      
+      return { error: err };
+    }
   };
 
   const signOut = async () => {
@@ -95,7 +122,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const resetPassword = async (email: string) => {
-    const redirectUrl = `${window.location.origin}/reset-password`;
+    // CRITICAL: Hardcoded to Vercel production URL
+    const redirectUrl = "https://naijalift.vercel.app/reset-password";
     
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: redirectUrl,
@@ -113,8 +141,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signInWithMagicLink = async (email: string) => {
-    const siteUrl = import.meta.env.VITE_SITE_URL || window.location.origin;
-    const redirectUrl = `${siteUrl}/`;
+    // CRITICAL: Hardcoded to Vercel production URL
+    const redirectUrl = "https://naijalift.vercel.app/";
     
     const { error } = await supabase.auth.signInWithOtp({
       email,
