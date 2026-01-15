@@ -116,6 +116,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       },
     });
 
+    // Send custom welcome email via Resend (non-blocking)
+    if (!error) {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      fetch(`${supabaseUrl}/functions/v1/send-welcome-email`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, fullName }),
+      }).catch((emailError) => {
+        console.warn("Welcome email failed (non-critical):", emailError);
+      });
+    }
+
     return { error: normalizeAuthEmailError(error) };
   };
 
