@@ -16,6 +16,7 @@ import NotFound from "./pages/NotFound";
 import VerificationSuccess from "./pages/VerificationSuccess";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
+import PaymentCallback from "./pages/PaymentCallback";
 
 const queryClient = new QueryClient();
 
@@ -38,6 +39,7 @@ const App = () => (
               <Route path="/community" element={<Community />} />
               <Route path="/admin" element={<Admin />} />
               <Route path="/ogahouse" element={<OgaHouse />} />
+              <Route path="/payment-callback" element={<PaymentCallback />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Layout>
