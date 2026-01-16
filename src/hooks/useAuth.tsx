@@ -2,7 +2,10 @@ import { useState, useEffect, createContext, useContext } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
-const ADMIN_EMAIL = "abdulmajeedsesiadam@gmail.com";
+const OWNER_EMAILS = [
+  "abdulmajeedsesiadam@gmail.com",
+  "naijalift01@gmail.com",
+];
 
 interface AuthContextType {
   user: User | null;
@@ -78,7 +81,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const checkAdminRole = async (authUser: User) => {
     // Fast-path: ensure the specified owner account is always treated as admin
     // even if role rows haven't been copied into the new database yet.
-    if ((authUser.email || "").toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
+    const email = (authUser.email || "").toLowerCase();
+    if (OWNER_EMAILS.includes(email)) {
       setIsAdmin(true);
       return;
     }
