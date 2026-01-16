@@ -10,14 +10,9 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [react()].filter(Boolean),
   resolve: {
-    // IMPORTANT: Force the app to use env-driven backend config,
+    // IMPORTANT: Force the app to use env-driven backend config (Vercel/prod URL),
     // while keeping the auto-generated client file untouched.
     alias: [
-      // Override the generated client import to use Lovable Cloud env vars
-      {
-        find: "@/integrations/supabase/client",
-        replacement: path.resolve(__dirname, "./src/integrations/supabase/client.cloud.ts"),
-      },
       {
         find: "@",
         replacement: path.resolve(__dirname, "./src"),
