@@ -194,7 +194,7 @@ const handler = async (req: Request): Promise<Response> => {
         Start exploring opportunities that can transform your life and career. The best part? You're now part of an exclusive community of go-getters!
       </p>
       
-      <a href="https://naijalift.vercel.app/dashboard" class="cta-button">
+      <a href="https://naijalift.space/dashboard" class="cta-button">
         🚀 Explore Opportunities Now
       </a>
       

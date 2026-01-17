@@ -106,8 +106,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signUp = async (email: string, password: string, fullName: string) => {
-    // CRITICAL: Always use production Vercel URL for email verification links
-    const redirectUrl = "https://naijalift.vercel.app/verification-success";
+    // CRITICAL: Always use production URL for email verification links
+    const redirectUrl = "https://naijalift.space/verification-success";
 
     const { error } = await supabase.auth.signUp({
       email,
@@ -142,8 +142,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const resetPassword = async (email: string) => {
-    // CRITICAL: Hardcoded to Vercel production URL
-    const redirectUrl = "https://naijalift.vercel.app/reset-password";
+    // CRITICAL: Hardcoded to production URL
+    const redirectUrl = "https://naijalift.space/reset-password";
     
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: redirectUrl,
@@ -161,8 +161,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signInWithMagicLink = async (email: string) => {
-    // CRITICAL: Hardcoded to Vercel production URL
-    const redirectUrl = "https://naijalift.vercel.app/";
+    // CRITICAL: Hardcoded to production URL
+    const redirectUrl = "https://naijalift.space/";
     
     const { error } = await supabase.auth.signInWithOtp({
       email,
