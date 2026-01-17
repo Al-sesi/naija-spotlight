@@ -1,13 +1,13 @@
 import { useEffect } from "react";
 import { Link } from "react-router-dom";
-import { CheckCircle, ArrowLeft } from "lucide-react";
+import { CheckCircle, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function VerificationSuccess() {
   useEffect(() => {
     const title = "Email Verified | NAIJALIFT";
     const description =
-      "Email Verified! Your account is now active. Please return to the login page to access your account.";
+      "Email Verified! Your account is now active. You can now go to your dashboard.";
 
     document.title = title;
 
@@ -35,15 +35,15 @@ export default function VerificationSuccess() {
             Email Verified!
           </h1>
           <p className="text-muted-foreground text-base md:text-lg px-4">
-            Your account is now active. Please return to the login page to access your account.
+            Your account is now active. You can now go to your dashboard.
           </p>
         </div>
 
         <div className="pt-4">
           <Button asChild size="lg" className="w-full sm:w-auto font-semibold">
-            <Link to="/auth">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Login
+            <Link to="/dashboard">
+              <ArrowRight className="mr-2 h-4 w-4" />
+              Go to Dashboard
             </Link>
           </Button>
         </div>

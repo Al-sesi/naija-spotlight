@@ -34,10 +34,12 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="container py-8">
-      <div className="mb-6">
-        <h1 className="text-3xl font-display font-bold mb-2">My Dashboard</h1>
-        <p className="text-muted-foreground">Manage your applications, notifications, and preferences.</p>
+    <div className="container px-4 sm:px-6 py-6 sm:py-8">
+      <div className="mb-6 space-y-1">
+        <h1 className="text-2xl sm:text-3xl font-display font-bold">My Dashboard</h1>
+        <p className="text-sm sm:text-base text-muted-foreground">
+          Stay on top of your applications, alerts, and billing in one place.
+        </p>
       </div>
 
       {/* Trial Counter */}
@@ -45,17 +47,19 @@ export default function Dashboard() {
         <TrialCounter />
       </div>
 
-      <Tabs defaultValue="applications" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3 max-w-lg">
-          <TabsTrigger value="applications" className="flex items-center gap-2">
+      <Tabs defaultValue="applications" className="space-y-5 sm:space-y-6">
+        <TabsList className="grid w-full grid-cols-3 max-w-md sm:max-w-lg rounded-xl bg-muted/60 p-1 shadow-sm">
+          <TabsTrigger value="applications" className="flex items-center justify-center gap-1 text-xs sm:text-sm">
             <LayoutDashboard className="h-4 w-4" />
-            Applications
+            <span className="hidden sm:inline">Applications</span>
+            <span className="sm:hidden">Apps</span>
           </TabsTrigger>
-          <TabsTrigger value="notifications" className="flex items-center gap-2">
+          <TabsTrigger value="notifications" className="flex items-center justify-center gap-1 text-xs sm:text-sm">
             <Bell className="h-4 w-4" />
-            Notifications
+            <span className="hidden sm:inline">Notifications</span>
+            <span className="sm:hidden">Alerts</span>
           </TabsTrigger>
-          <TabsTrigger value="billing" className="flex items-center gap-2">
+          <TabsTrigger value="billing" className="flex items-center justify-center gap-1 text-xs sm:text-sm">
             <CreditCard className="h-4 w-4" />
             Billing
           </TabsTrigger>

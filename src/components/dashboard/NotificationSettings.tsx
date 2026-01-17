@@ -120,14 +120,14 @@ export function NotificationSettings() {
               <MessageSquare className="h-4 w-4" />
               Phone Number (for SMS / WhatsApp alerts)
             </Label>
-            <div className="flex gap-2">
+            <div className="flex gap-2 max-w-full">
               <Input
                 id="phone"
                 placeholder="+234 800 000 0000"
                 value={phoneNumber}
                 onChange={(e) => setPhoneNumber(e.target.value)}
                 onBlur={handlePhoneUpdate}
-                className="max-w-xs"
+                className="w-full sm:max-w-xs"
                 disabled={!isPremium}
               />
             </div>
@@ -194,7 +194,7 @@ export function NotificationSettings() {
 
                       <div className="flex items-center justify-between">
                         <Label htmlFor={`whatsapp-${category.key}`} className="flex items-center gap-2 text-sm cursor-pointer">
-                          <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                          <MessageSquare className="h-4 w-4 text-emerald-500" />
                           WhatsApp Alerts
                           {!isPremium && <Lock className="h-3 w-3 text-amber-500" />}
                         </Label>
@@ -238,7 +238,7 @@ export function NotificationSettings() {
       <UpgradeModal 
         open={showUpgradeModal} 
         onOpenChange={setShowUpgradeModal}
-        feature="SMS Alerts"
+        feature="SMS & WhatsApp Alerts"
       />
     </div>
   );
