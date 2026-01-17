@@ -323,8 +323,11 @@ export default function OgaHouse() {
           </div>
 
           {/* Footer */}
-          <footer className="p-4 text-center text-sm text-muted-foreground border-t">
-            ALL RIGHTS RESERVED. NAIJALIFT.
+          <footer className="p-4 text-center text-sm text-muted-foreground border-t space-y-1">
+            <p>ALL RIGHTS RESERVED. NAIJALIFT.</p>
+            <p className="text-xs">
+              For advertising or sponsored listings, contact naijalift01@gmail.com or call 09070899927.
+            </p>
           </footer>
         </main>
       </div>
