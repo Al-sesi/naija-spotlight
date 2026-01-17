@@ -54,9 +54,9 @@ export function NotificationSettings() {
     }
   }, [preferences]);
 
-  const handleToggle = (type: "email" | "sms", category: string, checked: boolean) => {
-    // If trying to enable SMS and not premium, show upgrade modal
-    if (type === "sms" && checked && !isPremium) {
+  const handleToggle = (type: "email" | "sms" | "whatsapp", category: string, checked: boolean) => {
+    // If trying to enable SMS/WhatsApp and not premium, show upgrade modal
+    if ((type === "sms" || type === "whatsapp") && checked && !isPremium) {
       setShowUpgradeModal(true);
       return;
     }
@@ -106,7 +106,7 @@ export function NotificationSettings() {
           )}
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Phone Number for SMS */}
+          {/* Phone Number for SMS / WhatsApp */}
           <div className="space-y-2 p-4 rounded-lg bg-muted/50 relative">
             {!isPremium && (
               <div className="absolute top-2 right-2">
@@ -118,7 +118,7 @@ export function NotificationSettings() {
             )}
             <Label htmlFor="phone" className="flex items-center gap-2">
               <MessageSquare className="h-4 w-4" />
-              Phone Number (for SMS alerts)
+              Phone Number (for SMS / WhatsApp alerts)
             </Label>
             <div className="flex gap-2">
               <Input
@@ -133,8 +133,8 @@ export function NotificationSettings() {
             </div>
             <p className="text-xs text-muted-foreground">
               {isPremium 
-                ? "Enter your Nigerian phone number to receive SMS alerts"
-                : "Upgrade to Premium to receive SMS alerts for new opportunities"
+                ? "Enter your Nigerian phone number to receive SMS or WhatsApp alerts"
+                : "Upgrade to Premium to receive SMS and WhatsApp alerts for new opportunities"
               }
             </p>
           </div>
@@ -145,8 +145,10 @@ export function NotificationSettings() {
               const Icon = category.icon;
               const emailKey = `email_${category.key}` as keyof typeof preferences;
               const smsKey = `sms_${category.key}` as keyof typeof preferences;
+              const whatsappKey = `whatsapp_${category.key}` as keyof typeof preferences;
               const emailEnabled = preferences?.[emailKey] ?? false;
               const smsEnabled = preferences?.[smsKey] ?? false;
+              const whatsappEnabled = preferences?.[whatsappKey] ?? false;
 
               return (
                 <Card key={category.key} className="border-border/50">
@@ -189,6 +191,21 @@ export function NotificationSettings() {
                           className={!isPremium ? "opacity-50" : ""}
                         />
                       </div>
+
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor={`whatsapp-${category.key}`} className="flex items-center gap-2 text-sm cursor-pointer">
+                          <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                          WhatsApp Alerts
+                          {!isPremium && <Lock className="h-3 w-3 text-amber-500" />}
+                        </Label>
+                        <Switch
+                          id={`whatsapp-${category.key}`}
+                          checked={isPremium ? !!whatsappEnabled : false}
+                          onCheckedChange={(checked) => handleToggle("whatsapp", category.key, checked)}
+                          disabled={updatePreferences.isPending || !isPremium}
+                          className={!isPremium ? "opacity-50" : ""}
+                        />
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -202,7 +219,7 @@ export function NotificationSettings() {
               <CardContent className="pt-4">
                 <p className="text-sm font-medium mb-2">✨ Upgrade to Premium Lifter</p>
                 <div className="text-xs text-muted-foreground space-y-1">
-                  <p>• SMS Alerts for new opportunities</p>
+                  <p>• SMS & WhatsApp Alerts for new opportunities</p>
                   <p>• Verified badge on your profile</p>
                   <p>• Priority support & early access</p>
                 </div>
