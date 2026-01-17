@@ -10,10 +10,14 @@ export function VerificationRedirectGuard() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const signal = `${location.search}${location.hash}`;
-    const isSignupVerification = signal.includes("type=signup");
+    const signal = `${location.search}${location.hash}`.toLowerCase();
+    const hasToken = signal.includes("token=") || signal.includes("token_hash=");
+    const isEmailVerification =
+      signal.includes("type=signup") ||
+      signal.includes("type=email") ||
+      signal.includes("type=magiclink");
 
-    if (!isSignupVerification) return;
+    if (!hasToken || !isEmailVerification) return;
     if (location.pathname === "/verification-success") return;
 
     navigate(
