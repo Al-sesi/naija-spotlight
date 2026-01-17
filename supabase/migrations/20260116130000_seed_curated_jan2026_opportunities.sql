@@ -216,5 +216,83 @@ VALUES
     true,
     false,
     NULL
+  ),
+  (
+    'PTDF Overseas Postgraduate Scholarship 2026',
+    'Petroleum Technology Development Fund (PTDF)',
+    'scholarship',
+    'Overseas postgraduate scholarship scheme for Nigerian students in oil, gas, and related disciplines with applications managed via the official PTDF portal.',
+    'https://scholarship.ptdf.gov.ng/',
+    NULL,
+    NULL,
+    'Nationwide',
+    true,
+    false,
+    'Postgraduate'
+  ),
+  (
+    'NLNG Undergraduate Scholarship Scheme 2026',
+    'Nigeria LNG (NLNG)',
+    'scholarship',
+    'Undergraduate scholarship scheme for high-performing Nigerian students, with applications submitted through the NLNG scholarship portal.',
+    'https://nlngscholarships.smapply.io/',
+    NULL,
+    NULL,
+    'Nationwide',
+    true,
+    false,
+    'Undergraduate'
+  ),
+  (
+    'Jim Ovia Foundation Scholarship 2026',
+    'Jim Ovia Foundation',
+    'scholarship',
+    'Scholarship programme supporting talented Nigerian students with tuition support; applications are typically opened annually via the foundation portal.',
+    'https://jimoviafoundation.org/',
+    NULL,
+    NULL,
+    'Nationwide',
+    true,
+    false,
+    'Undergraduate'
+  ),
+  (
+    'Tony Elumelu Foundation Entrepreneurship Programme 2026',
+    'Tony Elumelu Foundation',
+    'ngo',
+    'Flagship entrepreneurship support programme providing training, mentoring, and seed capital for African entrepreneurs, with applications open for the 2026 cycle.',
+    'https://www.tefconnect.com/',
+    '2026-03-01T23:59:59Z',
+    NULL,
+    'Nationwide',
+    true,
+    false,
+    NULL
+  ),
+  (
+    'NELFUND Student Loan Portal 2025/2026 Session',
+    'Nigerian Education Loan Fund (NELFUND)',
+    'government',
+    'Federal student loan scheme portal for eligible Nigerian students for the 2025/2026 academic session, with applications submitted online.',
+    'https://portal.nelf.gov.ng/',
+    '2026-01-31T23:59:59Z',
+    NULL,
+    'Nationwide',
+    true,
+    false,
+    'Student Loan'
+  ),
+  (
+    'Tech Revolution Africa 2026',
+    'Tech Revolution Africa',
+    'tech',
+    'Pan-African tech conference bringing together founders, investors, and ecosystem leaders with keynotes, panels, and networking sessions.',
+    'https://techrevolutionafrica.org/',
+    NULL,
+    '2026-01-30T00:00:00Z',
+    'Nationwide',
+    true,
+    false,
+    NULL
   );
 
