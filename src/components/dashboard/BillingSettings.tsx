@@ -115,9 +115,9 @@ export function BillingSettings() {
           {isPremium ? (
             <>
               {/* Premium Plan Details */}
-              <div className="flex items-center justify-between p-4 rounded-lg bg-gradient-to-r from-amber-100 to-amber-50 dark:from-amber-900/30 dark:to-amber-800/20">
-                <div>
-                  <h3 className="font-semibold text-lg">Premium Lifter</h3>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 rounded-lg bg-gradient-to-r from-amber-100 to-amber-50 dark:from-amber-900/30 dark:to-amber-800/20">
+                <div className="text-left">
+                  <h3 className="font-semibold text-base sm:text-lg">Premium Lifter</h3>
                   <p className="text-sm text-muted-foreground">
                     Full access to all features
                   </p>
@@ -126,7 +126,7 @@ export function BillingSettings() {
                     {billedCategories === 1 ? "category" : "categories"}
                   </p>
                 </div>
-                <div className="text-right">
+                <div className="text-left sm:text-right">
                   <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">
                     ₦{totalPrice.toLocaleString()}
                   </p>
@@ -229,11 +229,6 @@ export function BillingSettings() {
           )}
         </CardContent>
       </Card>
-
-      {/* Footer */}
-      <p className="text-xs text-center text-muted-foreground">
-        ALL RIGHTS RESERVED. NAIJALIFT.
-      </p>
 
       <UpgradeModal open={showUpgradeModal} onOpenChange={setShowUpgradeModal} />
     </div>
