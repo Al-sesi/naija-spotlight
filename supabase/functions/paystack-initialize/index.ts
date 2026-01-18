@@ -56,12 +56,14 @@ serve(async (req) => {
       });
     }
 
-    const { plan } = await req.json();
-    
-    // Plan is always Premium Lifter at ₦197/month
-    const amount = 19700; // Amount in kobo (₦197)
-    
-    // Initialize Paystack transaction
+    const body = await req.json().catch(() => ({}));
+    const plan = body?.plan;
+    const categories = Array.isArray(body?.categories) ? body.categories : [];
+
+    const basePriceKobo = 19700;
+    const categoryCount = categories.length > 0 ? categories.length : 1;
+    const amount = basePriceKobo * categoryCount;
+
     const paystackResponse = await fetch("https://api.paystack.co/transaction/initialize", {
       method: "POST",
       headers: {
@@ -70,13 +72,15 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         email: userEmail,
-        amount: amount,
+        amount,
         currency: "NGN",
-        plan: plan || undefined, // Paystack plan code for recurring
+        plan: plan || undefined,
         callback_url: "https://naijalift.space/payment-callback",
         metadata: {
           user_id: userId,
           plan_type: "premium_lifter",
+          categories,
+          category_count: categoryCount,
         },
       }),
     });

@@ -10,6 +10,8 @@ export interface SubscriptionData {
   subscription_started_at: string | null;
   subscription_ends_at: string | null;
   paystack_subscription_code: string | null;
+  premium_categories: string[];
+  verification_trial_ends_at: string | null;
 }
 
 export function useSubscription() {
@@ -22,7 +24,7 @@ export function useSubscription() {
 
       const { data, error } = await supabase
         .from("profiles")
-        .select("subscription_status, plan_type, trial_ends_at, subscription_started_at, subscription_ends_at, paystack_subscription_code")
+        .select("subscription_status, plan_type, trial_ends_at, subscription_started_at, subscription_ends_at, paystack_subscription_code, premium_categories, verification_trial_ends_at")
         .eq("id", user.id)
         .single();
 
@@ -31,7 +33,16 @@ export function useSubscription() {
         return null;
       }
 
-      return data;
+      return {
+        subscription_status: data.subscription_status,
+        plan_type: data.plan_type,
+        trial_ends_at: data.trial_ends_at,
+        subscription_started_at: data.subscription_started_at,
+        subscription_ends_at: data.subscription_ends_at,
+        paystack_subscription_code: data.paystack_subscription_code,
+        premium_categories: (data as any).premium_categories ?? [],
+        verification_trial_ends_at: (data as any).verification_trial_ends_at ?? null,
+      };
     },
     enabled: !!user,
   });
@@ -40,22 +51,20 @@ export function useSubscription() {
 export function useIsPremium() {
   const { data: subscription, isLoading } = useSubscription();
 
-  const isPremium = (() => {
-    if (!subscription) return false;
-    
-    // Check if subscription is active
-    if (subscription.subscription_status === "active") return true;
-    
-    // Check if still in trial period
-    if (subscription.trial_ends_at) {
-      const trialEnd = new Date(subscription.trial_ends_at);
-      if (trialEnd > new Date()) return true;
-    }
-    
-    return false;
-  })();
+  const now = new Date();
 
-  return { isPremium, isLoading };
+  const isPremium =
+    !!subscription &&
+    (subscription.subscription_status === "active" ||
+      (subscription.trial_ends_at ? new Date(subscription.trial_ends_at) > now : false));
+
+  const hasVerificationAccess =
+    isPremium ||
+    (subscription?.verification_trial_ends_at
+      ? new Date(subscription.verification_trial_ends_at) > now
+      : false);
+
+  return { isPremium, hasVerificationAccess, isLoading };
 }
 
 export function useInitializePayment() {
@@ -63,12 +72,17 @@ export function useInitializePayment() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ plan }: { plan?: string }) => {
-      const { data: { session } } = await supabase.auth.getSession();
+    mutationFn: async ({ plan, categories }: { plan?: string; categories?: string[] }) => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (!session) throw new Error("Not authenticated");
 
       const response = await supabase.functions.invoke("paystack-initialize", {
-        body: { plan },
+        body: { plan, categories: categories ?? [] },
+        headers: {
+          "x-access-token": session.access_token,
+        },
       });
 
       if (response.error) {

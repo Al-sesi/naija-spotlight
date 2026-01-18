@@ -60,6 +60,8 @@ serve(async (req) => {
         const email = data.customer?.email;
         const subscriptionCode = data.subscription_code;
         const customerCode = data.customer?.customer_code;
+        const metadata = data.metadata || {};
+        const categories = Array.isArray(metadata.categories) ? metadata.categories : [];
         
         if (email) {
           const { error } = await supabase
@@ -70,6 +72,7 @@ serve(async (req) => {
               paystack_subscription_code: subscriptionCode,
               paystack_customer_code: customerCode,
               subscription_started_at: new Date().toISOString(),
+              premium_categories: categories,
             })
             .eq("email", email);
           

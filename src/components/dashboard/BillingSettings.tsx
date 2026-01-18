@@ -90,10 +90,15 @@ export function BillingSettings() {
 
   const isInTrial = trialDaysRemaining > 0 && subscription?.subscription_status !== "active";
 
+  const categoriesCount = subscription?.premium_categories?.length ?? 0;
+  const billedCategories = categoriesCount > 0 ? categoriesCount : 1;
+  const pricePerCategory = 197;
+  const totalPrice = billedCategories * pricePerCategory;
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-full">
       {/* Current Plan */}
-      <Card className={isPremium ? "border-amber-500/30 bg-gradient-to-br from-amber-50/50 to-transparent dark:from-amber-950/20" : ""}>
+      <Card className={isPremium ? "border-amber-500/30 bg-gradient-to-br from-amber-50/50 to-transparent dark:from-amber-950/20 max-w-full" : "max-w-full"}>
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -113,11 +118,19 @@ export function BillingSettings() {
               <div className="flex items-center justify-between p-4 rounded-lg bg-gradient-to-r from-amber-100 to-amber-50 dark:from-amber-900/30 dark:to-amber-800/20">
                 <div>
                   <h3 className="font-semibold text-lg">Premium Lifter</h3>
-                  <p className="text-sm text-muted-foreground">Full access to all features</p>
+                  <p className="text-sm text-muted-foreground">
+                    Full access to all features
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    ₦{pricePerCategory} per category • {billedCategories}{" "}
+                    {billedCategories === 1 ? "category" : "categories"}
+                  </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">₦197</p>
-                  <p className="text-xs text-muted-foreground">/month</p>
+                  <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">
+                    ₦{totalPrice.toLocaleString()}
+                  </p>
+                  <p className="text-xs text-muted-foreground">per month</p>
                 </div>
               </div>
 
@@ -206,7 +219,7 @@ export function BillingSettings() {
                   className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-lg shadow-amber-500/30"
                 >
                   <Crown className="h-4 w-4 mr-2" />
-                  Upgrade to Premium • ₦197/month
+                  Upgrade to Premium • from ₦197/month
                 </Button>
                 <p className="text-xs text-muted-foreground mt-3">
                   Start with a 30-day free trial

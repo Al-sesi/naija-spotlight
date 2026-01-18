@@ -10,7 +10,7 @@ export function TrialCounter() {
   if (isLoading) {
     return (
       <Card className="bg-gradient-to-r from-primary/10 to-primary/5">
-        <CardContent className="py-4">
+        <CardContent className="px-4 py-4 sm:px-6">
           <div className="animate-pulse h-12 bg-muted rounded" />
         </CardContent>
       </Card>
@@ -28,9 +28,9 @@ export function TrialCounter() {
   const isExpired = daysRemaining <= 0;
 
   return (
-    <Card className={`bg-gradient-to-r ${isExpired ? 'from-destructive/10 to-destructive/5' : 'from-primary/10 to-primary/5'} border-0`}>
-      <CardContent className="py-4">
-        <div className="flex items-center justify-between mb-3">
+    <Card className={`bg-gradient-to-r ${isExpired ? "from-destructive/10 to-destructive/5" : "from-primary/10 to-primary/5"} border-0`}>
+      <CardContent className="px-4 py-4 sm:px-6">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-3">
           <div className="flex items-center gap-2">
             {isExpired ? (
               <Clock className="h-5 w-5 text-destructive" />
@@ -41,8 +41,8 @@ export function TrialCounter() {
               {isExpired ? "Trial Expired" : "Your LIFT Trial"}
             </span>
           </div>
-          <span className={`text-2xl font-bold font-display ${isExpired ? 'text-destructive' : 'text-primary'}`}>
-            {daysRemaining} {daysRemaining === 1 ? 'day' : 'days'}
+          <span className={`text-2xl font-bold font-display ${isExpired ? "text-destructive" : "text-primary"} sm:text-3xl`}>
+            {daysRemaining} {daysRemaining === 1 ? "day" : "days"}
           </span>
         </div>
         <Progress value={progress} className="h-2" />

@@ -47,19 +47,28 @@ export default function Dashboard() {
         <TrialCounter />
       </div>
 
-      <Tabs defaultValue="applications" className="space-y-5 sm:space-y-6">
-        <TabsList className="grid w-full grid-cols-3 max-w-md sm:max-w-lg rounded-xl bg-muted/60 p-1 shadow-sm">
-          <TabsTrigger value="applications" className="flex items-center justify-center gap-1 text-xs sm:text-sm">
+      <Tabs defaultValue="applications" className="space-y-5 sm:space-y-6 max-w-full">
+        <TabsList className="flex w-full max-w-full overflow-x-auto whitespace-nowrap rounded-xl bg-muted/60 p-1 shadow-sm gap-1">
+          <TabsTrigger
+            value="applications"
+            className="flex min-w-[110px] flex-1 items-center justify-center gap-1 text-xs sm:text-sm"
+          >
             <LayoutDashboard className="h-4 w-4" />
             <span className="hidden sm:inline">Applications</span>
             <span className="sm:hidden">Apps</span>
           </TabsTrigger>
-          <TabsTrigger value="notifications" className="flex items-center justify-center gap-1 text-xs sm:text-sm">
+          <TabsTrigger
+            value="notifications"
+            className="flex min-w-[110px] flex-1 items-center justify-center gap-1 text-xs sm:text-sm"
+          >
             <Bell className="h-4 w-4" />
             <span className="hidden sm:inline">Notifications</span>
             <span className="sm:hidden">Alerts</span>
           </TabsTrigger>
-          <TabsTrigger value="billing" className="flex items-center justify-center gap-1 text-xs sm:text-sm">
+          <TabsTrigger
+            value="billing"
+            className="flex min-w-[110px] flex-1 items-center justify-center gap-1 text-xs sm:text-sm"
+          >
             <CreditCard className="h-4 w-4" />
             Billing
           </TabsTrigger>

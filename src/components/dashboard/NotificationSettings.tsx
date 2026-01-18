@@ -85,36 +85,34 @@ export function NotificationSettings() {
   }
 
   return (
-    <div className="space-y-6">
-      <Card>
+    <div className="space-y-6 max-w-full">
+      <Card className="max-w-full">
         <CardHeader>
           <div className="flex items-center gap-2">
             <Bell className="h-5 w-5 text-primary" />
-            <CardTitle>Notification Preferences</CardTitle>
+            <CardTitle className="text-base sm:text-lg">Notification Preferences</CardTitle>
           </div>
-          <CardDescription>
+          <CardDescription className="text-sm leading-relaxed">
             Choose which categories you want to receive alerts for. Toggle on to get notified when new opportunities are posted.
           </CardDescription>
           {isPremium ? (
-            <Badge className="w-fit bg-gradient-to-r from-amber-500 to-amber-600 text-white border-0">
+            <Badge className="w-fit bg-gradient-to-r from-amber-500 to-amber-600 text-white border-0 mt-3 mb-1">
               ✨ Premium Lifter
             </Badge>
           ) : (
-            <Badge variant="secondary" className="w-fit bg-primary/10 text-primary border-0">
+            <Badge variant="secondary" className="w-fit bg-primary/10 text-primary border-0 mt-3 mb-1">
               🎉 Free during Beta Phase!
             </Badge>
           )}
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-6 max-w-full">
           {/* Phone Number for SMS / WhatsApp */}
-          <div className="space-y-2 p-4 rounded-lg bg-muted/50 relative">
+          <div className="space-y-3 p-4 rounded-lg bg-muted/50 max-w-full">
             {!isPremium && (
-              <div className="absolute top-2 right-2">
-                <Badge variant="outline" className="text-xs gap-1 border-amber-500/50 text-amber-600">
-                  <Lock className="h-3 w-3" />
-                  Premium
-                </Badge>
-              </div>
+              <Badge variant="outline" className="text-xs gap-1 border-amber-500/50 text-amber-600 mb-1">
+                <Lock className="h-3 w-3" />
+                Premium
+              </Badge>
             )}
             <Label htmlFor="phone" className="flex items-center gap-2">
               <MessageSquare className="h-4 w-4" />
