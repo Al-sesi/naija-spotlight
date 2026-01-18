@@ -222,7 +222,7 @@ const handler = async (req: Request): Promise<Response> => {
         Authorization: `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: "NAIJALIFT <onboarding@resend.dev>",
+        from: "NAIJALIFT <info@naijalift.space>",
         to: [email],
         subject: "🎉 Welcome to NAIJALIFT — Your 30-Day Premium Trial Starts Now!",
         html: emailHtml,

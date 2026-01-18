@@ -30,6 +30,37 @@ interface ProfileRow {
   id: string;
   email: string | null;
   full_name: string | null;
+  trial_ends_at?: string | null;
+}
+
+type EmailPreferenceKey =
+  | "email_scholarships"
+  | "email_government"
+  | "email_grants"
+  | "email_social_tech";
+
+interface NotificationPreferenceRow {
+  user_id: string;
+  email_scholarships: boolean;
+  email_government: boolean;
+  email_grants: boolean;
+  email_social_tech: boolean;
+}
+
+function getEmailPreferenceKey(category: OpportunityCategory): EmailPreferenceKey {
+  switch (category) {
+    case "government":
+      return "email_government";
+    case "ngo":
+      return "email_grants";
+    case "scholarship":
+      return "email_scholarships";
+    case "tech":
+    case "career":
+    case "social":
+    default:
+      return "email_social_tech";
+  }
 }
 
 function formatCategoryLabel(category: OpportunityCategory): string {
@@ -83,60 +114,60 @@ function buildEmailHtml(opportunity: NewOpportunityPayload["opportunity"], first
     body {
       margin: 0;
       padding: 0;
-      background-color: #020617;
+      background-color: #f0fdf4;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
-    a { color: #fb923c; text-decoration: none; }
+    a { color: #008751; text-decoration: none; }
     .wrapper {
       width: 100%;
       padding: 24px 0;
-      background-color: #020617;
+      background-color: #f0fdf4;
     }
     .container {
       max-width: 560px;
       margin: 0 auto;
       border-radius: 18px;
-      border: 1px solid #1e293b;
-      background: radial-gradient(circle at top, rgba(251,146,60,0.16), transparent 55%) #020617;
+      border: 1px solid #d1fae5;
+      background: linear-gradient(145deg, #ffffff 0%, #ecfdf5 100%);
       overflow: hidden;
     }
     .header {
-      padding: 22px 22px 14px 22px;
+      padding: 24px 24px 16px 24px;
       text-align: center;
-      background: radial-gradient(circle at top, #fb923c 0, #020617 55%);
+      background: linear-gradient(135deg, #008751 0%, #005c36 100%);
     }
     .logo {
-      font-size: 20px;
+      font-size: 22px;
       font-weight: 800;
-      color: #f9fafb;
+      color: #ffffff;
       letter-spacing: 0.12em;
       text-transform: uppercase;
     }
     .tagline {
       margin-top: 4px;
-      font-size: 11px;
-      color: #e5e7eb;
-      opacity: 0.9;
+      font-size: 12px;
+      color: rgba(255,255,255,0.9);
+      opacity: 0.95;
     }
     .pill {
       display: inline-block;
       margin-top: 14px;
-      padding: 5px 12px;
+      padding: 6px 14px;
       border-radius: 999px;
-      font-size: 10px;
+      font-size: 11px;
       text-transform: uppercase;
       letter-spacing: 0.16em;
-      background-color: rgba(15,23,42,0.9);
-      color: #fed7aa;
-      border: 1px solid rgba(251,146,60,0.6);
+      background-color: rgba(240,253,244,0.95);
+      color: #065f46;
+      border: 1px solid rgba(209,250,229,0.9);
     }
     .content {
       padding: 22px 22px 6px 22px;
-      color: #e5e7eb;
+      color: #374151;
     }
     .hello {
       font-size: 13px;
-      color: #9ca3af;
+      color: #6b7280;
       margin-bottom: 4px;
     }
     .title {
@@ -144,21 +175,21 @@ function buildEmailHtml(opportunity: NewOpportunityPayload["opportunity"], first
       font-weight: 700;
       line-height: 1.3;
       margin-bottom: 12px;
-      color: #f9fafb;
+      color: #111827;
     }
     .title span {
-      color: #fed7aa;
+      color: #008751;
     }
     .lead {
       font-size: 13px;
       line-height: 1.7;
-      color: #d1d5db;
+      color: #4b5563;
       margin-bottom: 18px;
     }
     .card {
       border-radius: 14px;
-      border: 1px solid #1f2937;
-      background: linear-gradient(135deg, rgba(15,23,42,0.98), rgba(17,24,39,0.98));
+      border: 1px solid #d1fae5;
+      background: linear-gradient(135deg, #ecfdf5, #ffffff);
       padding: 14px 16px 12px 16px;
       margin-bottom: 16px;
     }
@@ -166,33 +197,33 @@ function buildEmailHtml(opportunity: NewOpportunityPayload["opportunity"], first
       font-size: 11px;
       text-transform: uppercase;
       letter-spacing: 0.16em;
-      color: #a5b4fc;
+      color: #065f46;
       margin-bottom: 4px;
     }
     .card-title {
       font-size: 15px;
       font-weight: 600;
-      color: #f9fafb;
+      color: #065f46;
       margin-bottom: 4px;
     }
     .card-provider {
       font-size: 12px;
-      color: #9ca3af;
+      color: #6b7280;
       margin-bottom: 8px;
     }
     .card-body {
       font-size: 12px;
-      color: #d1d5db;
+      color: #4b5563;
       line-height: 1.7;
       margin-bottom: 8px;
     }
     .meta {
       font-size: 11px;
-      color: #9ca3af;
+      color: #6b7280;
       margin-bottom: 10px;
     }
     .meta strong {
-      color: #e5e7eb;
+      color: #111827;
     }
     .cta-wrap {
       text-align: center;
@@ -200,10 +231,10 @@ function buildEmailHtml(opportunity: NewOpportunityPayload["opportunity"], first
     }
     .button {
       display: inline-block;
-      padding: 11px 26px;
+      padding: 12px 28px;
       border-radius: 999px;
-      background: linear-gradient(135deg, #fb923c, #f97316);
-      color: #111827;
+      background: linear-gradient(135deg, #008751, #00a65a);
+      color: #ffffff;
       font-size: 13px;
       font-weight: 700;
       text-transform: uppercase;
@@ -216,13 +247,13 @@ function buildEmailHtml(opportunity: NewOpportunityPayload["opportunity"], first
       letter-spacing: normal;
       margin-top: 2px;
       font-weight: 500;
-      color: #111827;
+      color: #e5e7eb;
     }
     .footer {
       font-size: 11px;
       color: #6b7280;
-      padding: 10px 22px 18px 22px;
-      border-top: 1px solid #111827;
+      padding: 12px 22px 20px 22px;
+      border-top: 1px solid #e5e7eb;
     }
     .footer a {
       color: #9ca3af;
@@ -273,7 +304,7 @@ function buildEmailHtml(opportunity: NewOpportunityPayload["opportunity"], first
 
       <div class="footer">
         <p>
-          You are receiving this because you turned on email alerts in NAIJALIFT.
+          You are receiving this because you turned on email alerts in NAIJALIFT or you are in your free trial period.
           If this is too much, you can pause alerts in your dashboard.
         </p>
         <p style="margin-top:6px;">
@@ -305,7 +336,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const serviceRoleKey = Deno.env.get("SERVICE_ROLE_KEY");
 
     if (!supabaseUrl || !serviceRoleKey) {
       throw new Error("Supabase environment variables are not configured");
@@ -317,7 +348,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     const { data: profiles, error: profilesError } = await supabase
       .from("profiles")
-      .select("id, email, full_name") as {
+      .select("id, email, full_name, trial_ends_at") as {
       data: ProfileRow[] | null;
       error: unknown;
     };
@@ -326,20 +357,57 @@ const handler = async (req: Request): Promise<Response> => {
       throw profilesError;
     }
 
+    const { data: preferences, error: preferencesError } = await supabase
+      .from("notification_preferences")
+      .select("user_id, email_scholarships, email_government, email_grants, email_social_tech") as {
+      data: NotificationPreferenceRow[] | null;
+      error: unknown;
+    };
+
+    if (preferencesError) {
+      throw preferencesError;
+    }
+
+    const prefsByUser = new Map<string, NotificationPreferenceRow>();
+    for (const pref of preferences || []) {
+      prefsByUser.set(pref.user_id, pref);
+    }
+
+    const now = new Date();
+    const preferenceKey = getEmailPreferenceKey(opportunity.category);
+
     const recipients =
-      profiles?.filter((p) => p.email).map((p) => ({
-        email: p.email as string,
-        fullName: p.full_name,
-      })) ?? [];
+      profiles
+        ?.filter((profile) => {
+          if (!profile.email) {
+            return false;
+          }
+
+          const trialEndsAt = profile.trial_ends_at ? new Date(profile.trial_ends_at) : null;
+          const trialActive = trialEndsAt ? trialEndsAt > now : false;
+
+          if (trialActive) {
+            return true;
+          }
+
+          const pref = prefsByUser.get(profile.id);
+          if (!pref) {
+            return false;
+          }
+
+          return pref[preferenceKey];
+        })
+        .map((profile) => ({
+          email: profile.email as string,
+          fullName: profile.full_name,
+        })) ?? [];
+
+    const emails = recipients.map((r) => r.email);
 
     let sentCount = 0;
-    for (const recipient of recipients) {
-      const firstName =
-        (recipient.fullName || "")
-          .split(" ")
-          .filter(Boolean)[0] || "Champion";
 
-      const emailHtml = buildEmailHtml(opportunity, firstName);
+    if (emails.length > 0) {
+      const emailHtml = buildEmailHtml(opportunity, "Champion");
 
       const res = await fetch("https://api.resend.com/emails", {
         method: "POST",
@@ -348,8 +416,8 @@ const handler = async (req: Request): Promise<Response> => {
           Authorization: `Bearer ${RESEND_API_KEY}`,
         },
         body: JSON.stringify({
-          from: "NAIJALIFT <onboarding@resend.dev>",
-          to: [recipient.email],
+          from: "NAIJALIFT <info@naijalift.space>",
+          to: emails,
           subject: `✨ New ${formatCategoryLabel(opportunity.category)} on NAIJALIFT`,
           html: emailHtml,
         }),
@@ -357,11 +425,10 @@ const handler = async (req: Request): Promise<Response> => {
 
       if (!res.ok) {
         const errorText = await res.text();
-        console.error("Resend error for", recipient.email, errorText);
-        continue;
+        console.error("Resend batch error", errorText);
+      } else {
+        sentCount = emails.length;
       }
-
-      sentCount += 1;
     }
 
     return new Response(
