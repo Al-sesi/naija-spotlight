@@ -1,4 +1,3 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
@@ -20,22 +19,29 @@ serve(async (req) => {
       });
     }
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "https://vdliauwtxklhlkltqqua.supabase.co";
-    const supabaseKey = req.headers.get("apikey");
-
-    if (!supabaseUrl || !supabaseKey) {
-      return new Response(JSON.stringify({ error: "Server configuration error" }), {
-        status: 500,
+    const [, token] = authHeader.split(" ");
+    if (!token) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const supabase = createClient(supabaseUrl, supabaseKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
+    const payloadPart = token.split(".")[1];
+    if (!payloadPart) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) {
+    const decoded = atob(payloadPart.replace(/-/g, "+").replace(/_/g, "/"));
+    const payload = JSON.parse(decoded);
+
+    const userId = payload.sub;
+    const userEmail = payload.email;
+
+    if (!userId || !userEmail) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -63,13 +69,13 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        email: user.email,
+        email: userEmail,
         amount: amount,
         currency: "NGN",
         plan: plan || undefined, // Paystack plan code for recurring
         callback_url: "https://naijalift.space/payment-callback",
         metadata: {
-          user_id: user.id,
+          user_id: userId,
           plan_type: "premium_lifter",
         },
       }),
