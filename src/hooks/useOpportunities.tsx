@@ -103,17 +103,17 @@ export function useCreateOpportunity() {
         .insert(opportunity)
         .select()
         .single();
-      
+
       if (error) throw error;
       return data as Opportunity;
     },
     onSuccess: async (created) => {
-      try {
-        await supabase.functions.invoke("notify-new-opportunity", {
-          body: { opportunity: created },
-        });
-      } catch (error) {
-        console.error("Failed to send new opportunity notification email", error);
+      const { data, error } = await supabase.functions.invoke("notify-new-opportunity", {
+        body: { opportunity: created },
+      });
+
+      if (error) {
+        console.error("notify-new-opportunity error", error, "response data:", data);
       }
 
       queryClient.invalidateQueries({ queryKey: ["opportunities"] });
