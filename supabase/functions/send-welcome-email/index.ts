@@ -1,6 +1,49 @@
+// Force rebuild 2026-01-19
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import nodemailer from "npm:nodemailer@6.9.13";
 
-const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+interface EmailOptions {
+  to: string | string[];
+  subject: string;
+  html: string;
+  text?: string;
+  from?: string;
+}
+
+const BREVO_SMTP_KEY = Deno.env.get("BREVO_SMTP_KEY");
+
+const sendEmail = async ({ to, subject, html, text, from }: EmailOptions) => {
+  if (!BREVO_SMTP_KEY) {
+    throw new Error("BREVO_SMTP_KEY is not configured");
+  }
+
+  const transporter = nodemailer.createTransport({
+    host: "smtp-relay.brevo.com",
+    port: 587,
+    secure: false, // true for 465, false for other ports
+    auth: {
+      user: "a06962001@smtp-brevo.com",
+      pass: BREVO_SMTP_KEY,
+    },
+  });
+
+  const mailOptions = {
+    from: from || '"Naijalift" <info@naijalift.space>',
+    to: Array.isArray(to) ? to.join(", ") : to,
+    subject,
+    html,
+    text: text || html.replace(/<[^>]*>/g, ""), // Simple fallback if text not provided
+  };
+
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log("Email sent to %s: %s", mailOptions.to, info.messageId);
+    return { success: true, messageId: info.messageId };
+  } catch (error) {
+    console.error("Error sending email to %s:", mailOptions.to, error);
+    throw error;
+  }
+};
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -20,10 +63,6 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    if (!RESEND_API_KEY) {
-      throw new Error("RESEND_API_KEY is not configured");
-    }
-
     const { email, fullName }: WelcomeEmailRequest = await req.json();
 
     if (!email) {
@@ -215,30 +254,15 @@ const handler = async (req: Request): Promise<Response> => {
 </html>
     `;
 
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${RESEND_API_KEY}`,
-      },
-      body: JSON.stringify({
-        from: "Naijalift <info@naijalift.space>",
-        to: [email],
-        subject: "🎉 Welcome to NAIJALIFT — Your 30-Day Premium Trial Starts Now!",
-        html: emailHtml,
-      }),
+    const result = await sendEmail({
+      to: email,
+      subject: "🎉 Welcome to NAIJALIFT — Your 30-Day Premium Trial Starts Now!",
+      html: emailHtml,
     });
 
-    if (!res.ok) {
-      const errorData = await res.text();
-      console.error("Resend API error:", errorData);
-      throw new Error(`Failed to send email: ${errorData}`);
-    }
+    console.log("Welcome email sent successfully:", result.messageId);
 
-    const data = await res.json();
-    console.log("Welcome email sent successfully:", data);
-
-    return new Response(JSON.stringify({ success: true, data }), {
+    return new Response(JSON.stringify({ success: true, data: result }), {
       status: 200,
       headers: {
         "Content-Type": "application/json",

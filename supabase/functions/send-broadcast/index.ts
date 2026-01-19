@@ -1,7 +1,51 @@
+// Force rebuild 2026-01-19
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import nodemailer from "npm:nodemailer@6.9.13";
 
-const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+interface EmailOptions {
+  to: string | string[];
+  subject: string;
+  html: string;
+  text?: string;
+  from?: string;
+}
+
+const BREVO_SMTP_KEY = Deno.env.get("BREVO_SMTP_KEY");
+
+const sendEmail = async ({ to, subject, html, text, from }: EmailOptions) => {
+  if (!BREVO_SMTP_KEY) {
+    throw new Error("BREVO_SMTP_KEY is not configured");
+  }
+
+  const transporter = nodemailer.createTransport({
+    host: "smtp-relay.brevo.com",
+    port: 587,
+    secure: false, // true for 465, false for other ports
+    auth: {
+      user: "a06962001@smtp-brevo.com",
+      pass: BREVO_SMTP_KEY,
+    },
+  });
+
+  const mailOptions = {
+    from: from || '"Naijalift" <info@naijalift.space>',
+    to: Array.isArray(to) ? to.join(", ") : to,
+    subject,
+    html,
+    text: text || html.replace(/<[^>]*>/g, ""), // Simple fallback if text not provided
+  };
+
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log("Email sent to %s: %s", mailOptions.to, info.messageId);
+    return { success: true, messageId: info.messageId };
+  } catch (error) {
+    console.error("Error sending email to %s:", mailOptions.to, error);
+    throw error;
+  }
+};
+
 const ADMIN_EMAILS = ["abdulmajeedsesiadam@gmail.com", "naijalift01@gmail.com"];
 
 const corsHeaders = {
@@ -223,9 +267,8 @@ serve(async (req) => {
 
     console.log(`Found ${recipients.length} recipients for audience: ${audience}`);
 
-    // 4. Send Emails via Resend
+    // 4. Send Emails via Brevo SMTP
     // We'll send in batches to avoid rate limits or timeouts
-    // For this implementation, we'll do simple iteration. For production with thousands of users, use a queue.
     
     const results = {
       success: 0,
@@ -242,30 +285,18 @@ serve(async (req) => {
         if (!recipient.email) return;
 
         try {
-          const res = await fetch("https://api.resend.com/emails", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${RESEND_API_KEY}`,
-            },
-            body: JSON.stringify({
-              from: "NAIJALIFT <info@naijalift.space>",
-              to: recipient.email,
-              subject: subject,
-              html: htmlContent,
-              text: message, // Plain text fallback
-            }),
+          await sendEmail({
+            to: recipient.email,
+            subject: subject,
+            html: htmlContent,
+            text: message, // Plain text fallback
           });
 
-          if (res.ok) {
-            results.success++;
-          } else {
-            console.error(`Failed to send to ${recipient.email}:`, await res.text());
-            results.failed++;
-          }
+          results.success++;
         } catch (err) {
           console.error(`Error sending to ${recipient.email}:`, err);
           results.failed++;
+          // Error is logged but doesn't stop the rest of the queue
         }
       }));
     }
@@ -275,7 +306,7 @@ serve(async (req) => {
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
 
-  } catch (error) {
+  } catch (error: any) {
     console.error("Broadcast error:", error);
     return new Response(
       JSON.stringify({ error: error.message }),
