@@ -4,7 +4,7 @@ import { formatDistanceToNow, format } from "date-fns";
 import { 
   Shield, Plus, Link as LinkIcon, Users, MessageSquare, CheckCircle, XCircle, 
   Trash2, ToggleLeft, Home, FileText, Bell, UserCheck, Menu, X,
-  Megaphone, ChevronRight, Calendar
+  Megaphone, ChevronRight, Calendar, Send
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -24,10 +24,12 @@ import { useSiteAlert, useUpdateSiteAlert } from "@/hooks/useSiteAlert";
 import { NIGERIAN_STATES, OPPORTUNITY_TYPES, OpportunityType } from "@/lib/constants";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { useMutation } from "@tanstack/react-query";
 
 const ADMIN_EMAIL = "abdulmajeedsesiadam@gmail.com";
 
-type Section = "dashboard" | "add" | "manage" | "posts" | "users" | "team" | "alerts";
+type Section = "dashboard" | "add" | "manage" | "posts" | "users" | "team" | "alerts" | "broadcast";
 
 const sidebarItems: { id: Section; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { id: "dashboard", label: "Dashboard", icon: Home },
@@ -37,6 +39,7 @@ const sidebarItems: { id: Section; label: string; icon: React.ComponentType<{ cl
   { id: "users", label: "Users", icon: Users },
   { id: "team", label: "Team (Lifters)", icon: UserCheck },
   { id: "alerts", label: "Site Alerts", icon: Megaphone },
+  { id: "broadcast", label: "Broadcast", icon: Send },
 ];
 
 export default function OgaHouse() {
@@ -74,6 +77,29 @@ export default function OgaHouse() {
     message: "",
     is_active: false,
     type: "info" as "info" | "warning" | "success",
+  });
+
+  const [broadcastForm, setBroadcastForm] = useState({
+    subject: "",
+    message: "",
+    audience: "all" as "all" | "premium" | "free",
+  });
+
+  const broadcastMutation = useMutation({
+    mutationFn: async (data: typeof broadcastForm) => {
+      const { data: result, error } = await supabase.functions.invoke("send-broadcast", {
+        body: data,
+      });
+      if (error) throw error;
+      return result;
+    },
+    onSuccess: (data) => {
+      toast.success(`Broadcast sent! Success: ${data.stats.success}, Failed: ${data.stats.failed}`);
+      setBroadcastForm({ subject: "", message: "", audience: "all" });
+    },
+    onError: (error) => {
+      toast.error(`Failed to send broadcast: ${error.message}`);
+    },
   });
 
   useEffect(() => {
@@ -236,6 +262,13 @@ export default function OgaHouse() {
         return <TeamManagement />;
       case "alerts":
         return <SiteAlerts form={alertForm} setForm={setAlertForm} onSubmit={handleUpdateAlert} isLoading={updateSiteAlert.isPending} />;
+      case "broadcast":
+        return <BroadcastMessage 
+          form={broadcastForm} 
+          setForm={setBroadcastForm} 
+          onSubmit={(e) => { e.preventDefault(); broadcastMutation.mutate(broadcastForm); }} 
+          isLoading={broadcastMutation.isPending} 
+        />;
       default:
         return null;
     }
@@ -340,6 +373,78 @@ export default function OgaHouse() {
         />
       )}
     </div>
+  );
+}
+
+// Broadcast Message Component
+function BroadcastMessage({
+  form,
+  setForm,
+  onSubmit,
+  isLoading
+}: {
+  form: { subject: string; message: string; audience: "all" | "premium" | "free" };
+  setForm: (f: any) => void;
+  onSubmit: (e: React.FormEvent) => void;
+  isLoading: boolean;
+}) {
+  return (
+    <Card className="max-w-2xl">
+      <CardHeader>
+        <CardTitle className="text-lg flex items-center gap-2">
+          <Send className="h-5 w-5 text-emerald-600" />
+          Broadcast Message
+        </CardTitle>
+        <CardDescription>Send an email to all registered users or specific groups.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={onSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="audience">Audience</Label>
+            <Select value={form.audience} onValueChange={(v) => setForm({ ...form, audience: v })}>
+              <SelectTrigger id="audience" className="bg-background">
+                <SelectValue placeholder="Select audience" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Users</SelectItem>
+                <SelectItem value="premium">Premium Users Only</SelectItem>
+                <SelectItem value="free">Free Users Only</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="subject">Subject</Label>
+            <Input 
+              id="subject" 
+              value={form.subject} 
+              onChange={(e) => setForm({ ...form, subject: e.target.value })} 
+              placeholder="e.g. Important Update from NaijaLift"
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="message">Message</Label>
+            <Textarea 
+              id="message" 
+              value={form.message} 
+              onChange={(e) => setForm({ ...form, message: e.target.value })} 
+              placeholder="Type your message here..." 
+              rows={8}
+              required
+            />
+            <p className="text-xs text-muted-foreground">
+              Note: This will be sent as an email. Line breaks will be preserved.
+            </p>
+          </div>
+
+          <Button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700" disabled={isLoading}>
+            {isLoading ? "Sending Broadcast..." : "Send Broadcast"}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
   );
 }
 

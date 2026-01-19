@@ -416,7 +416,7 @@ const handler = async (req: Request): Promise<Response> => {
           Authorization: `Bearer ${RESEND_API_KEY}`,
         },
         body: JSON.stringify({
-          from: "NAIJALIFT <info@naijalift.space>",
+          from: "Naijalift <info@naijalift.space>",
           to: emails,
           subject: `✨ New ${formatCategoryLabel(opportunity.category)} on NAIJALIFT`,
           html: emailHtml,
