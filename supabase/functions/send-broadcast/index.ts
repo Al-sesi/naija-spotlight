@@ -123,10 +123,11 @@ serve(async (req) => {
               Authorization: `Bearer ${RESEND_API_KEY}`,
             },
             body: JSON.stringify({
-              from: "NAIJALIFT <notifications@naijalift.com>", // Update if you have a specific sender
+              from: "NAIJALIFT <info@naijalift.space>",
               to: recipient.email,
               subject: subject,
               html: htmlContent,
+              text: message, // Plain text fallback
             }),
           });
 
