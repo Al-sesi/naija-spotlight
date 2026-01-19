@@ -50,13 +50,18 @@ export function useSubscription() {
 
 export function useIsPremium() {
   const { data: subscription, isLoading } = useSubscription();
+  const { user } = useAuth();
 
   const now = new Date();
 
+  const isOwner =
+    (user?.email || "").toLowerCase() === "naijalift01@gmail.com";
+
   const isPremium =
-    !!subscription &&
-    (subscription.subscription_status === "active" ||
-      (subscription.trial_ends_at ? new Date(subscription.trial_ends_at) > now : false));
+    isOwner ||
+    (!!subscription &&
+      (subscription.subscription_status === "active" ||
+        (subscription.trial_ends_at ? new Date(subscription.trial_ends_at) > now : false)));
 
   const hasVerificationAccess =
     isPremium ||
