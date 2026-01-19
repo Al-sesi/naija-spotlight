@@ -15,6 +15,144 @@ interface BroadcastPayload {
   audience: "all" | "premium" | "free";
 }
 
+function buildEmailHtml(subject: string, message: string): string {
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>${subject}</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #f0fdf4;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    a { color: #008751; text-decoration: none; }
+    .wrapper {
+      width: 100%;
+      padding: 24px 0;
+      background-color: #f0fdf4;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      border-radius: 18px;
+      border: 1px solid #d1fae5;
+      background: linear-gradient(145deg, #ffffff 0%, #ecfdf5 100%);
+      overflow: hidden;
+    }
+    .header {
+      padding: 24px 24px 16px 24px;
+      text-align: center;
+      background: linear-gradient(135deg, #008751 0%, #005c36 100%);
+    }
+    .logo {
+      font-size: 22px;
+      font-weight: 800;
+      color: #ffffff;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+    .tagline {
+      margin-top: 4px;
+      font-size: 12px;
+      color: rgba(255,255,255,0.9);
+      opacity: 0.95;
+    }
+    .pill {
+      display: inline-block;
+      margin-top: 14px;
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      background-color: rgba(240,253,244,0.95);
+      color: #065f46;
+      border: 1px solid rgba(209,250,229,0.9);
+    }
+    .content {
+      padding: 32px 24px;
+      color: #374151;
+      font-size: 16px;
+      line-height: 1.6;
+    }
+    .message-body {
+      background-color: #ffffff;
+      padding: 24px;
+      border-radius: 12px;
+      border: 1px solid #e5e7eb;
+      margin-bottom: 24px;
+    }
+    .cta-wrap {
+      text-align: center;
+      padding: 0 24px 32px 24px;
+    }
+    .button {
+      display: inline-block;
+      padding: 14px 32px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, #008751, #00a65a);
+      color: #ffffff;
+      font-size: 14px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+    .footer {
+      font-size: 11px;
+      color: #6b7280;
+      padding: 24px;
+      border-top: 1px solid #e5e7eb;
+      text-align: center;
+      background-color: #f9fafb;
+    }
+    h1, h2, h3 {
+      color: #065f46;
+      margin-top: 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="container">
+      <div class="header">
+        <div class="logo">NAIJALIFT</div>
+        <div class="tagline">Empowering Nigerians with Opportunities</div>
+        <div class="pill">Community Update</div>
+      </div>
+
+      <div class="content">
+        <div class="message-body">
+          ${message.replace(/\n/g, "<br/>")}
+        </div>
+      </div>
+
+      <div class="cta-wrap">
+        <a href="https://naijalift.space/dashboard" class="button" target="_blank" rel="noopener noreferrer">
+          Visit Dashboard
+        </a>
+      </div>
+
+      <div class="footer">
+        <p>
+          You received this message because you are a valued member of NAIJALIFT.
+        </p>
+        <p style="margin-top:6px;">
+          © ${new Date().getFullYear()} NAIJALIFT. All rights reserved.
+        </p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+  `;
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -94,19 +232,7 @@ serve(async (req) => {
       failed: 0
     };
 
-    // Use a simple template
-    const htmlContent = `
-      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #059669;">${subject}</h2>
-        <div style="line-height: 1.6; color: #333;">
-          ${message.replace(/\n/g, "<br/>")}
-        </div>
-        <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
-        <p style="font-size: 12px; color: #666;">
-          You received this message because you are a registered member of NAIJALIFT.
-        </p>
-      </div>
-    `;
+    const htmlContent = buildEmailHtml(subject, message);
 
     // Send in parallel with limit
     const batchSize = 5;
