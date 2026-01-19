@@ -53,7 +53,9 @@ serve(async (req) => {
     }
 
     // 3. Fetch Target Users
-    let query = supabase.from("profiles").select("id, email, first_name, subscription_status, trial_ends_at");
+    let query = supabase
+      .from("profiles")
+      .select("id, email, subscription_status, trial_ends_at");
     
     // For now, fetch all and filter in memory for simplicity unless dataset is huge
     const { data: profiles, error: profilesError } = await query;
