@@ -27,7 +27,7 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useMutation } from "@tanstack/react-query";
 
-const ADMIN_EMAIL = "abdulmajeedsesiadam@gmail.com";
+const ADMIN_EMAILS = ["abdulmajeedsesiadam@gmail.com", "naijalift01@gmail.com"];
 
 type Section = "dashboard" | "add" | "manage" | "posts" | "users" | "team" | "alerts" | "broadcast";
 
@@ -122,7 +122,7 @@ export default function OgaHouse() {
   }
 
   // Access control - redirect if not the admin email
-  if (!user || user.email !== ADMIN_EMAIL) {
+  if (!user || !user.email || !ADMIN_EMAILS.includes(user.email)) {
     navigate("/", { replace: true });
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">

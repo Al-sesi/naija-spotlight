@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-const ADMIN_EMAIL = "abdulmajeedsesiadam@gmail.com";
+const ADMIN_EMAILS = ["abdulmajeedsesiadam@gmail.com", "naijalift01@gmail.com"];
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -42,7 +42,7 @@ serve(async (req) => {
     }
 
     // 2. Verify Admin
-    if (user.email !== ADMIN_EMAIL) {
+    if (!user.email || !ADMIN_EMAILS.includes(user.email)) {
       throw new Error("Forbidden: Admin access only");
     }
 
