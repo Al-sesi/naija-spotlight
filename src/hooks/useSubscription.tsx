@@ -98,9 +98,6 @@ export function useInitializePayment() {
 
       const response = await supabase.functions.invoke("paystack-initialize", {
         body: { plan, categories: categories ?? [], planTier },
-        headers: {
-          "x-access-token": session.access_token,
-        },
       });
 
       if (response.error) {
