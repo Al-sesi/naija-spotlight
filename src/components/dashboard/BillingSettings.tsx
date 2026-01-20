@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { format } from "date-fns";
-import { Crown, CreditCard, Calendar, AlertCircle, CheckCircle, XCircle, Sparkles } from "lucide-react";
+import { Crown, CreditCard, Calendar, AlertCircle, CheckCircle, XCircle, Sparkles, Mail, Shield, Smartphone, Zap } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -92,6 +92,10 @@ export function BillingSettings() {
 
   const planName = isUltra ? "Ultra Bundle" : "Basic Premium";
   const totalPrice = isUltra ? 1500 : 197;
+
+  const handleSubscribe = (tier: "basic" | "ultra") => {
+    initializePayment.mutate({ planTier: tier });
+  };
 
   return (
     <div className="space-y-6 max-w-full">
@@ -226,6 +230,100 @@ export function BillingSettings() {
           )}
         </CardContent>
       </Card>
+
+      {/* Subscription Options */}
+      <div>
+        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <Sparkles className="h-5 w-5 text-primary" />
+          Subscription Options
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Basic Plan */}
+          <div 
+            className={`relative p-4 rounded-xl border-2 transition-all ${
+              !isUltra && isPremium 
+                ? "border-amber-500 bg-amber-50/50 dark:bg-amber-950/20" 
+                : "border-border bg-card"
+            }`}
+          >
+            <div className="flex justify-between items-start mb-2">
+              <h3 className="font-bold text-lg">Basic Premium</h3>
+              {!isUltra && isPremium && <CheckCircle className="h-5 w-5 text-amber-500" />}
+            </div>
+            <div className="mb-4">
+              <span className="text-2xl font-bold">₦197</span>
+              <span className="text-muted-foreground text-sm">/month</span>
+            </div>
+            <ul className="space-y-2 text-sm mb-6">
+              <li className="flex items-center gap-2">
+                <Mail className="h-4 w-4 text-amber-500" />
+                <span>Email for All Categories</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <Shield className="h-4 w-4 text-amber-500" />
+                <span>Verified Badge</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckCircle className="h-4 w-4 text-amber-500" />
+                <span>Unlimited Access</span>
+              </li>
+            </ul>
+            <Button 
+              className="w-full" 
+              variant={!isUltra && isPremium ? "outline" : "default"}
+              disabled={!isUltra && isPremium}
+              onClick={() => handleSubscribe('basic')}
+            >
+              {!isUltra && isPremium ? "Current Plan" : "Switch to Basic"}
+            </Button>
+          </div>
+
+          {/* Ultra Plan */}
+          <div 
+            className={`relative p-4 rounded-xl border-2 transition-all ${
+              isUltra 
+                ? "border-primary bg-primary/5 dark:bg-primary/10" 
+                : "border-border bg-card"
+            }`}
+          >
+            {isUltra && (
+              <Badge className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground border-0 text-[10px] uppercase tracking-wider">
+                Active Plan
+              </Badge>
+            )}
+            <div className="flex justify-between items-start mb-2">
+              <h3 className="font-bold text-lg">Ultra Bundle</h3>
+              {isUltra && <CheckCircle className="h-5 w-5 text-primary" />}
+            </div>
+            <div className="mb-4">
+              <span className="text-2xl font-bold">₦1,500</span>
+              <span className="text-muted-foreground text-sm">/month</span>
+            </div>
+            <ul className="space-y-2 text-sm mb-6">
+              <li className="flex items-center gap-2">
+                <Smartphone className="h-4 w-4 text-primary" />
+                <span>All Channels for All Categories</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <Mail className="h-4 w-4 text-primary" />
+                <span>Email, SMS & WhatsApp</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <Zap className="h-4 w-4 text-primary" />
+                <span>Priority Delivery</span>
+              </li>
+            </ul>
+            <Button 
+              className="w-full" 
+              variant={isUltra ? "outline" : "default"}
+              disabled={isUltra}
+              onClick={() => handleSubscribe('ultra')}
+            >
+              {isUltra ? "Current Plan" : "Upgrade to Ultra"}
+            </Button>
+          </div>
+        </div>
+      </div>
 
       <UpgradeModal open={showUpgradeModal} onOpenChange={setShowUpgradeModal} />
     </div>
