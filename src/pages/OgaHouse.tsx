@@ -29,6 +29,57 @@ import { useMutation } from "@tanstack/react-query";
 
 const ADMIN_EMAILS = ["abdulmajeedsesiadam@gmail.com", "naijalift01@gmail.com"];
 
+interface OpportunityFormState {
+  title: string;
+  provider: string;
+  category: OpportunityType | "";
+  description: string;
+  link: string;
+  deadline: string;
+  event_date: string;
+  state: string;
+  is_verified: boolean;
+  is_remote: boolean;
+  level: string;
+}
+
+interface BroadcastFormState {
+  subject: string;
+  message: string;
+  audience: "all" | "premium" | "free";
+}
+
+interface SiteAlertFormState {
+  message: string;
+  is_active: boolean;
+  type: "info" | "warning" | "success";
+}
+
+interface AdminOpportunity {
+  id: string;
+  title: string;
+  category: string;
+  deadline: string | null;
+  is_verified: boolean | null;
+}
+
+interface AdminPost {
+  id: string;
+  content: string;
+  created_at: string;
+  profile?: {
+    full_name?: string | null;
+    email?: string | null;
+  } | null;
+}
+
+interface AdminUser {
+  id: string;
+  email: string | null;
+  full_name: string | null;
+  created_at: string | null;
+}
+
 type Section = "dashboard" | "add" | "manage" | "posts" | "users" | "team" | "alerts" | "broadcast";
 
 const sidebarItems: { id: Section; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
@@ -383,8 +434,8 @@ function BroadcastMessage({
   onSubmit,
   isLoading
 }: {
-  form: { subject: string; message: string; audience: "all" | "premium" | "free" };
-  setForm: (f: any) => void;
+  form: BroadcastFormState;
+  setForm: (f: BroadcastFormState) => void;
   onSubmit: (e: React.FormEvent) => void;
   isLoading: boolean;
 }) {
@@ -542,8 +593,8 @@ function AddOpportunityForm({
   onSubmit, 
   isLoading 
 }: { 
-  form: any; 
-  setForm: (f: any) => void; 
+  form: OpportunityFormState; 
+  setForm: (f: OpportunityFormState) => void; 
   onSubmit: (e: React.FormEvent) => void; 
   isLoading: boolean;
 }) {
@@ -649,7 +700,7 @@ function ManageOpportunities({
   onToggleVerified,
   onExtendDeadline
 }: { 
-  opportunities: any[]; 
+  opportunities: AdminOpportunity[]; 
   onDelete: (id: string) => void; 
   onToggleVerified: (id: string, current: boolean) => void;
   onExtendDeadline: (id: string, currentDeadline: string | null) => void;
@@ -754,7 +805,7 @@ function ReviewPosts({
   approvePending,
   rejectPending
 }: { 
-  posts: any[]; 
+  posts: AdminPost[]; 
   isLoading: boolean; 
   onApprove: (id: string) => void; 
   onReject: (id: string) => void;
@@ -835,7 +886,7 @@ function ReviewPosts({
 }
 
 // User Management Component
-function UserManagement({ users, isLoading }: { users: any[]; isLoading: boolean }) {
+function UserManagement({ users, isLoading }: { users: AdminUser[]; isLoading: boolean }) {
   return (
     <Card>
       <CardHeader>
@@ -931,8 +982,8 @@ function SiteAlerts({
   onSubmit, 
   isLoading 
 }: { 
-  form: { message: string; is_active: boolean; type: "info" | "warning" | "success" }; 
-  setForm: (f: any) => void; 
+  form: SiteAlertFormState; 
+  setForm: (f: SiteAlertFormState) => void; 
   onSubmit: (e: React.FormEvent) => void; 
   isLoading: boolean;
 }) {

@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
+import { OWNER_EMAILS } from "@/lib/constants";
 import { useToast } from "./use-toast";
 
 export interface SubscriptionData {
@@ -41,15 +42,27 @@ export function useSubscription() {
 
       const roles = rolesData?.map((r) => r.role) ?? [];
 
+      // Type assertion for fields that might be missing in the generated types but exist in DB
+      const profileData = data as {
+        subscription_status: string;
+        plan_type: string | null;
+        trial_ends_at: string | null;
+        subscription_started_at: string | null;
+        subscription_ends_at: string | null;
+        paystack_subscription_code: string | null;
+        premium_categories?: string[] | null;
+        verification_trial_ends_at?: string | null;
+      };
+
       return {
-        subscription_status: data.subscription_status,
-        plan_type: data.plan_type,
-        trial_ends_at: data.trial_ends_at,
-        subscription_started_at: data.subscription_started_at,
-        subscription_ends_at: data.subscription_ends_at,
-        paystack_subscription_code: data.paystack_subscription_code,
-        premium_categories: (data as any).premium_categories ?? [],
-        verification_trial_ends_at: (data as any).verification_trial_ends_at ?? null,
+        subscription_status: profileData.subscription_status,
+        plan_type: profileData.plan_type,
+        trial_ends_at: profileData.trial_ends_at,
+        subscription_started_at: profileData.subscription_started_at,
+        subscription_ends_at: profileData.subscription_ends_at,
+        paystack_subscription_code: profileData.paystack_subscription_code,
+        premium_categories: profileData.premium_categories ?? [],
+        verification_trial_ends_at: profileData.verification_trial_ends_at ?? null,
         roles,
       };
     },
