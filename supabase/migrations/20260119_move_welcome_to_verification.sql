@@ -13,7 +13,7 @@ DECLARE
   project_url text := 'https://vdliauwtxklhlkltqqua.supabase.co/functions/v1/send-welcome-email';
   
   -- SERVICE ROLE KEY: You MUST replace this with your actual Service Role Key
-  service_role_key text := 'YOUR_SERVICE_ROLE_KEY_HERE';
+  service_role_key text := 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZkbGlhdXd0eGtsaGxrbHRxcXVhIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NzM3Mjc1OCwiZXhwIjoyMDgyOTQ4NzU4fQ.DYXQwZFhtCeUM3fzyWWN84NOrAANNZvQkypAJmzjDGU';
   
   user_full_name text;
 BEGIN

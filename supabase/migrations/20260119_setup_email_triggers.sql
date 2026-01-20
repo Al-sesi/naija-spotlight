@@ -8,7 +8,7 @@ declare
   -- PROJECT URL (Update if using a custom domain)
   project_url text := 'https://vdliauwtxklhlkltqqua.supabase.co/functions/v1/send-welcome-email';
   -- SERVICE ROLE KEY (You must replace this with your actual Supabase Service Role Key)
-  service_role_key text := 'YOUR_SERVICE_ROLE_KEY_HERE';
+  service_role_key text := 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZkbGlhdXd0eGtsaGxrbHRxcXVhIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NzM3Mjc1OCwiZXhwIjoyMDgyOTQ4NzU4fQ.DYXQwZFhtCeUM3fzyWWN84NOrAANNZvQkypAJmzjDGU';
 begin
   -- Only send if email is present
   if new.email is not null then
@@ -41,7 +41,7 @@ create or replace function public.trigger_notify_new_opportunity()
 returns trigger as $$
 declare
   project_url text := 'https://vdliauwtxklhlkltqqua.supabase.co/functions/v1/notify-new-opportunity';
-  service_role_key text := 'YOUR_SERVICE_ROLE_KEY_HERE';
+  service_role_key text := 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZkbGlhdXd0eGtsaGxrbHRxcXVhIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NzM3Mjc1OCwiZXhwIjoyMDgyOTQ4NzU4fQ.DYXQwZFhtCeUM3fzyWWN84NOrAANNZvQkypAJmzjDGU';
 begin
   perform
     net.http_post(
