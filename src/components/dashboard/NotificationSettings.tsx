@@ -44,7 +44,7 @@ const CATEGORIES = [
 export function NotificationSettings() {
   const { data: preferences, isLoading } = useNotificationPreferences();
   const updatePreferences = useUpdateNotificationPreferences();
-  const { isPremium, isLoading: isPremiumLoading } = useIsPremium();
+  const { isPremium, isUltra, isLoading: isPremiumLoading } = useIsPremium();
   const [phoneNumber, setPhoneNumber] = useState("");
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
@@ -55,8 +55,14 @@ export function NotificationSettings() {
   }, [preferences]);
 
   const handleToggle = (type: "email" | "sms" | "whatsapp", category: string, checked: boolean) => {
-    // If trying to enable SMS/WhatsApp and not premium, show upgrade modal
-    if ((type === "sms" || type === "whatsapp") && checked && !isPremium) {
+    // Email requires at least Basic Premium (isPremium covers both)
+    if (type === "email" && checked && !isPremium) {
+      setShowUpgradeModal(true);
+      return;
+    }
+
+    // SMS/WhatsApp requires Ultra Bundle
+    if ((type === "sms" || type === "whatsapp") && checked && !isUltra) {
       setShowUpgradeModal(true);
       return;
     }

@@ -57,12 +57,23 @@ serve(async (req) => {
     }
 
     const body = await req.json().catch(() => ({}));
+    // Inputs: plan (Paystack plan ID if any), categories (array), planTier ('basic' | 'ultra')
     const plan = body?.plan;
     const categories = Array.isArray(body?.categories) ? body.categories : [];
+    const planTier = body?.planTier || "basic"; // 'basic' or 'ultra'
 
-    const basePriceKobo = 19700;
-    const categoryCount = categories.length > 0 ? categories.length : 1;
-    const amount = basePriceKobo * categoryCount;
+    let amount = 0;
+
+    // Pricing Logic
+    if (planTier === "ultra") {
+      // Ultra Bundle: ₦1500 (150000 kobo) - Flat fee, includes SMS/WhatsApp + All Categories (presumably)
+      amount = 150000;
+    } else {
+      // Basic Premium: ₦197 (19700 kobo) - Per Category (matches previous logic)
+      const basePriceKobo = 19700;
+      const categoryCount = categories.length > 0 ? categories.length : 1;
+      amount = basePriceKobo * categoryCount;
+    }
 
     const paystackResponse = await fetch("https://api.paystack.co/transaction/initialize", {
       method: "POST",
@@ -78,9 +89,9 @@ serve(async (req) => {
         callback_url: "https://naijalift.space/payment-callback",
         metadata: {
           user_id: userId,
-          plan_type: "premium_lifter",
+          plan_type: planTier, // 'basic' or 'ultra'
           categories,
-          category_count: categoryCount,
+          category_count: categories.length,
         },
       }),
     });
@@ -103,9 +114,10 @@ serve(async (req) => {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
+
   } catch (error) {
-    console.error("Initialize error:", error);
-    return new Response(JSON.stringify({ error: "Failed to initialize payment" }), {
+    console.error("Error initializing payment:", error);
+    return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

@@ -120,7 +120,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       },
     });
 
-    // Send custom welcome email via Resend (non-blocking)
+    // Send custom welcome email (non-blocking)
     if (!error) {
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       fetch(`${supabaseUrl}/functions/v1/send-welcome-email`, {

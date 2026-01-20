@@ -75,6 +75,9 @@ interface ProfileRow {
   email: string | null;
   full_name: string | null;
   trial_ends_at?: string | null;
+  subscription_status?: string | null;
+  plan_type?: string | null;
+  phone_number?: string | null;
 }
 
 type EmailPreferenceKey =
@@ -83,12 +86,22 @@ type EmailPreferenceKey =
   | "email_grants"
   | "email_social_tech";
 
+type WhatsAppPreferenceKey =
+  | "whatsapp_scholarships"
+  | "whatsapp_government"
+  | "whatsapp_grants"
+  | "whatsapp_social_tech";
+
 interface NotificationPreferenceRow {
   user_id: string;
   email_scholarships: boolean;
   email_government: boolean;
   email_grants: boolean;
   email_social_tech: boolean;
+  whatsapp_scholarships: boolean;
+  whatsapp_government: boolean;
+  whatsapp_grants: boolean;
+  whatsapp_social_tech: boolean;
 }
 
 function getEmailPreferenceKey(category: OpportunityCategory): EmailPreferenceKey {
@@ -104,6 +117,22 @@ function getEmailPreferenceKey(category: OpportunityCategory): EmailPreferenceKe
     case "social":
     default:
       return "email_social_tech";
+  }
+}
+
+function getWhatsAppPreferenceKey(category: OpportunityCategory): WhatsAppPreferenceKey {
+  switch (category) {
+    case "government":
+      return "whatsapp_government";
+    case "ngo":
+      return "whatsapp_grants";
+    case "scholarship":
+      return "whatsapp_scholarships";
+    case "tech":
+    case "career":
+    case "social":
+    default:
+      return "whatsapp_social_tech";
   }
 }
 
@@ -388,7 +417,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     const { data: profiles, error: profilesError } = await supabase
       .from("profiles")
-      .select("id, email, full_name, trial_ends_at") as {
+      .select("id, email, full_name, trial_ends_at, subscription_status, plan_type, phone_number") as {
       data: ProfileRow[] | null;
       error: unknown;
     };
@@ -399,7 +428,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     const { data: preferences, error: preferencesError } = await supabase
       .from("notification_preferences")
-      .select("user_id, email_scholarships, email_government, email_grants, email_social_tech") as {
+      .select("user_id, email_scholarships, email_government, email_grants, email_social_tech, whatsapp_scholarships, whatsapp_government, whatsapp_grants, whatsapp_social_tech") as {
       data: NotificationPreferenceRow[] | null;
       error: unknown;
     };
@@ -414,37 +443,49 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const now = new Date();
-    const preferenceKey = getEmailPreferenceKey(opportunity.category);
+    const emailKey = getEmailPreferenceKey(opportunity.category);
+    const whatsappKey = getWhatsAppPreferenceKey(opportunity.category);
 
-    const recipients =
-      profiles
-        ?.filter((profile) => {
-          if (!profile.email) {
-            return false;
-          }
+    const emailRecipients: { email: string; fullName: string | null }[] = [];
+    const whatsappRecipients: { phone: string; fullName: string | null }[] = [];
 
-          const trialEndsAt = profile.trial_ends_at ? new Date(profile.trial_ends_at) : null;
-          const trialActive = trialEndsAt ? trialEndsAt > now : false;
+    profiles?.forEach((profile) => {
+      if (!profile.email) return;
 
-          if (trialActive) {
-            return true;
-          }
+      const trialEndsAt = profile.trial_ends_at ? new Date(profile.trial_ends_at) : null;
+      const trialActive = trialEndsAt ? trialEndsAt > now : false;
+      const isSubscribed = profile.subscription_status === 'active';
+      const isUltra = profile.plan_type === 'ultra';
 
-          const pref = prefsByUser.get(profile.id);
-          if (!pref) {
-            return false;
-          }
+      const pref = prefsByUser.get(profile.id);
 
-          return pref[preferenceKey];
-        })
-        .map((profile) => ({
-          email: profile.email as string,
-          fullName: profile.full_name,
-        })) ?? [];
+      // Email Logic
+      let sendEmail = false;
+      if (trialActive) {
+        sendEmail = true; // Trial users get emails by default/logic
+      } else if (isSubscribed) {
+        // Basic or Ultra can get email if they opted in
+        if (pref && pref[emailKey]) {
+          sendEmail = true;
+        }
+      }
 
-    const emails = recipients.map((r) => r.email);
+      if (sendEmail) {
+        emailRecipients.push({ email: profile.email, fullName: profile.full_name });
+      }
+
+      // WhatsApp Logic (Only for Ultra subscribers with phone number)
+      if (isSubscribed && isUltra && profile.phone_number) {
+        if (pref && pref[whatsappKey]) {
+          whatsappRecipients.push({ phone: profile.phone_number, fullName: profile.full_name });
+        }
+      }
+    });
+
+    const emails = emailRecipients.map((r) => r.email);
 
     let sentCount = 0;
+    let whatsappSentCount = 0;
 
     if (emails.length > 0) {
       const emailHtml = buildEmailHtml(opportunity, "Champion");
@@ -472,11 +513,28 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
+    if (whatsappRecipients.length > 0) {
+        console.log(`Processing WhatsApp notifications for ${whatsappRecipients.length} users (Ultra Plan)`);
+        // Placeholder for WhatsApp API integration (e.g. Twilio or Meta Business API)
+        // For now, we just log it as the user requested "logic rebuild" not full integration yet.
+        for (const recipient of whatsappRecipients) {
+            try {
+                // await sendWhatsApp(recipient.phone, message);
+                console.log(`[MOCK] WhatsApp sent to ${recipient.phone} (${recipient.fullName})`);
+                whatsappSentCount++;
+            } catch (err) {
+                console.error(`Error sending WhatsApp to ${recipient.phone}:`, err);
+            }
+        }
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
-        sent: sentCount,
-        totalRecipients: recipients.length,
+        emailSent: sentCount,
+        whatsappSent: whatsappSentCount,
+        totalEmailRecipients: emailRecipients.length,
+        totalWhatsAppRecipients: whatsappRecipients.length,
       }),
       {
         status: 200,

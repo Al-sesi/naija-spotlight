@@ -1,4 +1,5 @@
-import { Crown, CheckCircle, Sparkles, MessageSquare, Shield, Zap } from "lucide-react";
+import { useState } from "react";
+import { Crown, CheckCircle, Sparkles, MessageSquare, Shield, Zap, Mail, Smartphone } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -9,6 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useInitializePayment } from "@/hooks/useSubscription";
+import { cn } from "@/lib/utils";
 
 interface UpgradeModalProps {
   open: boolean;
@@ -16,23 +18,17 @@ interface UpgradeModalProps {
   feature?: string;
 }
 
-const PREMIUM_FEATURES = [
-  { icon: Shield, label: "Verified Badge", description: "Stand out in the community" },
-  { icon: MessageSquare, label: "SMS Alerts", description: "Never miss an opportunity" },
-  { icon: Zap, label: "Early Access", description: "Get notified before others" },
-  { icon: Sparkles, label: "Priority Support", description: "Dedicated help when needed" },
-];
-
 export function UpgradeModal({ open, onOpenChange, feature }: UpgradeModalProps) {
   const initializePayment = useInitializePayment();
+  const [selectedTier, setSelectedTier] = useState<"basic" | "ultra">("basic");
 
   const handleUpgrade = () => {
-    initializePayment.mutate({});
+    initializePayment.mutate({ planTier: selectedTier });
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader className="text-center pb-4">
           <div className="mx-auto mb-4 relative">
             <div className="h-14 w-14 sm:h-16 sm:w-16 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/30">
@@ -43,79 +39,112 @@ export function UpgradeModal({ open, onOpenChange, feature }: UpgradeModalProps)
             </div>
           </div>
           <DialogTitle className="text-xl sm:text-2xl font-display">
-            Upgrade to Premium Lifter
+            Choose Your Power Plan
           </DialogTitle>
           <DialogDescription className="text-sm sm:text-base">
             {feature 
-              ? `Unlock ${feature} and all premium features`
-              : "Get the most out of NAIJALIFT"
+              ? `Unlock ${feature} with a premium plan`
+              : "Select the plan that fits your ambition"
             }
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 sm:space-y-6">
-          {/* Price Card */}
-          <div className="relative p-4 sm:p-6 rounded-xl bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-950/30 dark:to-amber-900/20 border border-amber-200 dark:border-amber-800">
-            <Badge className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-gradient-to-r from-amber-500 to-amber-600 text-white border-0 text-xs">
-              30 Days FREE Trial
-            </Badge>
-            <div className="text-center pt-2">
-              <div className="flex items-baseline justify-center gap-1">
-                <span className="text-3xl sm:text-4xl font-bold text-amber-600 dark:text-amber-400">₦197</span>
-                <span className="text-sm text-muted-foreground">/month</span>
-              </div>
-              <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                First charge after trial ends
-              </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Basic Plan */}
+          <div 
+            className={cn(
+              "relative p-4 rounded-xl border-2 cursor-pointer transition-all hover:border-amber-500/50",
+              selectedTier === "basic" 
+                ? "border-amber-500 bg-amber-50/50 dark:bg-amber-950/20" 
+                : "border-border bg-card"
+            )}
+            onClick={() => setSelectedTier("basic")}
+          >
+            <div className="flex justify-between items-start mb-2">
+              <h3 className="font-bold text-lg">Basic Premium</h3>
+              {selectedTier === "basic" && <CheckCircle className="h-5 w-5 text-amber-500" />}
             </div>
+            <div className="mb-4">
+              <span className="text-2xl font-bold">₦197</span>
+              <span className="text-muted-foreground text-sm">/month</span>
+            </div>
+            <ul className="space-y-2 text-sm">
+              <li className="flex items-center gap-2">
+                <Mail className="h-4 w-4 text-amber-500" />
+                <span>Email Notifications</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <Shield className="h-4 w-4 text-amber-500" />
+                <span>Verified Badge</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckCircle className="h-4 w-4 text-amber-500" />
+                <span>Unlimited Access</span>
+              </li>
+            </ul>
           </div>
 
-          {/* Features */}
-          <div className="space-y-2 sm:space-y-3">
-            {PREMIUM_FEATURES.map((item) => (
-              <div key={item.label} className="flex items-center gap-3">
-                <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center flex-shrink-0">
-                  <item.icon className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-amber-600 dark:text-amber-400" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{item.label}</p>
-                  <p className="text-xs text-muted-foreground truncate">{item.description}</p>
-                </div>
-                <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
-              </div>
-            ))}
+          {/* Ultra Plan */}
+          <div 
+            className={cn(
+              "relative p-4 rounded-xl border-2 cursor-pointer transition-all hover:border-primary/50",
+              selectedTier === "ultra" 
+                ? "border-primary bg-primary/5 dark:bg-primary/10" 
+                : "border-border bg-card"
+            )}
+            onClick={() => setSelectedTier("ultra")}
+          >
+            <Badge className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground border-0 text-[10px] uppercase tracking-wider">
+              Best Value
+            </Badge>
+            <div className="flex justify-between items-start mb-2">
+              <h3 className="font-bold text-lg">Ultra Bundle</h3>
+              {selectedTier === "ultra" && <CheckCircle className="h-5 w-5 text-primary" />}
+            </div>
+            <div className="mb-4">
+              <span className="text-2xl font-bold">₦1,500</span>
+              <span className="text-muted-foreground text-sm">/month</span>
+            </div>
+            <ul className="space-y-2 text-sm">
+              <li className="flex items-center gap-2">
+                <Smartphone className="h-4 w-4 text-primary" />
+                <span>SMS & WhatsApp Alerts</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <Mail className="h-4 w-4 text-primary" />
+                <span>Email Notifications</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <Zap className="h-4 w-4 text-primary" />
+                <span>Priority Delivery</span>
+              </li>
+            </ul>
           </div>
+        </div>
 
-          {/* CTA Buttons */}
-          <div className="space-y-2 sm:space-y-3 pt-2">
-            <Button 
-              onClick={handleUpgrade}
-              disabled={initializePayment.isPending}
-              className="w-full h-11 sm:h-12 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-semibold shadow-lg shadow-amber-500/30 text-sm sm:text-base"
-            >
-              {initializePayment.isPending ? (
-                <span className="flex items-center gap-2">
-                  <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Processing...
-                </span>
-              ) : (
-                <span className="flex items-center gap-2">
-                  <Crown className="h-4 w-4" />
-                  Start Free Trial
-                </span>
-              )}
-            </Button>
-            <Button 
-              variant="ghost" 
-              onClick={() => onOpenChange(false)}
-              className="w-full text-sm"
-            >
-              Maybe Later
-            </Button>
-          </div>
-
+        {/* CTA Buttons */}
+        <div className="space-y-2 sm:space-y-3 pt-4">
+          <Button 
+            onClick={handleUpgrade}
+            disabled={initializePayment.isPending}
+            className={cn(
+              "w-full h-11 sm:h-12 text-white font-semibold shadow-lg text-sm sm:text-base",
+              selectedTier === "ultra" 
+                ? "bg-primary hover:bg-primary/90 shadow-primary/30" 
+                : "bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 shadow-amber-500/30"
+            )}
+          >
+            {initializePayment.isPending ? (
+              <span className="flex items-center gap-2">
+                <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                Processing...
+              </span>
+            ) : (
+              `Subscribe to ${selectedTier === "basic" ? "Basic" : "Ultra"} - ₦${selectedTier === "basic" ? "197" : "1,500"}`
+            )}
+          </Button>
           <p className="text-xs text-center text-muted-foreground">
-            Secure payment powered by Paystack. Cancel anytime.
+            Cancel anytime. Secure payment by Paystack.
           </p>
         </div>
       </DialogContent>

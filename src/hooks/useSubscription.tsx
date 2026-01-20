@@ -63,13 +63,15 @@ export function useIsPremium() {
       (subscription.subscription_status === "active" ||
         (subscription.trial_ends_at ? new Date(subscription.trial_ends_at) > now : false)));
 
+  const isUltra = isOwner || (isPremium && subscription?.plan_type === 'ultra');
+
   const hasVerificationAccess =
     isPremium ||
     (subscription?.verification_trial_ends_at
       ? new Date(subscription.verification_trial_ends_at) > now
       : false);
 
-  return { isPremium, hasVerificationAccess, isLoading };
+  return { isPremium, isUltra, hasVerificationAccess, isLoading };
 }
 
 export function useInitializePayment() {
@@ -77,14 +79,14 @@ export function useInitializePayment() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ plan, categories }: { plan?: string; categories?: string[] }) => {
+    mutationFn: async ({ plan, categories, planTier }: { plan?: string; categories?: string[]; planTier?: "basic" | "ultra" }) => {
       const {
         data: { session },
       } = await supabase.auth.getSession();
       if (!session) throw new Error("Not authenticated");
 
       const response = await supabase.functions.invoke("paystack-initialize", {
-        body: { plan, categories: categories ?? [] },
+        body: { plan, categories: categories ?? [], planTier },
         headers: {
           "x-access-token": session.access_token,
         },
