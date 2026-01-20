@@ -21,7 +21,7 @@ import { UpgradeModal } from "@/components/subscription/UpgradeModal";
 
 export function BillingSettings() {
   const { data: subscription, isLoading } = useSubscription();
-  const { isPremium } = useIsPremium();
+  const { isPremium, isUltra } = useIsPremium();
   const initializePayment = useInitializePayment();
   const cancelSubscription = useCancelSubscription();
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
