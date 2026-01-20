@@ -71,7 +71,7 @@ export function UpgradeModal({ open, onOpenChange, feature }: UpgradeModalProps)
             <ul className="space-y-2 text-sm">
               <li className="flex items-center gap-2">
                 <Mail className="h-4 w-4 text-amber-500" />
-                <span>Email Notifications</span>
+                <span>Email for All Categories</span>
               </li>
               <li className="flex items-center gap-2">
                 <Shield className="h-4 w-4 text-amber-500" />
@@ -108,11 +108,11 @@ export function UpgradeModal({ open, onOpenChange, feature }: UpgradeModalProps)
             <ul className="space-y-2 text-sm">
               <li className="flex items-center gap-2">
                 <Smartphone className="h-4 w-4 text-primary" />
-                <span>SMS & WhatsApp Alerts</span>
+                <span>All Channels for All Categories</span>
               </li>
               <li className="flex items-center gap-2">
                 <Mail className="h-4 w-4 text-primary" />
-                <span>Email Notifications</span>
+                <span>Email, SMS & WhatsApp</span>
               </li>
               <li className="flex items-center gap-2">
                 <Zap className="h-4 w-4 text-primary" />

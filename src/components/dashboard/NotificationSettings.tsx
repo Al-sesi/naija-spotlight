@@ -185,14 +185,13 @@ export function NotificationSettings() {
                         <Label htmlFor={`sms-${category.key}`} className="flex items-center gap-2 text-sm cursor-pointer">
                           <MessageSquare className="h-4 w-4 text-muted-foreground" />
                           SMS Alerts
-                          {!isPremium && <Lock className="h-3 w-3 text-amber-500" />}
+                          {!isUltra && <Lock className="h-3 w-3 text-amber-500" />}
                         </Label>
                         <Switch
                           id={`sms-${category.key}`}
-                          checked={isPremium ? !!smsEnabled : false}
+                          checked={isUltra ? !!smsEnabled : false}
                           onCheckedChange={(checked) => handleToggle("sms", category.key, checked)}
-                          disabled={updatePreferences.isPending || !isPremium}
-                          className={!isPremium ? "opacity-50" : ""}
+                          disabled={updatePreferences.isPending}
                         />
                       </div>
 
@@ -200,14 +199,13 @@ export function NotificationSettings() {
                         <Label htmlFor={`whatsapp-${category.key}`} className="flex items-center gap-2 text-sm cursor-pointer">
                           <MessageSquare className="h-4 w-4 text-emerald-500" />
                           WhatsApp Alerts
-                          {!isPremium && <Lock className="h-3 w-3 text-amber-500" />}
+                          {!isUltra && <Lock className="h-3 w-3 text-amber-500" />}
                         </Label>
                         <Switch
                           id={`whatsapp-${category.key}`}
-                          checked={isPremium ? !!whatsappEnabled : false}
+                          checked={isUltra ? !!whatsappEnabled : false}
                           onCheckedChange={(checked) => handleToggle("whatsapp", category.key, checked)}
-                          disabled={updatePreferences.isPending || !isPremium}
-                          className={!isPremium ? "opacity-50" : ""}
+                          disabled={updatePreferences.isPending}
                         />
                       </div>
                     </div>

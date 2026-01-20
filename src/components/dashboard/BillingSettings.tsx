@@ -90,12 +90,8 @@ export function BillingSettings() {
 
   const isInTrial = trialDaysRemaining > 0 && subscription?.subscription_status !== "active";
 
-  const categoriesCount = subscription?.premium_categories?.length ?? 0;
-  const billedCategories = categoriesCount > 0 ? categoriesCount : 1;
-  
   const planName = isUltra ? "Ultra Bundle" : "Basic Premium";
-  const planPrice = isUltra ? 1500 : 197;
-  const totalPrice = billedCategories * planPrice;
+  const totalPrice = isUltra ? 1500 : 197;
 
   return (
     <div className="space-y-6 max-w-full">
@@ -121,11 +117,10 @@ export function BillingSettings() {
                 <div className="text-left">
                   <h3 className="font-semibold text-base sm:text-lg">{planName}</h3>
                   <p className="text-sm text-muted-foreground">
-                    {isUltra ? "Full access + SMS & WhatsApp Alerts" : "Email Notifications Only"}
+                    {isUltra ? "Full access to All Categories + SMS & WhatsApp Alerts" : "Email Notifications for All Categories"}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    ₦{planPrice} per category • {billedCategories}{" "}
-                    {billedCategories === 1 ? "category" : "categories"}
+                    Flat rate • All Access
                   </p>
                 </div>
                 <div className="text-left sm:text-right">

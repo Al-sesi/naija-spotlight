@@ -66,13 +66,11 @@ serve(async (req) => {
 
     // Pricing Logic
     if (planTier === "ultra") {
-      // Ultra Bundle: ₦1500 (150000 kobo) - Flat fee, includes SMS/WhatsApp + All Categories (presumably)
+      // Ultra Bundle: ₦1500 (150000 kobo) - Flat fee for All Categories + All Channels
       amount = 150000;
     } else {
-      // Basic Premium: ₦197 (19700 kobo) - Per Category (matches previous logic)
-      const basePriceKobo = 19700;
-      const categoryCount = categories.length > 0 ? categories.length : 1;
-      amount = basePriceKobo * categoryCount;
+      // Basic Premium: ₦197 (19700 kobo) - Flat fee for All Categories (Email only)
+      amount = 19700;
     }
 
     const paystackResponse = await fetch("https://api.paystack.co/transaction/initialize", {
