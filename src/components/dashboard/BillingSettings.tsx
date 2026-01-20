@@ -92,8 +92,10 @@ export function BillingSettings() {
 
   const categoriesCount = subscription?.premium_categories?.length ?? 0;
   const billedCategories = categoriesCount > 0 ? categoriesCount : 1;
-  const pricePerCategory = 197;
-  const totalPrice = billedCategories * pricePerCategory;
+  
+  const planName = isUltra ? "Ultra Bundle" : "Basic Premium";
+  const planPrice = isUltra ? 1500 : 197;
+  const totalPrice = billedCategories * planPrice;
 
   return (
     <div className="space-y-6 max-w-full">
@@ -117,12 +119,12 @@ export function BillingSettings() {
               {/* Premium Plan Details */}
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 rounded-lg bg-gradient-to-r from-amber-100 to-amber-50 dark:from-amber-900/30 dark:to-amber-800/20">
                 <div className="text-left">
-                  <h3 className="font-semibold text-base sm:text-lg">Premium Lifter</h3>
+                  <h3 className="font-semibold text-base sm:text-lg">{planName}</h3>
                   <p className="text-sm text-muted-foreground">
-                    Full access to all features
+                    {isUltra ? "Full access + SMS & WhatsApp Alerts" : "Email Notifications Only"}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    ₦{pricePerCategory} per category • {billedCategories}{" "}
+                    ₦{planPrice} per category • {billedCategories}{" "}
                     {billedCategories === 1 ? "category" : "categories"}
                   </p>
                 </div>

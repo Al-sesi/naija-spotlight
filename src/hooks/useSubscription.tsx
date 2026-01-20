@@ -12,6 +12,7 @@ export interface SubscriptionData {
   paystack_subscription_code: string | null;
   premium_categories: string[];
   verification_trial_ends_at: string | null;
+  roles: string[];
 }
 
 export function useSubscription() {
@@ -33,6 +34,13 @@ export function useSubscription() {
         return null;
       }
 
+      const { data: rolesData } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id);
+
+      const roles = rolesData?.map((r) => r.role) ?? [];
+
       return {
         subscription_status: data.subscription_status,
         plan_type: data.plan_type,
@@ -42,6 +50,7 @@ export function useSubscription() {
         paystack_subscription_code: data.paystack_subscription_code,
         premium_categories: (data as any).premium_categories ?? [],
         verification_trial_ends_at: (data as any).verification_trial_ends_at ?? null,
+        roles,
       };
     },
     enabled: !!user,
@@ -54,8 +63,9 @@ export function useIsPremium() {
 
   const now = new Date();
 
+  const isAdmin = subscription?.roles?.includes("admin") ?? false;
   const isOwner =
-    (user?.email || "").toLowerCase() === "naijalift01@gmail.com";
+    (user?.email || "").toLowerCase() === "naijalift01@gmail.com" || isAdmin;
 
   const isPremium =
     isOwner ||
@@ -64,6 +74,7 @@ export function useIsPremium() {
         (subscription.trial_ends_at ? new Date(subscription.trial_ends_at) > now : false)));
 
   const isUltra = isOwner || (isPremium && subscription?.plan_type === 'ultra');
+
 
   const hasVerificationAccess =
     isPremium ||
