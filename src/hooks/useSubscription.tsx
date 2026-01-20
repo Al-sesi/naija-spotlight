@@ -65,7 +65,7 @@ export function useIsPremium() {
 
   const isAdmin = subscription?.roles?.includes("admin") ?? false;
   const isOwner =
-    (user?.email || "").toLowerCase() === "naijalift01@gmail.com" || isAdmin;
+    OWNER_EMAILS.includes((user?.email || "").toLowerCase()) || isAdmin;
 
   const isPremium =
     isOwner ||
