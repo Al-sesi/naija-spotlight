@@ -49,9 +49,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
+    // Safety timeout: If Supabase takes too long (e.g. network hang), force loading to stop after 4 seconds
+    const safetyTimeout = setTimeout(() => {
+      setLoading((prev) => {
+        if (prev) {
+          console.warn("Auth check timed out, forcing loading to false");
+          return false;
+        }
+        return prev;
+      });
+    }, 4000);
+
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
+      clearTimeout(safetyTimeout); // Clear timeout on success
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
@@ -66,6 +78,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     supabase.auth.getSession().then(({ data: { session } }) => {
+      clearTimeout(safetyTimeout); // Clear timeout on success
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
@@ -74,11 +87,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         checkAdminRole(session.user);
       }
     }).catch((err) => {
+      clearTimeout(safetyTimeout); // Clear timeout on error
       console.error("Auth session check failed:", err);
       setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(safetyTimeout);
+    };
   }, []);
 
   const checkAdminRole = async (authUser: User) => {
