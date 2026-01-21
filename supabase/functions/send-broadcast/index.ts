@@ -68,9 +68,9 @@ class BrevoProvider implements EmailProvider {
   async send(to: string, subject: string, html: string, text: string) {
     if (!this.transporter) throw new Error("Brevo not configured");
     await this.transporter.sendMail({
-      from: '"NaijaLift Updates" <info@naijalift.space>',
-      to,
-      subject,
+        from: '"NaijaLift Updates" <info@naijalift.space>',
+        to,
+        subject,
       html,
       text,
       headers: {
