@@ -444,6 +444,22 @@ function BroadcastMessage({
   onSubmit: (e: React.FormEvent) => void;
   isLoading: boolean;
 }) {
+  const [localSubmitting, setLocalSubmitting] = useState(false);
+
+  // Reset local submitting state when parent loading state finishes
+  useEffect(() => {
+    if (!isLoading) {
+      setLocalSubmitting(false);
+    }
+  }, [isLoading]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (isLoading || localSubmitting) return; // Prevent double submission
+    setLocalSubmitting(true);
+    onSubmit(e);
+  };
+
   return (
     <Card className="max-w-2xl">
       <CardHeader>
@@ -454,7 +470,7 @@ function BroadcastMessage({
         <CardDescription>Send an email to all registered users or specific groups.</CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={onSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="audience">Audience</Label>
             <Select value={form.audience} onValueChange={(v) => setForm({ ...form, audience: v })}>
@@ -495,8 +511,8 @@ function BroadcastMessage({
             </p>
           </div>
 
-          <Button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700" disabled={isLoading}>
-            {isLoading ? "Sending Broadcast..." : "Send Broadcast"}
+          <Button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700" disabled={isLoading || localSubmitting}>
+            {isLoading || localSubmitting ? "Sending Broadcast..." : "Send Broadcast"}
           </Button>
         </form>
       </CardContent>

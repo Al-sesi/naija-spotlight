@@ -28,6 +28,8 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     const { subject, message, audience }: BroadcastRequest = await req.json();
 
+    console.log(`[${new Date().toISOString()}] Broadcast request received. Subject: ${subject}, Audience: ${audience}`);
+
     if (!BREVO_SMTP_KEY) {
       throw new Error("BREVO_SMTP_KEY is not configured");
     }
@@ -57,6 +59,18 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
+    // Deduplicate users by email to prevent double charging/sending
+    const uniqueEmails = new Set<string>();
+    const uniqueUsers = users.filter((user) => {
+      if (!user.email) return false;
+      const normalizedEmail = user.email.toLowerCase().trim();
+      if (uniqueEmails.has(normalizedEmail)) return false;
+      uniqueEmails.add(normalizedEmail);
+      return true;
+    });
+
+    console.log(`Found ${users.length} raw users, ${uniqueUsers.length} unique emails.`);
+
     // 2. Configure Transporter
     const transporter = nodemailer.createTransport({
       host: "smtp-relay.brevo.com",
@@ -72,7 +86,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // 3. Send Emails
     // Note: For large lists, this should be queued. For now, we loop (carefully).
-    const emailPromises = users.map(async (user) => {
+    const emailPromises = uniqueUsers.map(async (user) => {
       if (!user.email) return;
 
       // Clean, Minimalist Template to avoid "Promotions" tab
