@@ -167,7 +167,12 @@ export default function OgaHouse() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="animate-pulse text-lg">Loading OgaHouse...</div>
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-pulse text-lg">Loading OgaHouse...</div>
+          <Button variant="outline" onClick={() => window.location.reload()}>
+            Reload Page
+          </Button>
+        </div>
       </div>
     );
   }

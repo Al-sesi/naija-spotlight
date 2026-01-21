@@ -73,6 +73,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (session?.user) {
         checkAdminRole(session.user);
       }
+    }).catch((err) => {
+      console.error("Auth session check failed:", err);
+      setLoading(false);
     });
 
     return () => subscription.unsubscribe();
