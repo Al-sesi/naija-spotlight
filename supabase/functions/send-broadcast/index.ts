@@ -103,7 +103,7 @@ class ResendProvider implements EmailProvider {
   async send(to: string, subject: string, html: string, text: string) {
     if (!this.transporter) throw new Error("Resend not configured");
     await this.transporter.sendMail({
-      from: '"NaijaLift Updates" <info@naijalift.space>', // Ensure domain is verified in Resend too
+      from: '"NaijaLift Updates" <info@send.naijalift.space>', // Ensure domain is verified in Resend too
       to,
       subject,
       html,

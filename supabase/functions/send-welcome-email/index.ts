@@ -28,7 +28,7 @@ const sendEmail = async ({ to, subject, html, text, from }: EmailOptions) => {
   });
 
   const mailOptions = {
-    from: from || '"Naijalift" <info@naijalift.space>',
+    from: from || '"Naijalift" <info@send.naijalift.space>',
     to: Array.isArray(to) ? to.join(", ") : to,
     subject,
     html,
