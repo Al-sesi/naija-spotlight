@@ -254,15 +254,17 @@ const handler = async (req: Request): Promise<Response> => {
 </html>
     `;
 
-    const result = await sendEmail({
-      to: email,
-      subject: "🎉 Welcome to NAIJALIFT — Your 30-Day Premium Trial Starts Now!",
-      html: emailHtml,
-    });
+    // Send email using Failover Service
+    await emailService.send(
+      email,
+      "🎉 Welcome to NAIJALIFT — Your 30-Day Premium Trial Starts Now!",
+      emailHtml,
+      emailHtml.replace(/<[^>]*>/g, "") // Plain text fallback
+    );
 
-    console.log("Welcome email sent successfully:", result.messageId);
+    console.log("Welcome email sent successfully");
 
-    return new Response(JSON.stringify({ success: true, data: result }), {
+    return new Response(JSON.stringify({ success: true }), {
       status: 200,
       headers: {
         "Content-Type": "application/json",
