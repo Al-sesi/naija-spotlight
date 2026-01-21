@@ -40,7 +40,7 @@ interface EmailProvider {
 }
 
 class ResendHttpProvider implements EmailProvider {
-  name = "Resend (HTTP Primary)";
+  name = "Resend (HTTP Secondary)";
   
   constructor(private apiKey?: string) {}
 
@@ -81,12 +81,13 @@ class ResendHttpProvider implements EmailProvider {
 }
 
 class BrevoProvider implements EmailProvider {
-  name = "Brevo (Secondary)";
+  name = "Brevo (Primary)";
   private transporter: any;
 
   constructor(private apiKey?: string) {
     if (apiKey) {
       this.transporter = nodemailer.createTransport({
+        pool: true, // Use pooled connections for better performance
         host: "smtp-relay.brevo.com",
         port: 587,
         secure: false,
@@ -176,8 +177,8 @@ const handler = async (req: Request): Promise<Response> => {
 
     // 3. Initialize Email Service
     const providers = [
-      new ResendHttpProvider(RESEND_API_KEY),
-      new BrevoProvider(BREVO_API_KEY)
+      new BrevoProvider(BREVO_API_KEY),
+      new ResendHttpProvider(RESEND_API_KEY)
     ];
     const emailService = new FailoverEmailService(providers);
 
@@ -233,7 +234,7 @@ const handler = async (req: Request): Promise<Response> => {
     // 6. Send Emails (Sequential with 2-Concurrency and Rate Limiting)
     const START_TIME = Date.now();
     const TIMEOUT_MS = 50000; // 50 seconds
-    const DELAY_MS = 1050; // 1.05s delay between batches of 2 (Safe for Resend's 2 req/s)
+    const DELAY_MS = 500; // 0.5s delay between batches (Optimized for SMTP pool)
 
     for (let i = 0; i < uniqueUsers.length; i += 2) {
       // Safety: Stop if we are running out of time
@@ -249,6 +250,7 @@ const handler = async (req: Request): Promise<Response> => {
       const promises = batch.map(async (user) => {
         if (!user.email) return;
 
+        // Use EXACT same HTML structure as Welcome Email to ensure inbox placement
         const htmlContent = `
 <!DOCTYPE html>
 <html>
@@ -292,26 +294,24 @@ const handler = async (req: Request): Promise<Response> => {
     }
     .content { 
       padding: 40px 30px;
-      text-align: left;
+      text-align: center; /* Centered like welcome email */
     }
     h1 { 
       color: #008751; 
       margin: 0 0 20px 0;
-      font-size: 24px;
+      font-size: 28px;
       font-weight: 700;
-      text-align: center;
     }
     .message {
       color: #374151;
       line-height: 1.8;
       font-size: 16px;
-      white-space: pre-line;
       margin-bottom: 30px;
+      text-align: left; /* Keep message left-aligned for readability */
+      white-space: pre-line;
     }
     .btn { 
-      display: block; 
-      width: fit-content;
-      margin: 0 auto;
+      display: inline-block; 
       padding: 16px 40px; 
       background: linear-gradient(135deg, #008751 0%, #006b41 100%);
       color: white; 
@@ -320,6 +320,7 @@ const handler = async (req: Request): Promise<Response> => {
       font-weight: 700;
       font-size: 16px;
       box-shadow: 0 10px 20px rgba(0,135,81,0.25);
+      transition: transform 0.2s, box-shadow 0.2s;
     }
     .footer { 
       margin-top: 40px; 
@@ -327,7 +328,6 @@ const handler = async (req: Request): Promise<Response> => {
       border-top: 1px solid #e5e7eb; 
       font-size: 12px; 
       color: #6b7280; 
-      text-align: center;
     }
     .footer a {
       color: #008751;
@@ -339,7 +339,7 @@ const handler = async (req: Request): Promise<Response> => {
   <div class="container">
     <div class="header">
       <div class="logo-text">NAIJALIFT</div>
-      <div class="tagline">Official Update</div>
+      <div class="tagline">Elevating Nigerian Opportunities</div>
     </div>
     <div class="content">
       <h1>${subject}</h1>
