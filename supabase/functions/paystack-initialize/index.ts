@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-access-token",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 serve(async (req) => {
@@ -56,22 +56,9 @@ serve(async (req) => {
       });
     }
 
-    const body = await req.json().catch(() => ({}));
-    // Inputs: plan (Paystack plan ID if any), categories (array), planTier ('basic' | 'ultra')
-    const plan = body?.plan;
-    const categories = Array.isArray(body?.categories) ? body.categories : [];
-    const planTier = body?.planTier || "basic"; // 'basic' or 'ultra'
+    const { plan } = await req.json();
 
-    let amount = 0;
-
-    // Pricing Logic
-    if (planTier === "ultra") {
-      // Ultra Bundle: ₦1500 (150000 kobo) - Flat fee for All Categories + All Channels
-      amount = 150000;
-    } else {
-      // Basic Premium: ₦197 (19700 kobo) - Flat fee for All Categories (Email only)
-      amount = 19700;
-    }
+    const amount = 19700;
 
     const paystackResponse = await fetch("https://api.paystack.co/transaction/initialize", {
       method: "POST",
@@ -87,9 +74,7 @@ serve(async (req) => {
         callback_url: "https://naijalift.space/payment-callback",
         metadata: {
           user_id: userId,
-          plan_type: planTier, // 'basic' or 'ultra'
-          categories,
-          category_count: categories.length,
+          plan_type: "premium_lifter",
         },
       }),
     });
@@ -112,10 +97,9 @@ serve(async (req) => {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-
   } catch (error) {
-    console.error("Error initializing payment:", error);
-    return new Response(JSON.stringify({ error: "Internal server error" }), {
+    console.error("Initialize error:", error);
+    return new Response(JSON.stringify({ error: "Failed to initialize payment" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

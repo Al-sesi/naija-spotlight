@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { z } from "zod";
-import { Mail, Lock, User, ArrowRight, Rocket, Sparkles, Eye, EyeOff } from "lucide-react";
+import { Mail, Lock, User, ArrowRight, Rocket, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,6 +12,12 @@ import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
 
 const authSchema = z.object({
+  email: z.string().trim().email("Please enter a valid email").max(255, "Email must be less than 255 characters"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+});
+
+const signUpSchema = z.object({
+  fullName: z.string().trim().min(2, "Full Name is required and must be at least 2 characters"),
   email: z.string().trim().email("Please enter a valid email").max(255, "Email must be less than 255 characters"),
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
@@ -28,8 +34,6 @@ export default function Auth() {
   const [formData, setFormData] = useState({ email: "", password: "", fullName: "" });
   const [signupSuccess, setSignupSuccess] = useState(false);
   const [magicLinkSent, setMagicLinkSent] = useState(false);
-  const [showSigninPassword, setShowSigninPassword] = useState(false);
-  const [showSignupPassword, setShowSignupPassword] = useState(false);
   
   const isEmailConfirmed = session?.user?.email_confirmed_at != null;
 
@@ -61,7 +65,7 @@ export default function Auth() {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    const result = authSchema.safeParse(formData);
+    const result = signUpSchema.safeParse(formData);
     if (!result.success) {
       toast.error(result.error.errors[0].message);
       return;
@@ -219,20 +223,13 @@ export default function Auth() {
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       id="signin-password"
-                      type={showSigninPassword ? "text" : "password"}
+                      type="password"
                       placeholder="••••••••"
-                      className="pl-10 pr-10 text-sm"
+                      className="pl-10 text-sm"
                       value={formData.password}
                       onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                       required
                     />
-                    <button
-                      type="button"
-                      onClick={() => setShowSigninPassword((prev) => !prev)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    >
-                      {showSigninPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
                   </div>
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>
@@ -276,6 +273,7 @@ export default function Auth() {
                       className="pl-10 text-sm"
                       value={formData.fullName}
                       onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                      required
                     />
                   </div>
                 </div>
@@ -300,20 +298,13 @@ export default function Auth() {
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       id="signup-password"
-                      type={showSignupPassword ? "text" : "password"}
+                      type="password"
                       placeholder="••••••••"
-                      className="pl-10 pr-10 text-sm"
+                      className="pl-10 text-sm"
                       value={formData.password}
                       onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                       required
                     />
-                    <button
-                      type="button"
-                      onClick={() => setShowSignupPassword((prev) => !prev)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    >
-                      {showSignupPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
                   </div>
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>

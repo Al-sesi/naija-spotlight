@@ -1,7 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
-import { OWNER_EMAILS } from "@/lib/constants";
 import { useToast } from "./use-toast";
 
 export interface SubscriptionData {
@@ -13,7 +12,6 @@ export interface SubscriptionData {
   paystack_subscription_code: string | null;
   premium_categories: string[];
   verification_trial_ends_at: string | null;
-  roles: string[];
 }
 
 export function useSubscription() {
@@ -35,35 +33,15 @@ export function useSubscription() {
         return null;
       }
 
-      const { data: rolesData } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user.id);
-
-      const roles = rolesData?.map((r) => r.role) ?? [];
-
-      // Type assertion for fields that might be missing in the generated types but exist in DB
-      const profileData = data as {
-        subscription_status: string;
-        plan_type: string | null;
-        trial_ends_at: string | null;
-        subscription_started_at: string | null;
-        subscription_ends_at: string | null;
-        paystack_subscription_code: string | null;
-        premium_categories?: string[] | null;
-        verification_trial_ends_at?: string | null;
-      };
-
       return {
-        subscription_status: profileData.subscription_status,
-        plan_type: profileData.plan_type,
-        trial_ends_at: profileData.trial_ends_at,
-        subscription_started_at: profileData.subscription_started_at,
-        subscription_ends_at: profileData.subscription_ends_at,
-        paystack_subscription_code: profileData.paystack_subscription_code,
-        premium_categories: profileData.premium_categories ?? [],
-        verification_trial_ends_at: profileData.verification_trial_ends_at ?? null,
-        roles,
+        subscription_status: data.subscription_status,
+        plan_type: data.plan_type,
+        trial_ends_at: data.trial_ends_at,
+        subscription_started_at: data.subscription_started_at,
+        subscription_ends_at: data.subscription_ends_at,
+        paystack_subscription_code: data.paystack_subscription_code,
+        premium_categories: (data as any).premium_categories ?? [],
+        verification_trial_ends_at: (data as any).verification_trial_ends_at ?? null,
       };
     },
     enabled: !!user,
@@ -76,9 +54,8 @@ export function useIsPremium() {
 
   const now = new Date();
 
-  const isAdmin = subscription?.roles?.includes("admin") ?? false;
   const isOwner =
-    OWNER_EMAILS.includes((user?.email || "").toLowerCase()) || isAdmin;
+    (user?.email || "").toLowerCase() === "naijalift01@gmail.com";
 
   const isPremium =
     isOwner ||
@@ -86,16 +63,13 @@ export function useIsPremium() {
       (subscription.subscription_status === "active" ||
         (subscription.trial_ends_at ? new Date(subscription.trial_ends_at) > now : false)));
 
-  const isUltra = isOwner || (isPremium && subscription?.plan_type === 'ultra');
-
-
   const hasVerificationAccess =
     isPremium ||
     (subscription?.verification_trial_ends_at
       ? new Date(subscription.verification_trial_ends_at) > now
       : false);
 
-  return { isPremium, isUltra, hasVerificationAccess, isLoading };
+  return { isPremium, hasVerificationAccess, isLoading };
 }
 
 export function useInitializePayment() {
@@ -103,14 +77,17 @@ export function useInitializePayment() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ plan, categories, planTier }: { plan?: string; categories?: string[]; planTier?: "basic" | "ultra" }) => {
+    mutationFn: async ({ plan, categories }: { plan?: string; categories?: string[] }) => {
       const {
         data: { session },
       } = await supabase.auth.getSession();
       if (!session) throw new Error("Not authenticated");
 
       const response = await supabase.functions.invoke("paystack-initialize", {
-        body: { plan, categories: categories ?? [], planTier },
+        body: { plan, categories: categories ?? [] },
+        headers: {
+          "x-access-token": session.access_token,
+        },
       });
 
       if (response.error) {

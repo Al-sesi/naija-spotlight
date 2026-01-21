@@ -14,10 +14,6 @@ export interface NotificationPreferences {
   sms_government: boolean;
   sms_grants: boolean;
   sms_social_tech: boolean;
-   whatsapp_scholarships: boolean;
-   whatsapp_government: boolean;
-   whatsapp_grants: boolean;
-   whatsapp_social_tech: boolean;
   phone_number: string | null;
   created_at: string;
   updated_at: string;

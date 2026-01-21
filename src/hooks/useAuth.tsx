@@ -1,7 +1,11 @@
 import { useState, useEffect, createContext, useContext } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
-import { OWNER_EMAILS } from "@/lib/constants";
+
+const OWNER_EMAILS = [
+  "abdulmajeedsesiadam@gmail.com",
+  "naijalift01@gmail.com",
+];
 
 interface AuthContextType {
   user: User | null;
@@ -116,7 +120,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       },
     });
 
-    // Send custom welcome email (non-blocking)
+    // Send custom welcome email via Resend (non-blocking)
     if (!error) {
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       fetch(`${supabaseUrl}/functions/v1/send-welcome-email`, {

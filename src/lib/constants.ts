@@ -60,9 +60,3 @@ export const APPLICATION_STATUSES = [
 export type OpportunityType = typeof OPPORTUNITY_TYPES[number]["value"];
 export type ApplicationStatus = typeof APPLICATION_STATUSES[number]["value"];
 export type NigerianState = typeof NIGERIAN_STATES[number];
-
-export const OWNER_EMAILS = [
-  "abdulmajeedsesiadam@gmail.com",
-  "naijalift01@gmail.com",
-  "salomegift2018@gmail.com",
-];

@@ -44,7 +44,7 @@ const CATEGORIES = [
 export function NotificationSettings() {
   const { data: preferences, isLoading } = useNotificationPreferences();
   const updatePreferences = useUpdateNotificationPreferences();
-  const { isPremium, isUltra, isLoading: isPremiumLoading } = useIsPremium();
+  const { isPremium, isLoading: isPremiumLoading } = useIsPremium();
   const [phoneNumber, setPhoneNumber] = useState("");
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
@@ -55,14 +55,8 @@ export function NotificationSettings() {
   }, [preferences]);
 
   const handleToggle = (type: "email" | "sms" | "whatsapp", category: string, checked: boolean) => {
-    // Email requires at least Basic Premium (isPremium covers both)
-    if (type === "email" && checked && !isPremium) {
-      setShowUpgradeModal(true);
-      return;
-    }
-
-    // SMS/WhatsApp requires Ultra Bundle
-    if ((type === "sms" || type === "whatsapp") && checked && !isUltra) {
+    // If trying to enable SMS/WhatsApp and not premium, show upgrade modal
+    if ((type === "sms" || type === "whatsapp") && checked && !isPremium) {
       setShowUpgradeModal(true);
       return;
     }
@@ -185,13 +179,14 @@ export function NotificationSettings() {
                         <Label htmlFor={`sms-${category.key}`} className="flex items-center gap-2 text-sm cursor-pointer">
                           <MessageSquare className="h-4 w-4 text-muted-foreground" />
                           SMS Alerts
-                          {!isUltra && <Lock className="h-3 w-3 text-amber-500" />}
+                          {!isPremium && <Lock className="h-3 w-3 text-amber-500" />}
                         </Label>
                         <Switch
                           id={`sms-${category.key}`}
-                          checked={isUltra ? !!smsEnabled : false}
+                          checked={isPremium ? !!smsEnabled : false}
                           onCheckedChange={(checked) => handleToggle("sms", category.key, checked)}
-                          disabled={updatePreferences.isPending}
+                          disabled={updatePreferences.isPending || !isPremium}
+                          className={!isPremium ? "opacity-50" : ""}
                         />
                       </div>
 
@@ -199,13 +194,14 @@ export function NotificationSettings() {
                         <Label htmlFor={`whatsapp-${category.key}`} className="flex items-center gap-2 text-sm cursor-pointer">
                           <MessageSquare className="h-4 w-4 text-emerald-500" />
                           WhatsApp Alerts
-                          {!isUltra && <Lock className="h-3 w-3 text-amber-500" />}
+                          {!isPremium && <Lock className="h-3 w-3 text-amber-500" />}
                         </Label>
                         <Switch
                           id={`whatsapp-${category.key}`}
-                          checked={isUltra ? !!whatsappEnabled : false}
+                          checked={isPremium ? !!whatsappEnabled : false}
                           onCheckedChange={(checked) => handleToggle("whatsapp", category.key, checked)}
-                          disabled={updatePreferences.isPending}
+                          disabled={updatePreferences.isPending || !isPremium}
+                          className={!isPremium ? "opacity-50" : ""}
                         />
                       </div>
                     </div>

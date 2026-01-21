@@ -1,55 +1,11 @@
-// Force rebuild 2026-01-19
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import nodemailer from "npm:nodemailer@6.9.13";
 
-interface EmailOptions {
-  to: string | string[];
-  subject: string;
-  html: string;
-  text?: string;
-  from?: string;
-}
-
-const BREVO_SMTP_KEY = Deno.env.get("BREVO_SMTP_KEY");
-
-const sendEmail = async ({ to, subject, html, text, from }: EmailOptions) => {
-  if (!BREVO_SMTP_KEY) {
-    throw new Error("BREVO_SMTP_KEY is not configured");
-  }
-
-  const transporter = nodemailer.createTransport({
-    host: "smtp-relay.brevo.com",
-    port: 587,
-    secure: false, // true for 465, false for other ports
-    auth: {
-      user: "a06962001@smtp-brevo.com",
-      pass: BREVO_SMTP_KEY,
-    },
-  });
-
-  const mailOptions = {
-    from: from || '"Naijalift" <info@naijalift.space>',
-    to: Array.isArray(to) ? to.join(", ") : to,
-    subject,
-    html,
-    text: text || html.replace(/<[^>]*>/g, ""), // Simple fallback if text not provided
-  };
-
-  try {
-    const info = await transporter.sendMail(mailOptions);
-    console.log("Email sent to %s: %s", mailOptions.to, info.messageId);
-    return { success: true, messageId: info.messageId };
-  } catch (error) {
-    console.error("Error sending email to %s:", mailOptions.to, error);
-    throw error;
-  }
-};
+const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 type OpportunityCategory = "government" | "ngo" | "tech" | "career" | "scholarship" | "social";
@@ -74,66 +30,6 @@ interface ProfileRow {
   id: string;
   email: string | null;
   full_name: string | null;
-  trial_ends_at?: string | null;
-  subscription_status?: string | null;
-  plan_type?: string | null;
-  phone_number?: string | null;
-}
-
-type EmailPreferenceKey =
-  | "email_scholarships"
-  | "email_government"
-  | "email_grants"
-  | "email_social_tech";
-
-type WhatsAppPreferenceKey =
-  | "whatsapp_scholarships"
-  | "whatsapp_government"
-  | "whatsapp_grants"
-  | "whatsapp_social_tech";
-
-interface NotificationPreferenceRow {
-  user_id: string;
-  email_scholarships: boolean;
-  email_government: boolean;
-  email_grants: boolean;
-  email_social_tech: boolean;
-  whatsapp_scholarships: boolean;
-  whatsapp_government: boolean;
-  whatsapp_grants: boolean;
-  whatsapp_social_tech: boolean;
-}
-
-function getEmailPreferenceKey(category: OpportunityCategory): EmailPreferenceKey {
-  switch (category) {
-    case "government":
-      return "email_government";
-    case "ngo":
-      return "email_grants";
-    case "scholarship":
-      return "email_scholarships";
-    case "tech":
-    case "career":
-    case "social":
-    default:
-      return "email_social_tech";
-  }
-}
-
-function getWhatsAppPreferenceKey(category: OpportunityCategory): WhatsAppPreferenceKey {
-  switch (category) {
-    case "government":
-      return "whatsapp_government";
-    case "ngo":
-      return "whatsapp_grants";
-    case "scholarship":
-      return "whatsapp_scholarships";
-    case "tech":
-    case "career":
-    case "social":
-    default:
-      return "whatsapp_social_tech";
-  }
 }
 
 function formatCategoryLabel(category: OpportunityCategory): string {
@@ -187,60 +83,60 @@ function buildEmailHtml(opportunity: NewOpportunityPayload["opportunity"], first
     body {
       margin: 0;
       padding: 0;
-      background-color: #f0fdf4;
+      background-color: #020617;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
-    a { color: #008751; text-decoration: none; }
+    a { color: #fb923c; text-decoration: none; }
     .wrapper {
       width: 100%;
       padding: 24px 0;
-      background-color: #f0fdf4;
+      background-color: #020617;
     }
     .container {
       max-width: 560px;
       margin: 0 auto;
       border-radius: 18px;
-      border: 1px solid #d1fae5;
-      background: linear-gradient(145deg, #ffffff 0%, #ecfdf5 100%);
+      border: 1px solid #1e293b;
+      background: radial-gradient(circle at top, rgba(251,146,60,0.16), transparent 55%) #020617;
       overflow: hidden;
     }
     .header {
-      padding: 24px 24px 16px 24px;
+      padding: 22px 22px 14px 22px;
       text-align: center;
-      background: linear-gradient(135deg, #008751 0%, #005c36 100%);
+      background: radial-gradient(circle at top, #fb923c 0, #020617 55%);
     }
     .logo {
-      font-size: 22px;
+      font-size: 20px;
       font-weight: 800;
-      color: #ffffff;
+      color: #f9fafb;
       letter-spacing: 0.12em;
       text-transform: uppercase;
     }
     .tagline {
       margin-top: 4px;
-      font-size: 12px;
-      color: rgba(255,255,255,0.9);
-      opacity: 0.95;
+      font-size: 11px;
+      color: #e5e7eb;
+      opacity: 0.9;
     }
     .pill {
       display: inline-block;
       margin-top: 14px;
-      padding: 6px 14px;
+      padding: 5px 12px;
       border-radius: 999px;
-      font-size: 11px;
+      font-size: 10px;
       text-transform: uppercase;
       letter-spacing: 0.16em;
-      background-color: rgba(240,253,244,0.95);
-      color: #065f46;
-      border: 1px solid rgba(209,250,229,0.9);
+      background-color: rgba(15,23,42,0.9);
+      color: #fed7aa;
+      border: 1px solid rgba(251,146,60,0.6);
     }
     .content {
       padding: 22px 22px 6px 22px;
-      color: #374151;
+      color: #e5e7eb;
     }
     .hello {
       font-size: 13px;
-      color: #6b7280;
+      color: #9ca3af;
       margin-bottom: 4px;
     }
     .title {
@@ -248,21 +144,21 @@ function buildEmailHtml(opportunity: NewOpportunityPayload["opportunity"], first
       font-weight: 700;
       line-height: 1.3;
       margin-bottom: 12px;
-      color: #111827;
+      color: #f9fafb;
     }
     .title span {
-      color: #008751;
+      color: #fed7aa;
     }
     .lead {
       font-size: 13px;
       line-height: 1.7;
-      color: #4b5563;
+      color: #d1d5db;
       margin-bottom: 18px;
     }
     .card {
       border-radius: 14px;
-      border: 1px solid #d1fae5;
-      background: linear-gradient(135deg, #ecfdf5, #ffffff);
+      border: 1px solid #1f2937;
+      background: linear-gradient(135deg, rgba(15,23,42,0.98), rgba(17,24,39,0.98));
       padding: 14px 16px 12px 16px;
       margin-bottom: 16px;
     }
@@ -270,33 +166,33 @@ function buildEmailHtml(opportunity: NewOpportunityPayload["opportunity"], first
       font-size: 11px;
       text-transform: uppercase;
       letter-spacing: 0.16em;
-      color: #065f46;
+      color: #a5b4fc;
       margin-bottom: 4px;
     }
     .card-title {
       font-size: 15px;
       font-weight: 600;
-      color: #065f46;
+      color: #f9fafb;
       margin-bottom: 4px;
     }
     .card-provider {
       font-size: 12px;
-      color: #6b7280;
+      color: #9ca3af;
       margin-bottom: 8px;
     }
     .card-body {
       font-size: 12px;
-      color: #4b5563;
+      color: #d1d5db;
       line-height: 1.7;
       margin-bottom: 8px;
     }
     .meta {
       font-size: 11px;
-      color: #6b7280;
+      color: #9ca3af;
       margin-bottom: 10px;
     }
     .meta strong {
-      color: #111827;
+      color: #e5e7eb;
     }
     .cta-wrap {
       text-align: center;
@@ -304,10 +200,10 @@ function buildEmailHtml(opportunity: NewOpportunityPayload["opportunity"], first
     }
     .button {
       display: inline-block;
-      padding: 12px 28px;
+      padding: 11px 26px;
       border-radius: 999px;
-      background: linear-gradient(135deg, #008751, #00a65a);
-      color: #ffffff;
+      background: linear-gradient(135deg, #fb923c, #f97316);
+      color: #111827;
       font-size: 13px;
       font-weight: 700;
       text-transform: uppercase;
@@ -320,13 +216,13 @@ function buildEmailHtml(opportunity: NewOpportunityPayload["opportunity"], first
       letter-spacing: normal;
       margin-top: 2px;
       font-weight: 500;
-      color: #e5e7eb;
+      color: #111827;
     }
     .footer {
       font-size: 11px;
       color: #6b7280;
-      padding: 12px 22px 20px 22px;
-      border-top: 1px solid #e5e7eb;
+      padding: 10px 22px 18px 22px;
+      border-top: 1px solid #111827;
     }
     .footer a {
       color: #9ca3af;
@@ -377,7 +273,7 @@ function buildEmailHtml(opportunity: NewOpportunityPayload["opportunity"], first
 
       <div class="footer">
         <p>
-          You are receiving this because you turned on email alerts in NAIJALIFT or you are in your free trial period.
+          You are receiving this because you turned on email alerts in NAIJALIFT.
           If this is too much, you can pause alerts in your dashboard.
         </p>
         <p style="margin-top:6px;">
@@ -404,8 +300,12 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    if (!RESEND_API_KEY) {
+      throw new Error("RESEND_API_KEY is not configured");
+    }
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const serviceRoleKey = Deno.env.get("SERVICE_ROLE_KEY");
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
     if (!supabaseUrl || !serviceRoleKey) {
       throw new Error("Supabase environment variables are not configured");
@@ -417,7 +317,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     const { data: profiles, error: profilesError } = await supabase
       .from("profiles")
-      .select("id, email, full_name, trial_ends_at, subscription_status, plan_type, phone_number") as {
+      .select("id, email, full_name") as {
       data: ProfileRow[] | null;
       error: unknown;
     };
@@ -426,115 +326,49 @@ const handler = async (req: Request): Promise<Response> => {
       throw profilesError;
     }
 
-    const { data: preferences, error: preferencesError } = await supabase
-      .from("notification_preferences")
-      .select("user_id, email_scholarships, email_government, email_grants, email_social_tech, whatsapp_scholarships, whatsapp_government, whatsapp_grants, whatsapp_social_tech") as {
-      data: NotificationPreferenceRow[] | null;
-      error: unknown;
-    };
-
-    if (preferencesError) {
-      throw preferencesError;
-    }
-
-    const prefsByUser = new Map<string, NotificationPreferenceRow>();
-    for (const pref of preferences || []) {
-      prefsByUser.set(pref.user_id, pref);
-    }
-
-    const now = new Date();
-    const emailKey = getEmailPreferenceKey(opportunity.category);
-    const whatsappKey = getWhatsAppPreferenceKey(opportunity.category);
-
-    const emailRecipients: { email: string; fullName: string | null }[] = [];
-    const whatsappRecipients: { phone: string; fullName: string | null }[] = [];
-
-    profiles?.forEach((profile) => {
-      if (!profile.email) return;
-
-      const trialEndsAt = profile.trial_ends_at ? new Date(profile.trial_ends_at) : null;
-      const trialActive = trialEndsAt ? trialEndsAt > now : false;
-      const isSubscribed = profile.subscription_status === 'active';
-      const isUltra = profile.plan_type === 'ultra';
-
-      const pref = prefsByUser.get(profile.id);
-
-      // Email Logic
-      let sendEmail = false;
-      if (trialActive) {
-        sendEmail = true; // Trial users get emails by default/logic
-      } else if (isSubscribed) {
-        // Basic or Ultra can get email if they opted in
-        if (pref && pref[emailKey]) {
-          sendEmail = true;
-        }
-      }
-
-      if (sendEmail) {
-        emailRecipients.push({ email: profile.email, fullName: profile.full_name });
-      }
-
-      // WhatsApp Logic (Only for Ultra subscribers with phone number)
-      if (isSubscribed && isUltra && profile.phone_number) {
-        if (pref && pref[whatsappKey]) {
-          whatsappRecipients.push({ phone: profile.phone_number, fullName: profile.full_name });
-        }
-      }
-    });
-
-    const emails = emailRecipients.map((r) => r.email);
+    const recipients =
+      profiles?.filter((p) => p.email).map((p) => ({
+        email: p.email as string,
+        fullName: p.full_name,
+      })) ?? [];
 
     let sentCount = 0;
-    let whatsappSentCount = 0;
+    for (const recipient of recipients) {
+      const firstName =
+        (recipient.fullName || "")
+          .split(" ")
+          .filter(Boolean)[0] || "Champion";
 
-    if (emails.length > 0) {
-      const emailHtml = buildEmailHtml(opportunity, "Champion");
+      const emailHtml = buildEmailHtml(opportunity, firstName);
 
-      // Send emails individually to handle errors gracefully
-      // Using Promise.all with a small concurrency limit or just basic Promise.all
-      // For thousands of users, we'd need a queue or batching. For now, Promise.all is okay for small scale.
-      
-      const batchSize = 10;
-      for (let i = 0; i < emails.length; i += batchSize) {
-        const batch = emails.slice(i, i + batchSize);
-        await Promise.all(batch.map(async (email) => {
-            try {
-                await sendEmail({
-                    to: email,
-                    subject: `✨ New ${formatCategoryLabel(opportunity.category)} on NAIJALIFT`,
-                    html: emailHtml,
-                });
-                sentCount++;
-            } catch (err) {
-                console.error(`Error sending notification to ${email}:`, err);
-                // Error logged, loop continues
-            }
-        }));
+      const res = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${RESEND_API_KEY}`,
+        },
+        body: JSON.stringify({
+          from: "NAIJALIFT <onboarding@resend.dev>",
+          to: [recipient.email],
+          subject: `✨ New ${formatCategoryLabel(opportunity.category)} on NAIJALIFT`,
+          html: emailHtml,
+        }),
+      });
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error("Resend error for", recipient.email, errorText);
+        continue;
       }
-    }
 
-    if (whatsappRecipients.length > 0) {
-        console.log(`Processing WhatsApp notifications for ${whatsappRecipients.length} users (Ultra Plan)`);
-        // Placeholder for WhatsApp API integration (e.g. Twilio or Meta Business API)
-        // For now, we just log it as the user requested "logic rebuild" not full integration yet.
-        for (const recipient of whatsappRecipients) {
-            try {
-                // await sendWhatsApp(recipient.phone, message);
-                console.log(`[MOCK] WhatsApp sent to ${recipient.phone} (${recipient.fullName})`);
-                whatsappSentCount++;
-            } catch (err) {
-                console.error(`Error sending WhatsApp to ${recipient.phone}:`, err);
-            }
-        }
+      sentCount += 1;
     }
 
     return new Response(
       JSON.stringify({
         success: true,
-        emailSent: sentCount,
-        whatsappSent: whatsappSentCount,
-        totalEmailRecipients: emailRecipients.length,
-        totalWhatsAppRecipients: whatsappRecipients.length,
+        sent: sentCount,
+        totalRecipients: recipients.length,
       }),
       {
         status: 200,
@@ -554,6 +388,6 @@ const handler = async (req: Request): Promise<Response> => {
       }
     );
   }
-};
+  }
 
 serve(handler);
