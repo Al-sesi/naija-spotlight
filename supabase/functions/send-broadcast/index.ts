@@ -1,9 +1,27 @@
-// Broadcast Function - Optimized for Inbox Delivery
+// Broadcast Function - Optimized for Inbox Delivery with Failover System
+//
+// PREREQUISITES FOR FAILOVER (DNS SETUP):
+// 1. SPF Record (TXT @): You can only have ONE SPF record. Merge them!
+//    Correct: "v=spf1 include:spf.brevo.com include:resend.com ~all"
+//    Incorrect: Two separate TXT records.
+//
+// 2. DMARC Record (TXT _dmarc): You only need ONE DMARC record.
+//    It applies to ALL providers automatically.
+//    Value: "v=DMARC1; p=none; rua=mailto:youremail@example.com"
+//
+// 3. DKIM Records (CNAME/TXT): You MUST have separate records for each provider.
+//    Brevo: mail._domainkey.yourdomain.com
+//    Resend: resend._domainkey.yourdomain.com
+//    They do not conflict because they use different "selectors" (prefixes).
+
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import nodemailer from "npm:nodemailer@6.9.13";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const BREVO_SMTP_KEY = Deno.env.get("BREVO_SMTP_KEY");
+// Add your secondary provider key here in Supabase secrets
+const SECONDARY_SMTP_KEY = Deno.env.get("SECONDARY_SMTP_KEY"); 
+
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
@@ -20,6 +38,121 @@ interface BroadcastRequest {
   audience: "all" | "premium" | "free";
 }
 
+// --- Failover Architecture ---
+
+interface EmailProvider {
+  name: string;
+  isConfigured(): boolean;
+  send(to: string, subject: string, html: string, text: string): Promise<void>;
+}
+
+class BrevoProvider implements EmailProvider {
+  name = "Brevo (Primary)";
+  private transporter: any;
+
+  constructor(private apiKey?: string) {
+    if (apiKey) {
+      this.transporter = nodemailer.createTransport({
+        host: "smtp-relay.brevo.com",
+        port: 587,
+        secure: false,
+        auth: { user: "a06962001@smtp-brevo.com", pass: apiKey },
+      });
+    }
+  }
+
+  isConfigured(): boolean {
+    return !!this.apiKey;
+  }
+
+  async send(to: string, subject: string, html: string, text: string) {
+    if (!this.transporter) throw new Error("Brevo not configured");
+    await this.transporter.sendMail({
+      from: '"NaijaLift Updates" <info@naijalift.space>',
+      to,
+      subject,
+      html,
+      text,
+      headers: {
+        "List-Unsubscribe": "<https://naijalift.space/dashboard>",
+        "X-Entity-ID": "naijalift-broadcast"
+      }
+    });
+  }
+}
+
+class ResendProvider implements EmailProvider {
+  name = "Resend (Secondary)";
+  private transporter: any;
+
+  constructor(private apiKey?: string) {
+    if (apiKey) {
+      this.transporter = nodemailer.createTransport({
+        host: "smtp.resend.com",
+        port: 465,
+        secure: true,
+        auth: { user: "resend", pass: apiKey },
+      });
+    }
+  }
+
+  isConfigured(): boolean {
+    return !!this.apiKey;
+  }
+
+  async send(to: string, subject: string, html: string, text: string) {
+    if (!this.transporter) throw new Error("Resend not configured");
+    await this.transporter.sendMail({
+      from: '"NaijaLift Updates" <info@naijalift.space>', // Ensure domain is verified in Resend too
+      to,
+      subject,
+      html,
+      text,
+      headers: {
+        "List-Unsubscribe": "<https://naijalift.space/dashboard>",
+      }
+    });
+  }
+}
+
+class FailoverEmailService {
+  private providers: EmailProvider[];
+
+  constructor(providers: EmailProvider[]) {
+    // Only use providers that are actually configured (have API keys)
+    this.providers = providers.filter(p => p.isConfigured());
+  }
+
+  async send(to: string, subject: string, html: string, text: string) {
+    if (this.providers.length === 0) {
+      throw new Error("No email providers are configured!");
+    }
+
+    const errors: string[] = [];
+
+    // Try each provider in order
+    for (const provider of this.providers) {
+      try {
+        await provider.send(to, subject, html, text);
+        // If successful, log and return (stop trying others)
+        // console.log(`Sent via ${provider.name}`); 
+        return; 
+      } catch (error: any) {
+        const errorMessage = error.message || "Unknown error";
+        console.warn(`[Failover] Failed to send via ${provider.name}: ${errorMessage}`);
+        errors.push(`${provider.name}: ${errorMessage}`);
+        
+        // Continue to the next provider in the loop...
+      }
+    }
+
+    // If we get here, ALL providers failed
+    throw new Error(`All providers failed. Errors: ${errors.join(" | ")}`);
+  }
+}
+
+// --- Main Handler ---
+
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -30,9 +163,12 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log(`[${new Date().toISOString()}] Broadcast request received. Subject: ${subject}, Audience: ${audience}`);
 
-    if (!BREVO_SMTP_KEY) {
-      throw new Error("BREVO_SMTP_KEY is not configured");
-    }
+    // Initialize Providers
+    const providers = [
+      new BrevoProvider(BREVO_SMTP_KEY),
+      new ResendProvider(SECONDARY_SMTP_KEY) // Will be skipped if key is missing
+    ];
+    const emailService = new FailoverEmailService(providers);
 
     // 1. Fetch Target Audience
     let query = supabase.from("profiles").select("email, full_name");
@@ -42,7 +178,6 @@ const handler = async (req: Request): Promise<Response> => {
     } else if (audience === "free") {
       query = query.neq("subscription_status", "premium");
     }
-    // 'all' fetches everyone
 
     const { data: users, error } = await query;
 
@@ -59,7 +194,7 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Deduplicate users by email to prevent double charging/sending
+    // Deduplicate users
     const uniqueEmails = new Set<string>();
     const uniqueUsers = users.filter((user) => {
       if (!user.email) return false;
@@ -71,26 +206,12 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log(`Found ${users.length} raw users, ${uniqueUsers.length} unique emails.`);
 
-    // 2. Configure Transporter
-    const transporter = nodemailer.createTransport({
-      host: "smtp-relay.brevo.com",
-      port: 587,
-      secure: false,
-      auth: {
-        user: "a06962001@smtp-brevo.com",
-        pass: BREVO_SMTP_KEY,
-      },
-    });
-
     const stats = { success: 0, failed: 0 };
 
-    // 3. Send Emails
-    // Note: For large lists, this should be queued. For now, we loop (carefully).
+    // 2. Send Emails using Failover Service
     const emailPromises = uniqueUsers.map(async (user) => {
       if (!user.email) return;
 
-      // Clean, Minimalist Template to avoid "Promotions" tab
-      // Avoid: Large images, excessive heavy HTML, "Free", "Sale" keywords in HTML
       const htmlContent = `
 <!DOCTYPE html>
 <html>
@@ -100,22 +221,14 @@ const handler = async (req: Request): Promise<Response> => {
 </head>
 <body style="font-family: 'Segoe UI', Helvetica, Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 20px;">
   <div style="max-width: 600px; margin: 0 auto;">
-    
-    <!-- Simple Text Header -->
     <div style="margin-bottom: 24px;">
       <h2 style="color: #008751; margin: 0;">${subject}</h2>
     </div>
-
-    <!-- Content -->
     <div style="font-size: 16px; color: #444; white-space: pre-line;">
       ${message}
     </div>
-
-    <!-- Footer / Unsubscribe -->
     <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #eaeaea; font-size: 12px; color: #888;">
-      <p style="margin: 0;">
-        You are receiving this email as a member of <strong>NaijaLift</strong>.
-      </p>
+      <p style="margin: 0;">You are receiving this email as a member of <strong>NaijaLift</strong>.</p>
       <p style="margin: 8px 0 0 0;">
         <a href="https://naijalift.space/dashboard" style="color: #008751; text-decoration: none;">Manage Preferences</a>
         &nbsp;|&nbsp;
@@ -128,20 +241,11 @@ const handler = async (req: Request): Promise<Response> => {
       `;
 
       try {
-        await transporter.sendMail({
-          from: '"NaijaLift Updates" <info@naijalift.space>', // Changed from just "Naijalift"
-          to: user.email,
-          subject: subject,
-          html: htmlContent,
-          text: message, // Plain text fallback is crucial
-          headers: {
-            "List-Unsubscribe": "<https://naijalift.space/dashboard>", // Helps reputation
-            "X-Entity-ID": "naijalift-broadcast"
-          }
-        });
+        // The magic happens here: automatically tries Brevo, then Resend (if configured)
+        await emailService.send(user.email, subject, htmlContent, message);
         stats.success++;
       } catch (err) {
-        console.error(`Failed to send to ${user.email}:`, err);
+        console.error(`Failed to send to ${user.email} after trying all providers:`, err);
         stats.failed++;
       }
     });
