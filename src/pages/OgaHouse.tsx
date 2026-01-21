@@ -46,7 +46,7 @@ interface OpportunityFormState {
 interface BroadcastFormState {
   subject: string;
   message: string;
-  audience: "all" | "premium" | "free";
+  audience: "all" | "premium" | "free" | "admin";
 }
 
 interface SiteAlertFormState {
@@ -130,10 +130,10 @@ export default function OgaHouse() {
     type: "info" as "info" | "warning" | "success",
   });
 
-  const [broadcastForm, setBroadcastForm] = useState({
+  const [broadcastForm, setBroadcastForm] = useState<BroadcastFormState>({
     subject: "",
     message: "",
-    audience: "all" as "all" | "premium" | "free",
+    audience: "all",
   });
 
   const broadcastMutation = useMutation({
@@ -145,7 +145,19 @@ export default function OgaHouse() {
       return result;
     },
     onSuccess: (data) => {
-      toast.success(`Broadcast sent! Success: ${data.stats.success}, Failed: ${data.stats.failed}`);
+      if (!data.success) {
+        toast.error(`Broadcast failed: ${data.error || "Unknown error"}`);
+        return;
+      }
+
+      if (data.stats.failed > 0) {
+        const errorMsg = data.stats.errors && data.stats.errors.length > 0 
+           ? `First error: ${data.stats.errors[0]}`
+           : "Check logs for details.";
+        toast.warning(`Partial success. Sent: ${data.stats.success}, Failed: ${data.stats.failed}. ${errorMsg}`, { duration: 10000 });
+      } else {
+        toast.success(`Broadcast sent! Success: ${data.stats.success}, Failed: ${data.stats.failed}`);
+      }
       setBroadcastForm({ subject: "", message: "", audience: "all" });
     },
     onError: (error) => {
@@ -478,10 +490,11 @@ function BroadcastMessage({
                 <SelectValue placeholder="Select audience" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Users</SelectItem>
-                <SelectItem value="premium">Premium Users Only</SelectItem>
-                <SelectItem value="free">Free Users Only</SelectItem>
-              </SelectContent>
+                  <SelectItem value="all">All Users</SelectItem>
+                  <SelectItem value="premium">Premium Users</SelectItem>
+                  <SelectItem value="free">Free Users</SelectItem>
+                  <SelectItem value="admin">Test (Admins Only)</SelectItem>
+                </SelectContent>
             </Select>
           </div>
 

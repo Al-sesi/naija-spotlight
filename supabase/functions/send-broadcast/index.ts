@@ -1,44 +1,37 @@
-// Broadcast Function - Optimized for Inbox Delivery with Failover System
-//
-// PREREQUISITES FOR FAILOVER (DNS SETUP):
-// 1. SPF Record (TXT @): You can only have ONE SPF record. Merge them!
-//    Correct: "v=spf1 include:spf.brevo.com include:resend.com ~all"
-//    Incorrect: Two separate TXT records.
-//
-// 2. DMARC Record (TXT _dmarc): You only need ONE DMARC record.
-//    It applies to ALL providers automatically.
-//    Value: "v=DMARC1; p=none; rua=mailto:youremail@example.com"
-//
-// 3. DKIM Records (CNAME/TXT): You MUST have separate records for each provider.
-//    Brevo: mail._domainkey.yourdomain.com
-//    Resend: resend._domainkey.yourdomain.com
-//    They do not conflict because they use different "selectors" (prefixes).
+// Broadcast Function - Optimized with HTTP API (Fetch) & Robust Error Handling
+// Uses Brevo/Resend HTTP APIs directly.
+// ALWAYS returns 200 OK with error details to client to avoid generic "non-2xx" errors.
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import nodemailer from "npm:nodemailer@6.9.13";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import nodemailer from "npm:nodemailer@6.9.13";
 
-const BREVO_SMTP_KEY = Deno.env.get("BREVO_SMTP_KEY");
-// Add your secondary provider key here in Supabase secrets
-const SECONDARY_SMTP_KEY = Deno.env.get("SECONDARY_SMTP_KEY"); 
-
-const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+// Environment Variables
+const BREVO_API_KEY = Deno.env.get("BREVO_SMTP_KEY"); 
+const RESEND_API_KEY = Deno.env.get("SECONDARY_SMTP_KEY"); 
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// --- Helper for Consistent Responses ---
+function createResponse(body: any, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status, // We use 200 even for errors to ensure the client receives the JSON body
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
 interface BroadcastRequest {
   subject: string;
   message: string;
-  audience: "all" | "premium" | "free";
+  audience: "all" | "premium" | "free" | "admin";
 }
 
-// --- Failover Architecture ---
+// --- Failover Architecture (SMTP Version - Matching Welcome Email) ---
 
 interface EmailProvider {
   name: string;
@@ -46,8 +39,49 @@ interface EmailProvider {
   send(to: string, subject: string, html: string, text: string): Promise<void>;
 }
 
+class ResendHttpProvider implements EmailProvider {
+  name = "Resend (HTTP Primary)";
+  
+  constructor(private apiKey?: string) {}
+
+  isConfigured(): boolean {
+    return !!this.apiKey;
+  }
+
+  async send(to: string, subject: string, html: string, text: string) {
+    if (!this.apiKey) throw new Error("Resend not configured");
+
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${this.apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: "NaijaLift Updates <info@naijalift.space>",
+        to: [to],
+        subject: subject,
+        html: html,
+        text: text,
+        headers: {
+          "List-Unsubscribe": "<https://naijalift.space/dashboard>"
+        }
+      }),
+    });
+
+    if (!response.ok) {
+      // Handle Rate Limit specifically
+      if (response.status === 429) {
+        throw new Error("Rate limit exceeded");
+      }
+      const errorText = await response.text();
+      throw new Error(`Resend API error: ${response.status} - ${errorText}`);
+    }
+  }
+}
+
 class BrevoProvider implements EmailProvider {
-  name = "Brevo (Primary)";
+  name = "Brevo (Secondary)";
   private transporter: any;
 
   constructor(private apiKey?: string) {
@@ -68,49 +102,11 @@ class BrevoProvider implements EmailProvider {
   async send(to: string, subject: string, html: string, text: string) {
     if (!this.transporter) throw new Error("Brevo not configured");
     await this.transporter.sendMail({
-        from: '"NaijaLift Updates" <info@naijalift.space>',
-        to,
-        subject,
-      html,
-      text,
-      headers: {
-        "List-Unsubscribe": "<https://naijalift.space/dashboard>",
-        "X-Entity-ID": "naijalift-broadcast"
-      }
-    });
-  }
-}
-
-class ResendProvider implements EmailProvider {
-  name = "Resend (Secondary)";
-  private transporter: any;
-
-  constructor(private apiKey?: string) {
-    if (apiKey) {
-      this.transporter = nodemailer.createTransport({
-        host: "smtp.resend.com",
-        port: 465,
-        secure: true,
-        auth: { user: "resend", pass: apiKey },
-      });
-    }
-  }
-
-  isConfigured(): boolean {
-    return !!this.apiKey;
-  }
-
-  async send(to: string, subject: string, html: string, text: string) {
-    if (!this.transporter) throw new Error("Resend not configured");
-    await this.transporter.sendMail({
-      from: '"NaijaLift Updates" <info@send.naijalift.space>', // Ensure domain is verified in Resend too
+      from: '"Naijalift" <info@naijalift.space>',
       to,
       subject,
       html,
       text,
-      headers: {
-        "List-Unsubscribe": "<https://naijalift.space/dashboard>",
-      }
     });
   }
 }
@@ -119,7 +115,6 @@ class FailoverEmailService {
   private providers: EmailProvider[];
 
   constructor(providers: EmailProvider[]) {
-    // Only use providers that are actually configured (have API keys)
     this.providers = providers.filter(p => p.isConfigured());
   }
 
@@ -130,23 +125,17 @@ class FailoverEmailService {
 
     const errors: string[] = [];
 
-    // Try each provider in order
     for (const provider of this.providers) {
       try {
         await provider.send(to, subject, html, text);
-        // If successful, log and return (stop trying others)
-        // console.log(`Sent via ${provider.name}`); 
         return; 
       } catch (error: any) {
         const errorMessage = error.message || "Unknown error";
         console.warn(`[Failover] Failed to send via ${provider.name}: ${errorMessage}`);
         errors.push(`${provider.name}: ${errorMessage}`);
-        
-        // Continue to the next provider in the loop...
       }
     }
 
-    // If we get here, ALL providers failed
     throw new Error(`All providers failed. Errors: ${errors.join(" | ")}`);
   }
 }
@@ -159,44 +148,79 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { subject, message, audience }: BroadcastRequest = await req.json();
+    // 1. Diagnostics Check
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+        throw new Error("Missing Supabase Environment Variables (URL or Service Role Key).");
+    }
+    if (!BREVO_API_KEY && !RESEND_API_KEY) {
+        throw new Error("Missing Email API Keys. Please configure BREVO_SMTP_KEY or SECONDARY_SMTP_KEY.");
+    }
 
-    console.log(`[${new Date().toISOString()}] Broadcast request received. Subject: ${subject}, Audience: ${audience}`);
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // Initialize Providers
+    // 2. Parse Request
+    let body;
+    try {
+        body = await req.json();
+    } catch (e) {
+        throw new Error("Invalid JSON body in request.");
+    }
+
+    const { subject, message, audience } = body as BroadcastRequest;
+
+    if (!subject || !message) {
+        throw new Error("Missing subject or message in request body.");
+    }
+
+    console.log(`[${new Date().toISOString()}] Broadcast: ${subject}, Audience: ${audience}`);
+
+    // 3. Initialize Email Service
     const providers = [
-      new BrevoProvider(BREVO_SMTP_KEY),
-      new ResendProvider(SECONDARY_SMTP_KEY) // Will be skipped if key is missing
+      new ResendHttpProvider(RESEND_API_KEY),
+      new BrevoProvider(BREVO_API_KEY)
     ];
     const emailService = new FailoverEmailService(providers);
 
-    // 1. Fetch Target Audience
-    let query = supabase.from("profiles").select("email, full_name");
+    // 4. Fetch Users
+    let users: { email: string; full_name?: string }[] = [];
+
+    if (audience === "admin") {
+      console.log("Fetching ADMIN users only...");
+      users = [
+        { email: "abdulmajeedsesiadam@gmail.com", full_name: "Admin Sesi" },
+        { email: "naijalift01@gmail.com", full_name: "Admin NaijaLift" }
+      ];
+    } else {
+      console.log(`Fetching ${audience} users from database...`);
+      let query = supabase.from("profiles").select("email, full_name");
+      
+      if (audience === "premium") {
+        query = query.eq("subscription_status", "premium");
+      } else if (audience === "free") {
+        query = query.neq("subscription_status", "premium");
+      }
+
+      const { data, error: dbError } = await query;
+      if (dbError) throw new Error(`Database error: ${dbError.message}`);
+      users = data || [];
+    }
     
-    if (audience === "premium") {
-      query = query.eq("subscription_status", "premium");
-    } else if (audience === "free") {
-      query = query.neq("subscription_status", "premium");
+    // Add Admin for monitoring if not already in list
+    const adminEmail = "abdulmajeedsesiadam@gmail.com";
+    const userList = users || [];
+    // We don't force add admin to the main loop to avoid duplicate/confusion, 
+    // but we will send a confirmation email to admin at the end.
+
+    if (userList.length === 0) {
+      return createResponse({ 
+        success: true, 
+        stats: { success: 0, failed: 0, message: "No users found for this audience." } 
+      });
     }
 
-    const { data: users, error } = await query;
-
-    if (error) throw error;
-    if (!users || users.length === 0) {
-      return new Response(
-        JSON.stringify({ 
-          success: true, 
-          stats: { success: 0, failed: 0, message: "No users found for this audience." } 
-        }),
-        { 
-          headers: { ...corsHeaders, "Content-Type": "application/json" } 
-        }
-      );
-    }
-
-    // Deduplicate users
+    // 5. Deduplicate
     const uniqueEmails = new Set<string>();
-    const uniqueUsers = users.filter((user) => {
+    const uniqueUsers = userList.filter((user) => {
       if (!user.email) return false;
       const normalizedEmail = user.email.toLowerCase().trim();
       if (uniqueEmails.has(normalizedEmail)) return false;
@@ -204,70 +228,193 @@ const handler = async (req: Request): Promise<Response> => {
       return true;
     });
 
-    console.log(`Found ${users.length} raw users, ${uniqueUsers.length} unique emails.`);
+    const stats = { success: 0, failed: 0, errors: [] as string[] };
+    
+    // 6. Send Emails (Sequential with 2-Concurrency and Rate Limiting)
+    const START_TIME = Date.now();
+    const TIMEOUT_MS = 50000; // 50 seconds
+    const DELAY_MS = 1050; // 1.05s delay between batches of 2 (Safe for Resend's 2 req/s)
 
-    const stats = { success: 0, failed: 0 };
+    for (let i = 0; i < uniqueUsers.length; i += 2) {
+      // Safety: Stop if we are running out of time
+      if (Date.now() - START_TIME > TIMEOUT_MS) {
+        console.warn("Time limit reached. Stopping broadcast.");
+        stats.errors.push("Time limit reached. Please run broadcast again to send to remaining users.");
+        break; 
+      }
 
-    // 2. Send Emails using Failover Service
-    const emailPromises = uniqueUsers.map(async (user) => {
-      if (!user.email) return;
+      // Process 2 users at a time (or 1 if it's the last one)
+      const batch = uniqueUsers.slice(i, i + 2);
+      
+      const promises = batch.map(async (user) => {
+        if (!user.email) return;
 
-      const htmlContent = `
+        const htmlContent = `
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { 
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+      background-color: #f0fdf4; 
+      margin: 0; 
+      padding: 20px; 
+    }
+    .container { 
+      max-width: 600px; 
+      margin: 0 auto; 
+      background: linear-gradient(145deg, #ffffff 0%, #f0fdf4 100%);
+      padding: 0;
+      border-radius: 16px; 
+      box-shadow: 0 20px 60px rgba(0,135,81,0.15);
+      overflow: hidden;
+    }
+    .header {
+      background: linear-gradient(135deg, #008751 0%, #005c36 100%);
+      padding: 40px 30px;
+      text-align: center;
+    }
+    .logo-text {
+      font-size: 36px;
+      font-weight: 800;
+      color: #ffffff;
+      letter-spacing: 2px;
+      margin: 0;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+    }
+    .tagline {
+      color: rgba(255,255,255,0.9);
+      font-size: 14px;
+      margin-top: 8px;
+      letter-spacing: 1px;
+    }
+    .content { 
+      padding: 40px 30px;
+      text-align: left;
+    }
+    h1 { 
+      color: #008751; 
+      margin: 0 0 20px 0;
+      font-size: 24px;
+      font-weight: 700;
+      text-align: center;
+    }
+    .message {
+      color: #374151;
+      line-height: 1.8;
+      font-size: 16px;
+      white-space: pre-line;
+      margin-bottom: 30px;
+    }
+    .btn { 
+      display: block; 
+      width: fit-content;
+      margin: 0 auto;
+      padding: 16px 40px; 
+      background: linear-gradient(135deg, #008751 0%, #006b41 100%);
+      color: white; 
+      text-decoration: none; 
+      border-radius: 50px; 
+      font-weight: 700;
+      font-size: 16px;
+      box-shadow: 0 10px 20px rgba(0,135,81,0.25);
+    }
+    .footer { 
+      margin-top: 40px; 
+      padding-top: 20px; 
+      border-top: 1px solid #e5e7eb; 
+      font-size: 12px; 
+      color: #6b7280; 
+      text-align: center;
+    }
+    .footer a {
+      color: #008751;
+      text-decoration: none;
+    }
+  </style>
 </head>
-<body style="font-family: 'Segoe UI', Helvetica, Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 20px;">
-  <div style="max-width: 600px; margin: 0 auto;">
-    <div style="margin-bottom: 24px;">
-      <h2 style="color: #008751; margin: 0;">${subject}</h2>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="logo-text">NAIJALIFT</div>
+      <div class="tagline">Official Update</div>
     </div>
-    <div style="font-size: 16px; color: #444; white-space: pre-line;">
-      ${message}
-    </div>
-    <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #eaeaea; font-size: 12px; color: #888;">
-      <p style="margin: 0;">You are receiving this email as a member of <strong>NaijaLift</strong>.</p>
-      <p style="margin: 8px 0 0 0;">
-        <a href="https://naijalift.space/dashboard" style="color: #008751; text-decoration: none;">Manage Preferences</a>
-        &nbsp;|&nbsp;
-        <a href="https://naijalift.space" style="color: #008751; text-decoration: none;">Visit Website</a>
-      </p>
+    <div class="content">
+      <h1>${subject}</h1>
+      
+      <div class="message">
+        ${message}
+      </div>
+
+      <a href="https://naijalift.space/dashboard" class="btn">Go to Dashboard</a>
+
+      <div class="footer">
+        <p>© ${new Date().getFullYear()} NaijaLift. All rights reserved.</p>
+        <p>Lagos, Nigeria 🇳🇬</p>
+        <p>
+          <a href="https://naijalift.space/dashboard">Manage Preferences</a>
+        </p>
+      </div>
     </div>
   </div>
 </body>
-</html>
-      `;
+</html>`;
 
-      try {
-        // The magic happens here: automatically tries Brevo, then Resend (if configured)
-        await emailService.send(user.email, subject, htmlContent, message);
-        stats.success++;
-      } catch (err) {
-        console.error(`Failed to send to ${user.email} after trying all providers:`, err);
-        stats.failed++;
+        try {
+          await emailService.send(user.email, subject, htmlContent, message);
+          stats.success++;
+        } catch (err: any) {
+          console.error(`Failed to send to ${user.email}:`, err);
+          stats.failed++;
+          const errorMsg = err.message || String(err);
+          const shortError = errorMsg.substring(0, 100);
+          if (stats.errors.length < 5 && !stats.errors.some(e => e.includes(shortError))) {
+            stats.errors.push(`${user.email}: ${shortError}`);
+          }
+        }
+      });
+
+      await Promise.all(promises);
+
+      // Rate limiting delay (only if we are not at the end)
+      if (i + 2 < uniqueUsers.length) {
+        await new Promise(resolve => setTimeout(resolve, DELAY_MS));
       }
-    });
+    }
 
-    await Promise.all(emailPromises);
+    // 7. Send Admin Confirmation (Always try to send this)
+    try {
+      await emailService.send(
+        adminEmail, 
+        `[Broadcast Report] ${subject}`, 
+        `<p>Broadcast completed.</p>
+         <ul>
+           <li>Success: ${stats.success}</li>
+           <li>Failed: ${stats.failed}</li>
+           <li>Errors: ${stats.errors.join(", ")}</li>
+         </ul>
+         <hr>
+         <h3>Original Message:</h3>
+         ${message}`, 
+        `Broadcast Report: Success ${stats.success}, Failed ${stats.failed}`
+      );
+      console.log("Admin confirmation sent.");
+    } catch (e) {
+      console.error("Failed to send admin confirmation:", e);
+    }
 
-    return new Response(
-      JSON.stringify({ success: true, stats }),
-      { 
-        headers: { ...corsHeaders, "Content-Type": "application/json" } 
-      }
-    );
+    return createResponse({ success: true, stats });
 
   } catch (error: any) {
-    console.error("Broadcast error:", error);
-    return new Response(
-      JSON.stringify({ success: false, error: error.message }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, "Content-Type": "application/json" } 
-      }
-    );
+    console.error("Critical Broadcast Error:", error);
+    // Return 200 with error details so the client can display it
+    return createResponse({ 
+        success: false, 
+        error: error.message || "Unknown server error",
+        stats: { success: 0, failed: 0 }
+    });
   }
 };
 
