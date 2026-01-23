@@ -1,0 +1,19 @@
+{
+    "name": "NAIJALIFT",
+    "short_name": "NAIJALIFT",
+    "icons": [
+        {
+            "src": "/logo.jpg",
+            "sizes": "192x192",
+            "type": "image/jpeg"
+        },
+        {
+            "src": "/logo.jpg",
+            "sizes": "512x512",
+            "type": "image/jpeg"
+        }
+    ],
+    "theme_color": "#008751",
+    "background_color": "#ffffff",
+    "display": "standalone"
+}
