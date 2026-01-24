@@ -56,7 +56,15 @@ serve(async (req) => {
       });
     }
 
-    const { plan, planType } = await req.json();
+    // Parse body carefully - handle potential parsing errors
+    let body = {};
+    try {
+      const text = await req.text();
+      if (text) body = JSON.parse(text);
+    } catch (e) {
+      console.error("Error parsing request body:", e);
+    }
+    const { plan, planType } = body as any;
 
     let amount = 19700;
     if (planType === 'pro') {
