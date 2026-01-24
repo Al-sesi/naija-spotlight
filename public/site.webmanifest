@@ -1,6 +1,13 @@
 {
     "name": "NAIJALIFT",
     "short_name": "NAIJALIFT",
+    "description": "Your gateway to verified opportunities in Nigeria - scholarships, recruitment, grants, and events.",
+    "start_url": "/",
+    "scope": "/",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#008751",
+    "orientation": "portrait",
     "icons": [
         {
             "src": "/logo.jpg",
@@ -12,8 +19,5 @@
             "sizes": "512x512",
             "type": "image/jpeg"
         }
-    ],
-    "theme_color": "#008751",
-    "background_color": "#ffffff",
-    "display": "standalone"
+    ]
 }

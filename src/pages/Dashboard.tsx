@@ -35,6 +35,7 @@ export default function Dashboard() {
 
   return (
     <div className="container px-4 sm:px-6 py-6 sm:py-8">
+      <InstallPWA />
       <div className="mb-6 space-y-1">
         <h1 className="text-2xl sm:text-3xl font-display font-bold">My Dashboard</h1>
         <p className="text-sm sm:text-base text-muted-foreground">
