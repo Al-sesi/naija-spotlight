@@ -219,7 +219,7 @@ export function BillingSettings() {
                   className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-lg shadow-amber-500/30"
                 >
                   <Crown className="h-4 w-4 mr-2" />
-                  Upgrade to Premium • from ₦197/month
+                  Upgrade to Premium • ₦197 or ₦1,500/month
                 </Button>
                 <p className="text-xs text-muted-foreground mt-3">
                   Start with a 30-day free trial

@@ -56,9 +56,12 @@ serve(async (req) => {
       });
     }
 
-    const { plan } = await req.json();
+    const { plan, planType } = await req.json();
 
-    const amount = 19700;
+    let amount = 19700;
+    if (planType === 'pro') {
+      amount = 150000;
+    }
 
     const paystackResponse = await fetch("https://api.paystack.co/transaction/initialize", {
       method: "POST",
@@ -74,7 +77,7 @@ serve(async (req) => {
         callback_url: "https://naijalift.space/payment-callback",
         metadata: {
           user_id: userId,
-          plan_type: "premium_lifter",
+          plan_type: planType || "premium_lifter",
         },
       }),
     });
