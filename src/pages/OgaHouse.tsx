@@ -80,7 +80,7 @@ interface AdminUser {
   created_at: string | null;
 }
 
-type Section = "dashboard" | "add" | "manage" | "posts" | "users" | "team" | "alerts" | "broadcast";
+type Section = "dashboard" | "add" | "manage" | "posts" | "users" | "team" | "alerts" | "broadcast" | "referrals";
 
 const sidebarItems: { id: Section; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { id: "dashboard", label: "Dashboard", icon: Home },
@@ -89,6 +89,7 @@ const sidebarItems: { id: Section; label: string; icon: React.ComponentType<{ cl
   { id: "posts", label: "Review Posts", icon: MessageSquare },
   { id: "users", label: "Users", icon: Users },
   { id: "team", label: "Team (Lifters)", icon: UserCheck },
+  { id: "referrals", label: "Ambassadors", icon: Trophy },
   { id: "alerts", label: "Site Alerts", icon: Megaphone },
   { id: "broadcast", label: "Broadcast", icon: Send },
 ];
@@ -337,6 +338,11 @@ export default function OgaHouse() {
           onSubmit={(e) => { e.preventDefault(); broadcastMutation.mutate(broadcastForm); }} 
           isLoading={broadcastMutation.isPending} 
         />;
+      case "referrals":
+        return <div className="space-y-6">
+          <h2 className="text-3xl font-bold tracking-tight">Ambassador Performance</h2>
+          <ReferralStatsTable />
+        </div>;
       default:
         return null;
     }
