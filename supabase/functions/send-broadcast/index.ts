@@ -233,12 +233,13 @@ const handler = async (req: Request): Promise<Response> => {
 
     const stats = { success: 0, failed: 0, errors: [] as string[] };
     
-    // 6. Send Emails (Sequential with 2-Concurrency and Rate Limiting)
+    // 6. Send Emails (Sequential with 1-Concurrency and Rate Limiting)
     const START_TIME = Date.now();
     const TIMEOUT_MS = 50000; // 50 seconds
-    const DELAY_MS = 500; // 0.5s delay between batches (Optimized for SMTP pool)
+    const DELAY_MS = 600; // 600ms delay to respect Resend limits
+    const BATCH_SIZE = 1;
 
-    for (let i = 0; i < uniqueUsers.length; i += 2) {
+    for (let i = 0; i < uniqueUsers.length; i += BATCH_SIZE) {
       // Safety: Stop if we are running out of time
       if (Date.now() - START_TIME > TIMEOUT_MS) {
         console.warn("Time limit reached. Stopping broadcast.");
@@ -246,8 +247,8 @@ const handler = async (req: Request): Promise<Response> => {
         break; 
       }
 
-      // Process 2 users at a time (or 1 if it's the last one)
-      const batch = uniqueUsers.slice(i, i + 2);
+      // Process batch
+      const batch = uniqueUsers.slice(i, i + BATCH_SIZE);
       
       const promises = batch.map(async (user) => {
         if (!user.email) return;
@@ -381,7 +382,7 @@ const handler = async (req: Request): Promise<Response> => {
       await Promise.all(promises);
 
       // Rate limiting delay (only if we are not at the end)
-      if (i + 2 < uniqueUsers.length) {
+      if (i + BATCH_SIZE < uniqueUsers.length) {
         await new Promise(resolve => setTimeout(resolve, DELAY_MS));
       }
     }
