@@ -37,6 +37,18 @@ export function InstallPWA() {
     // Wait for the user to respond to the prompt
     const { outcome } = await deferredPrompt.userChoice;
     
+    // Track the install outcome
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      await supabase.from('app_installs' as any).insert({
+        user_id: user?.id,
+        user_agent: window.navigator.userAgent,
+        outcome: outcome
+      });
+    } catch (error) {
+      console.error('Error tracking install:', error);
+    }
+
     // We've used the prompt, and can't use it again, discard it
     setDeferredPrompt(null);
     
