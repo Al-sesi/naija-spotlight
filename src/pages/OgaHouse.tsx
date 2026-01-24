@@ -27,6 +27,7 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useMutation } from "@tanstack/react-query";
 import { ReferralStatsTable } from "@/components/admin/ReferralStatsTable";
+import { AppInstallsTable } from "@/components/admin/AppInstallsTable";
 
 const ADMIN_EMAILS = ["abdulmajeedsesiadam@gmail.com", "naijalift01@gmail.com"];
 
