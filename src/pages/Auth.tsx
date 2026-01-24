@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useLocation } from "react-router-dom";
 import { z } from "zod";
 import { Mail, Lock, User, ArrowRight, Rocket, Sparkles, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
