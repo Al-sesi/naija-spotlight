@@ -92,7 +92,7 @@ export function BillingSettings() {
 
   const categoriesCount = subscription?.premium_categories?.length ?? 0;
   const billedCategories = categoriesCount > 0 ? categoriesCount : 1;
-  const pricePerCategory = 197;
+  const pricePerCategory = subscription?.plan_type === 'pro' ? 1500 : 197;
   const totalPrice = billedCategories * pricePerCategory;
 
   return (
