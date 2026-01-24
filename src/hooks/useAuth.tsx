@@ -125,7 +125,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error: normalizeAuthEmailError(error) };
   };
 
-  const signUp = async (email: string, password: string, fullName: string) => {
+  const signUp = async (email: string, password: string, fullName: string, referralCode?: string) => {
     // CRITICAL: Always use production URL for email verification links
     const redirectUrl = "https://naijalift.space/verification-success";
 
@@ -135,6 +135,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       options: {
         data: {
           full_name: fullName,
+          referral_code: referralCode,
         },
         emailRedirectTo: redirectUrl,
       },

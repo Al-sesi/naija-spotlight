@@ -35,15 +35,15 @@ export default function VerificationSuccess() {
             Email Verified!
           </h1>
           <p className="text-muted-foreground text-base md:text-lg px-4">
-            Your account is now active. You can now go to your dashboard.
+            Your account is now active. You can now explore opportunities.
           </p>
         </div>
 
         <div className="pt-4">
           <Button asChild size="lg" className="w-full sm:w-auto font-semibold">
-            <Link to="/dashboard">
+            <Link to="/">
               <ArrowRight className="mr-2 h-4 w-4" />
-              Go to Dashboard
+              Go to Home
             </Link>
           </Button>
         </div>

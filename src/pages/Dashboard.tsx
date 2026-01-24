@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { NotificationSettings } from "@/components/dashboard/NotificationSettings";
 import { TrialCounter } from "@/components/dashboard/TrialCounter";
 import { BillingSettings } from "@/components/dashboard/BillingSettings";
+import { InstallPWA } from "@/components/InstallPWA";
 
 export default function Dashboard() {
   const { user } = useAuth();
