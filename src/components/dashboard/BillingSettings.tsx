@@ -94,6 +94,7 @@ export function BillingSettings() {
   const billedCategories = categoriesCount > 0 ? categoriesCount : 1;
   const pricePerCategory = subscription?.plan_type === 'pro' ? 1500 : 197;
   const totalPrice = billedCategories * pricePerCategory;
+  const planName = subscription?.plan_type === 'pro' ? "Pro Plan" : "Starter Plan";
 
   return (
     <div className="space-y-6 max-w-full">
@@ -117,7 +118,7 @@ export function BillingSettings() {
               {/* Premium Plan Details */}
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 rounded-lg bg-gradient-to-r from-amber-100 to-amber-50 dark:from-amber-900/30 dark:to-amber-800/20">
                 <div className="text-left">
-                  <h3 className="font-semibold text-base sm:text-lg">Premium Lifter</h3>
+                  <h3 className="font-semibold text-base sm:text-lg">{planName}</h3>
                   <p className="text-sm text-muted-foreground">
                     Full access to all features
                   </p>
@@ -173,35 +174,45 @@ export function BillingSettings() {
                 </div>
               </div>
 
-              {/* Cancel Button */}
-              {subscription?.subscription_status === "active" && (
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="outline" className="w-full text-destructive hover:text-destructive">
-                      Cancel Subscription
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Cancel your subscription?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        You'll lose access to premium features at the end of your current billing period. 
-                        This includes the verified badge, SMS alerts, and early access to opportunities.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Keep Subscription</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={() => cancelSubscription.mutate()}
-                        disabled={cancelSubscription.isPending}
-                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                      >
-                        {cancelSubscription.isPending ? "Cancelling..." : "Yes, Cancel"}
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              )}
+              {/* Actions */}
+              <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                <Button 
+                  onClick={() => setShowUpgradeModal(true)}
+                  className="flex-1 bg-emerald-600 hover:bg-emerald-700"
+                >
+                  Change Plan / Upgrade
+                </Button>
+
+                {/* Cancel Button */}
+                {subscription?.subscription_status === "active" && (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="outline" className="flex-1 text-destructive hover:text-destructive">
+                        Cancel Subscription
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Cancel your subscription?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          You'll lose access to premium features at the end of your current billing period. 
+                          This includes the verified badge, SMS alerts, and early access to opportunities.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Keep Subscription</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => cancelSubscription.mutate()}
+                          disabled={cancelSubscription.isPending}
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                          {cancelSubscription.isPending ? "Cancelling..." : "Yes, Cancel"}
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                )}
+              </div>
             </>
           ) : (
             <>
