@@ -75,6 +75,7 @@ class ResendHttpProvider implements EmailProvider {
         throw new Error("Rate limit exceeded");
       }
       const errorText = await response.text();
+      console.error(`[Resend Failure] Status: ${response.status}, Body: ${errorText}`);
       throw new Error(`Resend API error: ${response.status} - ${errorText}`);
     }
   }
@@ -85,13 +86,14 @@ class BrevoProvider implements EmailProvider {
   private transporter: any;
 
   constructor(private apiKey?: string) {
+    const smtpUser = Deno.env.get("BREVO_SMTP_USER") || "a06962001@smtp-brevo.com";
     if (apiKey) {
       this.transporter = nodemailer.createTransport({
         pool: true, // Use pooled connections for better performance
         host: "smtp-relay.brevo.com",
         port: 587,
         secure: false,
-        auth: { user: "a06962001@smtp-brevo.com", pass: apiKey },
+        auth: { user: smtpUser, pass: apiKey },
       });
     }
   }
