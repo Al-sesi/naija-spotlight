@@ -20,6 +20,51 @@ export interface RegisteredUser {
   created_at: string | null;
 }
 
+export interface AppInstall {
+  id: string;
+  user_id: string | null;
+  user_agent: string | null;
+  outcome: string | null;
+  created_at: string;
+  profile?: {
+    full_name: string | null;
+    email: string | null;
+  } | null;
+}
+
+export function useAppInstalls() {
+  return useQuery({
+    queryKey: ["app-installs"],
+    queryFn: async () => {
+      const { data: installs, error } = await supabase
+        .from("app_installs" as any)
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      // Fetch profiles for authenticated users
+      const userIds = [...new Set(installs?.filter((i: any) => i.user_id).map((i: any) => i.user_id) || [])];
+      
+      let profileMap = new Map();
+      if (userIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, full_name, email")
+          .in("id", userIds);
+          
+        profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+      }
+
+      return installs?.map((install: any) => ({
+        ...install,
+        profile: install.user_id ? profileMap.get(install.user_id) || null : null,
+      })) as AppInstall[];
+    },
+  });
+}
+
+
 export function usePendingPosts() {
   return useQuery({
     queryKey: ["pending-posts"],

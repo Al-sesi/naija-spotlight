@@ -81,7 +81,7 @@ interface AdminUser {
   created_at: string | null;
 }
 
-type Section = "dashboard" | "add" | "manage" | "posts" | "users" | "team" | "alerts" | "broadcast" | "referrals";
+type Section = "dashboard" | "add" | "manage" | "posts" | "users" | "team" | "alerts" | "broadcast" | "referrals" | "installs";
 
 const sidebarItems: { id: Section; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { id: "dashboard", label: "Dashboard", icon: Home },
@@ -91,6 +91,7 @@ const sidebarItems: { id: Section; label: string; icon: React.ComponentType<{ cl
   { id: "users", label: "Users", icon: Users },
   { id: "team", label: "Team (Lifters)", icon: UserCheck },
   { id: "referrals", label: "Ambassadors", icon: Trophy },
+  { id: "installs", label: "App Installs", icon: Download },
   { id: "alerts", label: "Site Alerts", icon: Megaphone },
   { id: "broadcast", label: "Broadcast", icon: Send },
 ];
@@ -343,6 +344,11 @@ export default function OgaHouse() {
         return <div className="space-y-6">
           <h2 className="text-3xl font-bold tracking-tight">Ambassador Performance</h2>
           <ReferralStatsTable />
+        </div>;
+      case "installs":
+        return <div className="space-y-6">
+          <h2 className="text-3xl font-bold tracking-tight">App Installations</h2>
+          <AppInstallsTable />
         </div>;
       default:
         return null;
