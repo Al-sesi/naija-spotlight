@@ -72,7 +72,7 @@ export default function Auth() {
     }
 
     setLoading(true);
-    const { error } = await signUp(formData.email, formData.password, formData.fullName);
+    const { error } = await signUp(formData.email, formData.password, formData.fullName, formData.referralCode);
     setLoading(false);
 
     if (error) {
@@ -304,6 +304,20 @@ export default function Auth() {
                       value={formData.password}
                       onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                       required
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="signup-referral" className="text-sm">Referral Code (Optional)</Label>
+                  <div className="relative">
+                    <Sparkles className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="signup-referral"
+                      type="text"
+                      placeholder="Referral Code"
+                      className="pl-10 text-sm"
+                      value={formData.referralCode}
+                      onChange={(e) => setFormData({ ...formData, referralCode: e.target.value })}
                     />
                   </div>
                 </div>
