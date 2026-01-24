@@ -52,6 +52,7 @@ export default function Index() {
 
   return (
     <div className="min-h-screen gradient-hero">
+      <InstallPWA />
       {/* Site Alert Banner */}
       {siteAlert?.is_active && siteAlert.message && !alertDismissed && (
         <div className={cn(
