@@ -4,7 +4,7 @@ import { formatDistanceToNow, format } from "date-fns";
 import { 
   Shield, Plus, Link as LinkIcon, Users, MessageSquare, CheckCircle, XCircle, 
   Trash2, ToggleLeft, Home, FileText, Bell, UserCheck, Menu, X,
-  Megaphone, ChevronRight, Calendar, Send, Trophy
+  Megaphone, ChevronRight, Calendar, Send, Trophy, Download
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
