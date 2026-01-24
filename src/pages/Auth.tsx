@@ -28,12 +28,16 @@ const emailSchema = z.object({
 
 export default function Auth() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { signIn, signUp, signInWithMagicLink, user, session } = useAuth();
   const [loading, setLoading] = useState(false);
   const [magicLinkLoading, setMagicLinkLoading] = useState(false);
-  const [formData, setFormData] = useState({ email: "", password: "", fullName: "" });
+  const [formData, setFormData] = useState({ email: "", password: "", fullName: "", referralCode: "" });
   const [signupSuccess, setSignupSuccess] = useState(false);
   const [magicLinkSent, setMagicLinkSent] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  
+  const defaultTab = location.pathname === "/sign-up" ? "signup" : "signin";
   
   const isEmailConfirmed = session?.user?.email_confirmed_at != null;
 
@@ -186,7 +190,7 @@ export default function Auth() {
         </CardHeader>
         <CardContent>
           
-          <Tabs defaultValue="signin" className="w-full">
+          <Tabs defaultValue={defaultTab} key={defaultTab} className="w-full">
             <TabsList className="grid w-full grid-cols-2 mb-6">
               <TabsTrigger value="signin" className="text-sm">Sign In</TabsTrigger>
               <TabsTrigger value="signup" className="text-sm">Sign Up</TabsTrigger>
