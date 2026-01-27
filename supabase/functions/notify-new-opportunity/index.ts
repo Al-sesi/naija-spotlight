@@ -85,150 +85,117 @@ function buildEmailHtml(opportunity: NewOpportunityPayload["opportunity"], first
     body {
       margin: 0;
       padding: 0;
-      background-color: #020617;
+      background-color: #f0fdf4;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
-    a { color: #fb923c; text-decoration: none; }
+    a { color: #008751; text-decoration: none; }
     .wrapper {
       width: 100%;
       padding: 24px 0;
-      background-color: #020617;
+      background-color: #f0fdf4;
     }
     .container {
       max-width: 560px;
       margin: 0 auto;
       border-radius: 18px;
-      border: 1px solid #1e293b;
-      background: radial-gradient(circle at top, rgba(251,146,60,0.16), transparent 55%) #020617;
+      border: 1px solid #dcfce7;
+      background: #ffffff;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
       overflow: hidden;
     }
     .header {
       padding: 22px 22px 14px 22px;
       text-align: center;
-      background: radial-gradient(circle at top, #fb923c 0, #020617 55%);
+      background: linear-gradient(135deg, #008751 0%, #005c36 100%);
     }
     .logo {
-      font-size: 20px;
+      font-size: 24px;
       font-weight: 800;
-      color: #f9fafb;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-    }
-    .tagline {
-      margin-top: 4px;
-      font-size: 11px;
-      color: #e5e7eb;
-      opacity: 0.9;
-    }
-    .pill {
-      display: inline-block;
-      margin-top: 14px;
-      padding: 5px 12px;
-      border-radius: 999px;
-      font-size: 10px;
-      text-transform: uppercase;
-      letter-spacing: 0.16em;
-      background-color: rgba(15,23,42,0.9);
-      color: #fed7aa;
-      border: 1px solid rgba(251,146,60,0.6);
+      color: #ffffff;
+      letter-spacing: -0.5px;
+      margin: 0;
     }
     .content {
-      padding: 22px 22px 6px 22px;
-      color: #e5e7eb;
+      padding: 32px 24px;
+      color: #1f2937;
     }
-    .hello {
-      font-size: 13px;
-      color: #9ca3af;
-      margin-bottom: 4px;
+    .greeting {
+      font-size: 16px;
+      color: #374151;
+      margin-bottom: 24px;
     }
     .title {
-      font-size: 20px;
+      font-size: 24px;
       font-weight: 700;
+      color: #111827;
       line-height: 1.3;
-      margin-bottom: 12px;
-      color: #f9fafb;
+      margin: 0 0 8px 0;
     }
-    .title span {
-      color: #fed7aa;
-    }
-    .lead {
-      font-size: 13px;
-      line-height: 1.7;
-      color: #d1d5db;
-      margin-bottom: 18px;
-    }
-    .card {
-      border-radius: 14px;
-      border: 1px solid #1f2937;
-      background: linear-gradient(135deg, rgba(15,23,42,0.98), rgba(17,24,39,0.98));
-      padding: 14px 16px 12px 16px;
-      margin-bottom: 16px;
-    }
-    .card-tag {
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.16em;
-      color: #a5b4fc;
-      margin-bottom: 4px;
-    }
-    .card-title {
-      font-size: 15px;
-      font-weight: 600;
-      color: #f9fafb;
-      margin-bottom: 4px;
-    }
-    .card-provider {
-      font-size: 12px;
-      color: #9ca3af;
-      margin-bottom: 8px;
-    }
-    .card-body {
-      font-size: 12px;
-      color: #d1d5db;
-      line-height: 1.7;
-      margin-bottom: 8px;
-    }
-    .meta {
-      font-size: 11px;
-      color: #9ca3af;
-      margin-bottom: 10px;
-    }
-    .meta strong {
-      color: #e5e7eb;
-    }
-    .cta-wrap {
-      text-align: center;
-      padding: 6px 22px 22px 22px;
-    }
-    .button {
-      display: inline-block;
-      padding: 11px 26px;
-      border-radius: 999px;
-      background: linear-gradient(135deg, #fb923c, #f97316);
-      color: #111827;
-      font-size: 13px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.16em;
-    }
-    .button span {
-      display: block;
-      font-size: 11px;
-      text-transform: none;
-      letter-spacing: normal;
-      margin-top: 2px;
+    .provider {
+      font-size: 16px;
+      color: #4b5563;
+      margin: 0 0 24px 0;
       font-weight: 500;
-      color: #111827;
+    }
+    .meta-row {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+    .meta-tag {
+      background-color: #f0fdf4;
+      color: #166534;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      border: 1px solid #bbf7d0;
+    }
+    .description {
+      font-size: 16px;
+      line-height: 1.6;
+      color: #4b5563;
+      margin-bottom: 32px;
+    }
+    .btn-container {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    .btn {
+      display: inline-block;
+      background-color: #008751;
+      color: #ffffff !important;
+      font-weight: 600;
+      padding: 14px 32px;
+      border-radius: 12px;
+      font-size: 16px;
+      box-shadow: 0 4px 6px -1px rgba(0, 135, 81, 0.2);
+      transition: background-color 0.2s;
+    }
+    .btn:hover {
+      background-color: #006d41;
     }
     .footer {
-      font-size: 11px;
-      color: #6b7280;
-      padding: 10px 22px 18px 22px;
-      border-top: 1px solid #111827;
+      background-color: #f9fafb;
+      padding: 24px;
+      text-align: center;
+      border-top: 1px solid #f3f4f6;
     }
-    .footer a {
+    .footer-text {
+      font-size: 12px;
       color: #9ca3af;
+      line-height: 1.5;
+      margin: 0;
+    }
+    .footer-links {
+      margin-top: 12px;
+    }
+    .footer-links a {
+      font-size: 12px;
+      color: #6b7280;
       text-decoration: underline;
+      margin: 0 8px;
     }
   </style>
 </head>
@@ -236,50 +203,39 @@ function buildEmailHtml(opportunity: NewOpportunityPayload["opportunity"], first
   <div class="wrapper">
     <div class="container">
       <div class="header">
-        <div class="logo">NAIJALIFT</div>
-        <div class="tagline">Fresh, curated opportunities for Nigerians who are serious.</div>
-        <div class="pill">New drop just for you</div>
+        <h1 class="logo">NAIJALIFT</h1>
       </div>
-
       <div class="content">
-        <p class="hello">Hi ${firstName || "Champion"},</p>
-        <p class="title">
-          A <span>${categoryLabel}</span> just landed on NAIJALIFT.
+        <div class="greeting">Hello ${firstName},</div>
+        
+        <h2 class="title">${opportunity.title}</h2>
+        <p class="provider">by ${opportunity.provider}</p>
+        
+        <div class="meta-row">
+          <span class="meta-tag">${categoryLabel}</span>
+          <span class="meta-tag">📍 ${location}</span>
+          <span class="meta-tag">📅 Ends: ${deadlineText}</span>
+        </div>
+        
+        <p class="description">
+          ${safeDescription}
         </p>
-        <p class="lead">
-          We just added a handpicked opportunity that could move you closer to your next big win.
-        </p>
-
-        <div class="card">
-          <div class="card-tag">${categoryLabel}</div>
-          <div class="card-title">${opportunity.title}</div>
-          <div class="card-provider">${opportunity.provider}</div>
-          <div class="card-body">
-            ${safeDescription}
-          </div>
-          <div class="meta">
-            <strong>Deadline:</strong> ${deadlineText} · <strong>Location:</strong> ${location}
-          </div>
-          <a href="${opportunity.link}" target="_blank" rel="noopener noreferrer" style="font-size:12px;color:#fb923c;font-weight:500;">
-            View full details and apply →
-          </a>
+        
+        <div class="btn-container">
+          <a href="${opportunity.link}" class="btn">View & Apply Now</a>
         </div>
       </div>
-
-      <div class="cta-wrap">
-        <a href="https://naijalift.space/dashboard" class="button" target="_blank" rel="noopener noreferrer">
-          VIEW MORE OPPORTUNITIES
-          <span>Log in to NAIJALIFT to see everything waiting for you</span>
-        </a>
-      </div>
-
+      
       <div class="footer">
-        <p>
-          You are receiving this because you turned on email alerts in NAIJALIFT.
-          If this is too much, you can pause alerts in your dashboard.
+        <p class="footer-text">
+          You received this email because you subscribed to ${categoryLabel} alerts on NAIJALIFT.
         </p>
-        <p style="margin-top:6px;">
-          © ${new Date().getFullYear()} NAIJALIFT. All rights reserved.
+        <div class="footer-links">
+          <a href="https://naijalift.space/dashboard/settings">Manage Alerts</a>
+          <a href="https://naijalift.space/dashboard/settings">Unsubscribe</a>
+        </div>
+        <p class="footer-text" style="margin-top: 16px;">
+          &copy; ${new Date().getFullYear()} NAIJALIFT. All rights reserved.
         </p>
       </div>
     </div>
