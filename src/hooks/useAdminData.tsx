@@ -129,9 +129,10 @@ export function useRejectPost() {
   });
 }
 
-export function useRegisteredUsers() {
+export function useRegisteredUsers(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ["registered-users"],
+    enabled: options?.enabled,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profiles")

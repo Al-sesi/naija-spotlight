@@ -102,15 +102,18 @@ export default function OgaHouse() {
   useEffect(() => {
     console.log("OgaHouse mounted. User:", user?.email, "Loading:", loading);
   }, [user, loading]);
+
+  const isAdmin = !!user?.email && ADMIN_EMAILS.includes(user.email);
+  const shouldFetchAdminData = !loading && isAdmin;
   
   const { data: opportunities } = useOpportunities({ types: [], states: [], search: "" });
   const createOpportunity = useCreateOpportunity();
   const deleteOpportunity = useDeleteOpportunity();
   const updateOpportunity = useUpdateOpportunity();
-  const { data: pendingPosts, isLoading: postsLoading } = usePendingPosts();
+  const { data: pendingPosts, isLoading: postsLoading } = usePendingPosts({ enabled: shouldFetchAdminData });
   const approvePost = useApprovePost();
   const rejectPost = useRejectPost();
-  const { data: users, isLoading: usersLoading } = useRegisteredUsers();
+  const { data: users, isLoading: usersLoading } = useRegisteredUsers({ enabled: shouldFetchAdminData });
   const { data: siteAlert } = useSiteAlert();
   const updateSiteAlert = useUpdateSiteAlert();
 
