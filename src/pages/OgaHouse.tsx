@@ -4,7 +4,7 @@ import { formatDistanceToNow, format } from "date-fns";
 import { 
   Shield, Plus, Link as LinkIcon, Users, MessageSquare, CheckCircle, XCircle, 
   Trash2, ToggleLeft, Home, FileText, Bell, UserCheck, Menu, X,
-  Megaphone, ChevronRight, Calendar, Send
+  Megaphone, ChevronRight, Calendar, Send, Trophy, Download
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -19,8 +19,9 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAuth } from "@/hooks/useAuth";
 import { useOpportunities, useCreateOpportunity, useDeleteOpportunity, useUpdateOpportunity } from "@/hooks/useOpportunities";
-import { usePendingPosts, useApprovePost, useRejectPost, useRegisteredUsers } from "@/hooks/useAdminData";
+import { usePendingPosts, useApprovePost, useRejectPost, useRegisteredUsers, useAppInstalls, AppInstall } from "@/hooks/useAdminData";
 import { useSiteAlert, useUpdateSiteAlert } from "@/hooks/useSiteAlert";
+import { ReferralStatsTable } from "@/components/admin/ReferralStatsTable";
 import { NIGERIAN_STATES, OPPORTUNITY_TYPES, OpportunityType } from "@/lib/constants";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -80,7 +81,7 @@ interface AdminUser {
   created_at: string | null;
 }
 
-type Section = "dashboard" | "add" | "manage" | "posts" | "users" | "team" | "alerts" | "broadcast";
+type Section = "dashboard" | "add" | "manage" | "posts" | "users" | "team" | "alerts" | "broadcast" | "ambassadors" | "installs";
 
 const sidebarItems: { id: Section; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { id: "dashboard", label: "Dashboard", icon: Home },
@@ -88,6 +89,8 @@ const sidebarItems: { id: Section; label: string; icon: React.ComponentType<{ cl
   { id: "manage", label: "Manage Opps", icon: FileText },
   { id: "posts", label: "Review Posts", icon: MessageSquare },
   { id: "users", label: "Users", icon: Users },
+  { id: "ambassadors", label: "Ambassadors", icon: Trophy },
+  { id: "installs", label: "App Installs", icon: Download },
   { id: "team", label: "Team (Lifters)", icon: UserCheck },
   { id: "alerts", label: "Site Alerts", icon: Megaphone },
   { id: "broadcast", label: "Broadcast", icon: Send },
@@ -146,6 +149,7 @@ function OgaHouseContent() {
   const approvePost = useApprovePost();
   const rejectPost = useRejectPost();
   const { data: users, isLoading: usersLoading } = useRegisteredUsers({ enabled: shouldFetchAdminData });
+  const { data: appInstalls, isLoading: installsLoading } = useAppInstalls();
   const { data: siteAlert } = useSiteAlert({ enabled: shouldFetchAdminData });
   const updateSiteAlert = useUpdateSiteAlert();
 
@@ -358,6 +362,10 @@ function OgaHouseContent() {
         />;
       case "users":
         return <UserManagement users={users || []} isLoading={usersLoading} />;
+      case "ambassadors":
+        return <ReferralStatsTable />;
+      case "installs":
+        return <AppInstallsList installs={appInstalls || []} isLoading={installsLoading} />;
       case "team":
         return <TeamManagement />;
       case "alerts":
@@ -995,6 +1003,80 @@ function UserManagement({ users, isLoading }: { users: AdminUser[]; isLoading: b
                         <CheckCircle className="h-3 w-3 mr-1" />
                         Verified
                       </Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// App Installs List Component
+function AppInstallsList({ installs, isLoading }: { installs: AppInstall[]; isLoading: boolean }) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-lg flex items-center gap-2">
+          <Download className="h-5 w-5 text-emerald-600" />
+          App Installations (PWA)
+        </CardTitle>
+        <CardDescription>{installs.length} installations tracked via browser prompt</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <div className="space-y-2">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="animate-pulse h-12 bg-muted rounded" />
+            ))}
+          </div>
+        ) : !installs.length ? (
+          <p className="text-muted-foreground text-center py-8">No installations recorded yet.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>User</TableHead>
+                  <TableHead>Outcome</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead className="max-w-[200px]">User Agent</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {installs.map((install) => (
+                  <TableRow key={install.id}>
+                    <TableCell className="font-medium">
+                      {install.profile ? (
+                        <div className="flex items-center gap-2">
+                          <Avatar className="h-6 w-6">
+                            <AvatarFallback className="text-xs">
+                              {(install.profile.full_name?.[0] || install.profile.email?.[0] || "U").toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex flex-col">
+                            <span className="text-sm">{install.profile.full_name || "Unknown"}</span>
+                            <span className="text-xs text-muted-foreground">{install.profile.email}</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground italic">Guest / Unauthenticated</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={install.outcome === 'accepted' ? 'default' : 'secondary'} 
+                        className={install.outcome === 'accepted' ? 'bg-emerald-600' : ''}>
+                        {install.outcome || 'Unknown'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {format(new Date(install.created_at), "MMM d, yyyy HH:mm")}
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate" title={install.user_agent || ""}>
+                      {install.user_agent}
                     </TableCell>
                   </TableRow>
                 ))}
