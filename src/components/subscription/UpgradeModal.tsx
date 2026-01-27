@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Crown, CheckCircle, Sparkles, MessageSquare, Shield, Zap } from "lucide-react";
 import {
   Dialog,
@@ -10,7 +9,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useInitializePayment } from "@/hooks/useSubscription";
-import { cn } from "@/lib/utils";
 
 interface UpgradeModalProps {
   open: boolean;
@@ -27,17 +25,14 @@ const PREMIUM_FEATURES = [
 
 export function UpgradeModal({ open, onOpenChange, feature }: UpgradeModalProps) {
   const initializePayment = useInitializePayment();
-  const [selectedPlan, setSelectedPlan] = useState<"basic" | "pro">("basic");
 
   const handleUpgrade = () => {
-    initializePayment.mutate({
-      planType: selectedPlan === "pro" ? "pro" : undefined
-    });
+    initializePayment.mutate({});
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[95vw] sm:max-w-xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader className="text-center pb-4">
           <div className="mx-auto mb-4 relative">
             <div className="h-14 w-14 sm:h-16 sm:w-16 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/30">
@@ -53,76 +48,26 @@ export function UpgradeModal({ open, onOpenChange, feature }: UpgradeModalProps)
           <DialogDescription className="text-sm sm:text-base">
             {feature 
               ? `Unlock ${feature} and all premium features`
-              : "Choose the plan that fits your needs"
+              : "Get the most out of NAIJALIFT"
             }
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 sm:space-y-6">
-          {/* Plan Selection */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Basic Plan */}
-            <div 
-              className={cn(
-                "relative p-4 rounded-xl border-2 cursor-pointer transition-all hover:border-amber-300",
-                selectedPlan === "basic" 
-                  ? "bg-amber-50/50 border-amber-500 dark:bg-amber-950/20" 
-                  : "bg-card border-border"
-              )}
-              onClick={() => setSelectedPlan("basic")}
-            >
-              <div className="flex justify-between items-start mb-2">
-                <Badge variant={selectedPlan === "basic" ? "default" : "outline"} className={selectedPlan === "basic" ? "bg-amber-500" : ""}>
-                  Starter
-                </Badge>
-                {selectedPlan === "basic" && <CheckCircle className="h-5 w-5 text-amber-500" />}
-              </div>
-              <div className="text-center py-2">
-                <div className="flex items-baseline justify-center gap-1">
-                  <span className="text-2xl font-bold text-foreground">₦197</span>
-                  <span className="text-xs text-muted-foreground">/month</span>
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Perfect for getting started
-                </p>
-              </div>
-            </div>
-
-            {/* Pro Plan */}
-            <div 
-              className={cn(
-                "relative p-4 rounded-xl border-2 cursor-pointer transition-all hover:border-amber-300",
-                selectedPlan === "pro" 
-                  ? "bg-amber-50/50 border-amber-500 dark:bg-amber-950/20" 
-                  : "bg-card border-border"
-              )}
-              onClick={() => setSelectedPlan("pro")}
-            >
-              <div className="flex justify-between items-start mb-2">
-                <Badge variant={selectedPlan === "pro" ? "default" : "outline"} className={selectedPlan === "pro" ? "bg-amber-500" : ""}>
-                  Pro
-                </Badge>
-                {selectedPlan === "pro" && <CheckCircle className="h-5 w-5 text-amber-500" />}
-              </div>
-              <div className="text-center py-2">
-                <div className="flex items-baseline justify-center gap-1">
-                  <span className="text-2xl font-bold text-foreground">₦1,500</span>
-                  <span className="text-xs text-muted-foreground">/month</span>
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  For serious growth
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="relative p-3 rounded-lg bg-muted/50 border border-border text-center">
+          {/* Price Card */}
+          <div className="relative p-4 sm:p-6 rounded-xl bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-950/30 dark:to-amber-900/20 border border-amber-200 dark:border-amber-800">
             <Badge className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-gradient-to-r from-amber-500 to-amber-600 text-white border-0 text-xs">
               30 Days FREE Trial
             </Badge>
-            <p className="text-xs text-muted-foreground pt-2">
-              Both plans include a 30-day free trial. First charge after trial ends.
-            </p>
+            <div className="text-center pt-2">
+              <div className="flex items-baseline justify-center gap-1">
+                <span className="text-3xl sm:text-4xl font-bold text-amber-600 dark:text-amber-400">₦197</span>
+                <span className="text-sm text-muted-foreground">/month</span>
+              </div>
+              <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                First charge after trial ends
+              </p>
+            </div>
           </div>
 
           {/* Features */}
@@ -156,7 +101,7 @@ export function UpgradeModal({ open, onOpenChange, feature }: UpgradeModalProps)
               ) : (
                 <span className="flex items-center gap-2">
                   <Crown className="h-4 w-4" />
-                  Start Free Trial with {selectedPlan === "basic" ? "Starter" : "Pro"}
+                  Start Free Trial
                 </span>
               )}
             </Button>

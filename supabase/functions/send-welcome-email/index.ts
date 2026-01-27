@@ -1,109 +1,49 @@
-
 // Force rebuild 2026-01-19
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import nodemailer from "npm:nodemailer@6.9.13";
 
+interface EmailOptions {
+  to: string | string[];
+  subject: string;
+  html: string;
+  text?: string;
+  from?: string;
+}
+
 const BREVO_SMTP_KEY = Deno.env.get("BREVO_SMTP_KEY");
-const SECONDARY_SMTP_KEY = Deno.env.get("SECONDARY_SMTP_KEY");
 
-// --- Failover Architecture ---
-
-interface EmailProvider {
-  name: string;
-  isConfigured(): boolean;
-  send(to: string, subject: string, html: string, text: string): Promise<void>;
-}
-
-class BrevoProvider implements EmailProvider {
-  name = "Brevo (Primary)";
-  private transporter: any;
-
-  constructor(private apiKey?: string) {
-    if (apiKey) {
-      this.transporter = nodemailer.createTransport({
-        host: "smtp-relay.brevo.com",
-        port: 587,
-        secure: false,
-        auth: { user: "a06962001@smtp-brevo.com", pass: apiKey },
-      });
-    }
+const sendEmail = async ({ to, subject, html, text, from }: EmailOptions) => {
+  if (!BREVO_SMTP_KEY) {
+    throw new Error("BREVO_SMTP_KEY is not configured");
   }
 
-  isConfigured(): boolean {
-    return !!this.apiKey;
+  const transporter = nodemailer.createTransport({
+    host: "smtp-relay.brevo.com",
+    port: 587,
+    secure: false, // true for 465, false for other ports
+    auth: {
+      user: "a06962001@smtp-brevo.com",
+      pass: BREVO_SMTP_KEY,
+    },
+  });
+
+  const mailOptions = {
+    from: from || '"Naijalift" <info@naijalift.space>',
+    to: Array.isArray(to) ? to.join(", ") : to,
+    subject,
+    html,
+    text: text || html.replace(/<[^>]*>/g, ""), // Simple fallback if text not provided
+  };
+
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log("Email sent to %s: %s", mailOptions.to, info.messageId);
+    return { success: true, messageId: info.messageId };
+  } catch (error) {
+    console.error("Error sending email to %s:", mailOptions.to, error);
+    throw error;
   }
-
-  async send(to: string, subject: string, html: string, text: string) {
-    if (!this.transporter) throw new Error("Brevo not configured");
-    await this.transporter.sendMail({
-      from: '"Naijalift" <info@naijalift.space>',
-      to,
-      subject,
-      html,
-      text,
-    });
-  }
-}
-
-class ResendProvider implements EmailProvider {
-  name = "Resend (Secondary)";
-  private transporter: any;
-
-  constructor(private apiKey?: string) {
-    if (apiKey) {
-      this.transporter = nodemailer.createTransport({
-        host: "smtp.resend.com",
-        port: 465,
-        secure: true,
-        auth: { user: "resend", pass: apiKey },
-      });
-    }
-  }
-
-  isConfigured(): boolean {
-    return !!this.apiKey;
-  }
-
-  async send(to: string, subject: string, html: string, text: string) {
-    if (!this.transporter) throw new Error("Resend not configured");
-    await this.transporter.sendMail({
-      from: '"Naijalift" <info@naijalift.space>',
-      to,
-      subject,
-      html,
-      text,
-    });
-  }
-}
-
-class FailoverEmailService {
-  private providers: EmailProvider[];
-
-  constructor(providers: EmailProvider[]) {
-    this.providers = providers.filter(p => p.isConfigured());
-  }
-
-  async send(to: string, subject: string, html: string, text: string) {
-    if (this.providers.length === 0) {
-      throw new Error("No email providers are configured!");
-    }
-
-    const errors: string[] = [];
-
-    for (const provider of this.providers) {
-      try {
-        await provider.send(to, subject, html, text);
-        return; 
-      } catch (error: any) {
-        const errorMessage = error.message || "Unknown error";
-        console.warn(`[Failover] Failed to send via ${provider.name}: ${errorMessage}`);
-        errors.push(`${provider.name}: ${errorMessage}`);
-      }
-    }
-
-    throw new Error(`All providers failed. Errors: ${errors.join(" | ")}`);
-  }
-}
+};
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -208,110 +148,134 @@ const handler = async (req: Request): Promise<Response> => {
       text-align: left;
       border-radius: 0 12px 12px 0;
     }
-    .highlight-item {
-      display: flex;
-      align-items: center;
-      margin-bottom: 12px;
-      color: #064e3b;
-      font-weight: 600;
+    .highlight-box h3 {
+      color: #008751;
+      margin: 0 0 10px 0;
+      font-size: 16px;
     }
-    .highlight-item:last-child {
-      margin-bottom: 0;
+    .highlight-box ul {
+      margin: 0;
+      padding-left: 20px;
+      color: #374151;
     }
-    .highlight-icon {
-      margin-right: 12px;
-      font-size: 20px;
+    .highlight-box li {
+      margin: 8px 0;
     }
-    .btn { 
-      display: inline-block; 
+    .cta-button { 
+      display: inline-block;
+      background: linear-gradient(135deg, #008751 0%, #00a65a 100%);
+      color: #ffffff !important; 
       padding: 16px 40px; 
-      background: linear-gradient(135deg, #008751 0%, #006b41 100%);
-      color: white; 
-      text-decoration: none; 
       border-radius: 50px; 
+      text-decoration: none; 
       font-weight: 700;
       font-size: 16px;
-      box-shadow: 0 10px 20px rgba(0,135,81,0.25);
-      transition: transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 8px 25px rgba(0,135,81,0.35);
+      transition: all 0.3s ease;
+    }
+    .cta-button:hover {
+      box-shadow: 0 12px 35px rgba(0,135,81,0.45);
+    }
+    .divider {
+      height: 1px;
+      background: linear-gradient(to right, transparent, #d1d5db, transparent);
+      margin: 30px 0;
     }
     .footer { 
-      margin-top: 40px; 
-      padding-top: 20px; 
-      border-top: 1px solid #e5e7eb; 
+      background: #f9fafb;
+      text-align: center; 
       font-size: 12px; 
       color: #6b7280; 
+      padding: 25px 30px;
+      border-top: 1px solid #e5e7eb;
+    }
+    .footer-brand {
+      color: #008751;
+      font-weight: 700;
+      font-size: 14px;
+      margin-bottom: 10px;
+    }
+    .social-note {
+      font-style: italic;
+      margin-top: 15px;
+      color: #9ca3af;
     }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="header">
-      <div class="logo-text">NAIJALIFT</div>
-      <div class="tagline">Elevating Nigerian Opportunities</div>
+      <h1 class="logo-text">🇳🇬 NAIJALIFT</h1>
+      <p class="tagline">Your Gateway to Nigerian Opportunities</p>
     </div>
+    
     <div class="content">
-      <div class="welcome-badge">Official Member</div>
-      <h1>Welcome, ${displayName}! 🇳🇬</h1>
+      <span class="welcome-badge">🎉 Welcome Aboard!</span>
       
-      <div class="message">
-        You've just joined the most exclusive community for Nigerians who are serious about seizing global opportunities. We're thrilled to have you on board!
-      </div>
-
+      <h1>Hello, ${displayName}!</h1>
+      
+      <p class="message">
+        Congratulations! You've just joined <strong>NAIJALIFT</strong> — Nigeria's most exclusive platform connecting ambitious Nigerians with life-changing opportunities.
+      </p>
+      
       <div class="highlight-box">
-        <div class="highlight-item">
-          <span class="highlight-icon">🚀</span>
-          <span>Curated Global Opportunities</span>
-        </div>
-        <div class="highlight-item">
-          <span class="highlight-icon">⚡</span>
-          <span>Instant WhatsApp Alerts</span>
-        </div>
-        <div class="highlight-item">
-          <span class="highlight-icon">💎</span>
-          <span>Premium Resource Access</span>
-        </div>
+        <h3>🎁 Your Premium Trial Includes:</h3>
+        <ul>
+          <li><strong>30 Days FREE</strong> Premium Access</li>
+          <li>Government Programs & Grants</li>
+          <li>Scholarships (Local & International)</li>
+          <li>Tech & Career Opportunities</li>
+          <li>NGO & Social Programs</li>
+        </ul>
       </div>
-
-      <a href="https://naijalift.space/dashboard" class="btn">Go to Dashboard</a>
-
-      <div class="footer">
-        <p>© ${new Date().getFullYear()} NaijaLift. All rights reserved.</p>
-        <p>Lagos, Nigeria 🇳🇬</p>
-      </div>
+      
+      <p class="message">
+        Start exploring opportunities that can transform your life and career. The best part? You're now part of an exclusive community of go-getters!
+      </p>
+      
+      <a href="https://naijalift.space/dashboard" class="cta-button">
+        🚀 Explore Opportunities Now
+      </a>
+      
+      <div class="divider"></div>
+      
+      <p style="font-size: 14px; color: #6b7280;">
+        Questions? Reply to this email — we're here to help you succeed.
+      </p>
+    </div>
+    
+    <div class="footer">
+      <p class="footer-brand">NAIJALIFT — First of its Kind in Nigeria</p>
+      <p>© ${new Date().getFullYear()} NAIJALIFT. All rights reserved.</p>
+      <p class="social-note">You're receiving this because you signed up for NAIJALIFT.</p>
     </div>
   </div>
 </body>
 </html>
     `;
 
-    // Initialize Providers
-    const providers = [
-      new BrevoProvider(BREVO_SMTP_KEY),
-      new ResendProvider(SECONDARY_SMTP_KEY)
-    ];
-    const emailService = new FailoverEmailService(providers);
+    const result = await sendEmail({
+      to: email,
+      subject: "🎉 Welcome to NAIJALIFT — Your 30-Day Premium Trial Starts Now!",
+      html: emailHtml,
+    });
 
-    await emailService.send(
-      email,
-      "Welcome to NaijaLift! 🇳🇬",
-      emailHtml,
-      `Welcome to NaijaLift, ${displayName}! We are excited to have you.`
-    );
+    console.log("Welcome email sent successfully:", result.messageId);
 
-    return new Response(
-      JSON.stringify({ success: true }),
-      { 
-        headers: { ...corsHeaders, "Content-Type": "application/json" } 
-      }
-    );
-
+    return new Response(JSON.stringify({ success: true, data: result }), {
+      status: 200,
+      headers: {
+        "Content-Type": "application/json",
+        ...corsHeaders,
+      },
+    });
   } catch (error: any) {
-    console.error("Error sending welcome email:", error);
+    console.error("Error in send-welcome-email function:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, "Content-Type": "application/json" } 
+      JSON.stringify({ success: false, error: error.message }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
       }
     );
   }

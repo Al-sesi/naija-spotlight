@@ -107,7 +107,7 @@ export function Header() {
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <Link to="/sign-in">
+            <Link to="/auth">
               <Button variant="default" size="sm" className="text-sm">
                 Sign In
               </Button>

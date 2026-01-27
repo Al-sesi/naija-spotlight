@@ -77,14 +77,14 @@ export function useInitializePayment() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ plan, planType, categories }: { plan?: string; planType?: string; categories?: string[] }) => {
+    mutationFn: async ({ plan, categories }: { plan?: string; categories?: string[] }) => {
       const {
         data: { session },
       } = await supabase.auth.getSession();
       if (!session) throw new Error("Not authenticated");
 
       const response = await supabase.functions.invoke("paystack-initialize", {
-        body: { plan, planType, categories: categories ?? [] },
+        body: { plan, categories: categories ?? [] },
         headers: {
           "x-access-token": session.access_token,
         },

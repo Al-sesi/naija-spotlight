@@ -38,7 +38,7 @@ export default function Community() {
         <MessageSquare className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
         <h2 className="text-2xl font-display font-bold mb-2">Join the Community</h2>
         <p className="text-muted-foreground mb-6">Sign in to share updates and connect with others.</p>
-        <Link to="/sign-in"><Button>Sign In</Button></Link>
+        <Link to="/auth"><Button>Sign In</Button></Link>
       </div>
     );
   }

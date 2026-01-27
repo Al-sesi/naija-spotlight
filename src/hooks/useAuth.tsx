@@ -13,7 +13,7 @@ interface AuthContextType {
   loading: boolean;
   isAdmin: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signUp: (email: string, password: string, fullName: string, referralCode?: string) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: Error | null }>;
   updatePassword: (newPassword: string) => Promise<{ error: Error | null }>;
@@ -49,21 +49,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    // Safety timeout: If Supabase takes too long (e.g. network hang), force loading to stop after 4 seconds
-    const safetyTimeout = setTimeout(() => {
-      setLoading((prev) => {
-        if (prev) {
-          console.warn("Auth check timed out, forcing loading to false");
-          return false;
-        }
-        return prev;
-      });
-    }, 4000);
-
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
-      clearTimeout(safetyTimeout); // Clear timeout on success
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
@@ -78,7 +66,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     supabase.auth.getSession().then(({ data: { session } }) => {
-      clearTimeout(safetyTimeout); // Clear timeout on success
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
@@ -86,16 +73,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (session?.user) {
         checkAdminRole(session.user);
       }
-    }).catch((err) => {
-      clearTimeout(safetyTimeout); // Clear timeout on error
-      console.error("Auth session check failed:", err);
-      setLoading(false);
     });
 
-    return () => {
-      subscription.unsubscribe();
-      clearTimeout(safetyTimeout);
-    };
+    return () => subscription.unsubscribe();
   }, []);
 
   const checkAdminRole = async (authUser: User) => {
@@ -125,7 +105,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error: normalizeAuthEmailError(error) };
   };
 
-  const signUp = async (email: string, password: string, fullName: string, referralCode?: string) => {
+  const signUp = async (email: string, password: string, fullName: string) => {
     // CRITICAL: Always use production URL for email verification links
     const redirectUrl = "https://naijalift.space/verification-success";
 
@@ -135,7 +115,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       options: {
         data: {
           full_name: fullName,
-          referral_code: referralCode,
         },
         emailRedirectTo: redirectUrl,
       },

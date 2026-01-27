@@ -30,8 +30,7 @@ const App = () => (
           <Layout>
             <Routes>
               <Route path="/" element={<Index />} />
-              <Route path="/sign-up" element={<Auth />} />
-              <Route path="/sign-in" element={<Auth />} />
+              <Route path="/auth" element={<Auth />} />
               <Route path="/verification-success" element={<VerificationSuccess />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />

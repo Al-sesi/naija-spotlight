@@ -26,7 +26,7 @@ export default function Dashboard() {
         <Bookmark className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
         <h2 className="text-2xl font-display font-bold mb-2">Track Your Applications</h2>
         <p className="text-muted-foreground mb-6">Sign in to save and track opportunities you've applied to.</p>
-        <Link to="/sign-in">
+        <Link to="/auth">
           <Button>Sign In</Button>
         </Link>
       </div>

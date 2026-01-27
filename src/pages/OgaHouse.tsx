@@ -4,7 +4,7 @@ import { formatDistanceToNow, format } from "date-fns";
 import { 
   Shield, Plus, Link as LinkIcon, Users, MessageSquare, CheckCircle, XCircle, 
   Trash2, ToggleLeft, Home, FileText, Bell, UserCheck, Menu, X,
-  Megaphone, ChevronRight, Calendar, Send, Trophy, Download
+  Megaphone, ChevronRight, Calendar, Send
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -26,8 +26,6 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useMutation } from "@tanstack/react-query";
-import { ReferralStatsTable } from "@/components/admin/ReferralStatsTable";
-import { AppInstallsTable } from "@/components/admin/AppInstallsTable";
 
 const ADMIN_EMAILS = ["abdulmajeedsesiadam@gmail.com", "naijalift01@gmail.com"];
 
@@ -48,7 +46,7 @@ interface OpportunityFormState {
 interface BroadcastFormState {
   subject: string;
   message: string;
-  audience: "all" | "premium" | "free" | "admin";
+  audience: "all" | "premium" | "free";
 }
 
 interface SiteAlertFormState {
@@ -82,7 +80,7 @@ interface AdminUser {
   created_at: string | null;
 }
 
-type Section = "dashboard" | "add" | "manage" | "posts" | "users" | "team" | "alerts" | "broadcast" | "referrals" | "installs";
+type Section = "dashboard" | "add" | "manage" | "posts" | "users" | "team" | "alerts" | "broadcast";
 
 const sidebarItems: { id: Section; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { id: "dashboard", label: "Dashboard", icon: Home },
@@ -91,8 +89,6 @@ const sidebarItems: { id: Section; label: string; icon: React.ComponentType<{ cl
   { id: "posts", label: "Review Posts", icon: MessageSquare },
   { id: "users", label: "Users", icon: Users },
   { id: "team", label: "Team (Lifters)", icon: UserCheck },
-  { id: "referrals", label: "Ambassadors", icon: Trophy },
-  { id: "installs", label: "App Installs", icon: Download },
   { id: "alerts", label: "Site Alerts", icon: Megaphone },
   { id: "broadcast", label: "Broadcast", icon: Send },
 ];
@@ -134,10 +130,10 @@ export default function OgaHouse() {
     type: "info" as "info" | "warning" | "success",
   });
 
-  const [broadcastForm, setBroadcastForm] = useState<BroadcastFormState>({
+  const [broadcastForm, setBroadcastForm] = useState({
     subject: "",
     message: "",
-    audience: "all",
+    audience: "all" as "all" | "premium" | "free",
   });
 
   const broadcastMutation = useMutation({
@@ -149,19 +145,7 @@ export default function OgaHouse() {
       return result;
     },
     onSuccess: (data) => {
-      if (!data.success) {
-        toast.error(`Broadcast failed: ${data.error || "Unknown error"}`);
-        return;
-      }
-
-      if (data.stats.failed > 0) {
-        const errorMsg = data.stats.errors && data.stats.errors.length > 0 
-           ? `First error: ${data.stats.errors[0]}`
-           : "Check logs for details.";
-        toast.warning(`Partial success. Sent: ${data.stats.success}, Failed: ${data.stats.failed}. ${errorMsg}`, { duration: 10000 });
-      } else {
-        toast.success(`Broadcast sent! Success: ${data.stats.success}, Failed: ${data.stats.failed}`);
-      }
+      toast.success(`Broadcast sent! Success: ${data.stats.success}, Failed: ${data.stats.failed}`);
       setBroadcastForm({ subject: "", message: "", audience: "all" });
     },
     onError: (error) => {
@@ -341,16 +325,6 @@ export default function OgaHouse() {
           onSubmit={(e) => { e.preventDefault(); broadcastMutation.mutate(broadcastForm); }} 
           isLoading={broadcastMutation.isPending} 
         />;
-      case "referrals":
-        return <div className="space-y-6">
-          <h2 className="text-3xl font-bold tracking-tight">Ambassador Performance</h2>
-          <ReferralStatsTable />
-        </div>;
-      case "installs":
-        return <div className="space-y-6">
-          <h2 className="text-3xl font-bold tracking-tight">App Installations</h2>
-          <AppInstallsTable />
-        </div>;
       default:
         return null;
     }
@@ -470,22 +444,6 @@ function BroadcastMessage({
   onSubmit: (e: React.FormEvent) => void;
   isLoading: boolean;
 }) {
-  const [localSubmitting, setLocalSubmitting] = useState(false);
-
-  // Reset local submitting state when parent loading state finishes
-  useEffect(() => {
-    if (!isLoading) {
-      setLocalSubmitting(false);
-    }
-  }, [isLoading]);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (isLoading || localSubmitting) return; // Prevent double submission
-    setLocalSubmitting(true);
-    onSubmit(e);
-  };
-
   return (
     <Card className="max-w-2xl">
       <CardHeader>
@@ -496,7 +454,7 @@ function BroadcastMessage({
         <CardDescription>Send an email to all registered users or specific groups.</CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={onSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="audience">Audience</Label>
             <Select value={form.audience} onValueChange={(v) => setForm({ ...form, audience: v })}>
@@ -504,11 +462,10 @@ function BroadcastMessage({
                 <SelectValue placeholder="Select audience" />
               </SelectTrigger>
               <SelectContent>
-                  <SelectItem value="all">All Users</SelectItem>
-                  <SelectItem value="premium">Premium Users</SelectItem>
-                  <SelectItem value="free">Free Users</SelectItem>
-                  <SelectItem value="admin">Test (Admins Only)</SelectItem>
-                </SelectContent>
+                <SelectItem value="all">All Users</SelectItem>
+                <SelectItem value="premium">Premium Users Only</SelectItem>
+                <SelectItem value="free">Free Users Only</SelectItem>
+              </SelectContent>
             </Select>
           </div>
 
@@ -538,8 +495,8 @@ function BroadcastMessage({
             </p>
           </div>
 
-          <Button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700" disabled={isLoading || localSubmitting}>
-            {isLoading || localSubmitting ? "Sending Broadcast..." : "Send Broadcast"}
+          <Button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700" disabled={isLoading}>
+            {isLoading ? "Sending Broadcast..." : "Send Broadcast"}
           </Button>
         </form>
       </CardContent>

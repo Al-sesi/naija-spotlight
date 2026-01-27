@@ -9,7 +9,6 @@ import { FilterSidebar } from "@/components/opportunities/FilterSidebar";
 import { OpportunityGrid } from "@/components/opportunities/OpportunityGrid";
 import { OpportunityType } from "@/lib/constants";
 import { cn } from "@/lib/utils";
-import { InstallPWA } from "@/components/InstallPWA";
 
 const quickCategories = [
   { type: "government", label: "Recruitment", icon: Briefcase },
@@ -53,7 +52,6 @@ export default function Index() {
 
   return (
     <div className="min-h-screen gradient-hero">
-      <InstallPWA />
       {/* Site Alert Banner */}
       {siteAlert?.is_active && siteAlert.message && !alertDismissed && (
         <div className={cn(

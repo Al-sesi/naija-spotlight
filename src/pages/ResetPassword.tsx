@@ -78,7 +78,7 @@ export default function ResetPassword() {
           <CardContent>
             <Button 
               className="w-full"
-              onClick={() => navigate("/sign-in")}
+              onClick={() => navigate("/auth")}
             >
               Continue to Sign In
               <ArrowRight className="ml-2 h-4 w-4" />

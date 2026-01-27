@@ -56,20 +56,9 @@ serve(async (req) => {
       });
     }
 
-    // Parse body carefully - handle potential parsing errors
-    let body = {};
-    try {
-      const text = await req.text();
-      if (text) body = JSON.parse(text);
-    } catch (e) {
-      console.error("Error parsing request body:", e);
-    }
-    const { plan, planType } = body as any;
+    const { plan } = await req.json();
 
-    let amount = 19700;
-    if (planType === 'pro') {
-      amount = 150000;
-    }
+    const amount = 19700;
 
     const paystackResponse = await fetch("https://api.paystack.co/transaction/initialize", {
       method: "POST",
@@ -85,7 +74,7 @@ serve(async (req) => {
         callback_url: "https://naijalift.space/payment-callback",
         metadata: {
           user_id: userId,
-          plan_type: planType || "premium_lifter",
+          plan_type: "premium_lifter",
         },
       }),
     });
