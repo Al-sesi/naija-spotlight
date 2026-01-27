@@ -98,6 +98,10 @@ export default function OgaHouse() {
   const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState<Section>("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  useEffect(() => {
+    console.log("OgaHouse mounted. User:", user?.email, "Loading:", loading);
+  }, [user, loading]);
   
   const { data: opportunities } = useOpportunities({ types: [], states: [], search: "" });
   const createOpportunity = useCreateOpportunity();
