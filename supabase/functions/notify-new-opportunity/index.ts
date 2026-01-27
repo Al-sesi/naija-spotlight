@@ -351,12 +351,29 @@ const handler = async (req: Request): Promise<Response> => {
       const emailHtml = buildEmailHtml(opportunity, firstName);
 
       try {
+        const textBody = `Hi ${firstName},
+
+A new ${formatCategoryLabel(opportunity.category)} is available on NAIJALIFT:
+${opportunity.title} by ${opportunity.provider}
+
+${opportunity.description ? opportunity.description.substring(0, 200) + (opportunity.description.length > 200 ? "..." : "") : "Check it out on our platform."}
+
+Deadline: ${formatDeadline(opportunity.deadline)}
+Location: ${formatLocation(opportunity.state, opportunity.is_remote)}
+
+View full details: ${opportunity.link}
+
+To manage your alerts, visit https://naijalift.space/dashboard/settings
+
+Best,
+The NAIJALIFT Team`;
+
         await transporter.sendMail({
           from: '"Naijalift" <info@naijalift.space>',
           to: recipient.email,
           subject: `✨ New ${formatCategoryLabel(opportunity.category)} on NAIJALIFT`,
           html: emailHtml,
-          text: `A new ${formatCategoryLabel(opportunity.category)} is available: ${opportunity.title}. Check it out on Naijalift.`,
+          text: textBody,
           headers: {
             "List-Unsubscribe": "<https://naijalift.space/dashboard/settings>",
             "X-Entity-Ref-ID": opportunity.id
