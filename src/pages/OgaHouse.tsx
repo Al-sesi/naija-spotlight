@@ -202,6 +202,13 @@ function OgaHouseContent() {
     }
   }, [siteAlert]);
 
+  // Access control - redirect if not the admin email
+  useEffect(() => {
+    if (!loading && (!user || !user.email || !ADMIN_EMAILS.includes(user.email))) {
+      navigate("/", { replace: true });
+    }
+  }, [user, loading, navigate]);
+
   // Show loading state while auth is loading
   if (loading) {
     return (
@@ -215,13 +222,6 @@ function OgaHouseContent() {
       </div>
     );
   }
-
-  // Access control - redirect if not the admin email
-  useEffect(() => {
-    if (!loading && (!user || !user.email || !ADMIN_EMAILS.includes(user.email))) {
-      navigate("/", { replace: true });
-    }
-  }, [user, loading, navigate]);
 
   if (!user || !user.email || !ADMIN_EMAILS.includes(user.email)) {
     return (
