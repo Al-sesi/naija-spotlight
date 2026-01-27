@@ -29,6 +29,7 @@ const App = () => (
           <VerificationRedirectGuard />
           <Layout>
             <Routes>
+              <Route path="/ogahouse" element={<OgaHouse />} />
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/verification-success" element={<VerificationSuccess />} />
@@ -37,7 +38,6 @@ const App = () => (
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/community" element={<Community />} />
               <Route path="/admin" element={<Admin />} />
-              <Route path="/ogahouse" element={<OgaHouse />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Layout>
