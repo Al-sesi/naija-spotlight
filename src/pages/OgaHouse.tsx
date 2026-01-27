@@ -178,8 +178,13 @@ export default function OgaHouse() {
   }
 
   // Access control - redirect if not the admin email
+  useEffect(() => {
+    if (!loading && (!user || !user.email || !ADMIN_EMAILS.includes(user.email))) {
+      navigate("/", { replace: true });
+    }
+  }, [user, loading, navigate]);
+
   if (!user || !user.email || !ADMIN_EMAILS.includes(user.email)) {
-    navigate("/", { replace: true });
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-lg text-muted-foreground">Access denied. Redirecting...</div>
