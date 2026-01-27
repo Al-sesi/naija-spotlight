@@ -93,7 +93,39 @@ const sidebarItems: { id: Section; label: string; icon: React.ComponentType<{ cl
   { id: "broadcast", label: "Broadcast", icon: Send },
 ];
 
-export default function OgaHouse() {
+class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasError: boolean, error: Error | null}> {
+  constructor(props: {children: React.ReactNode}) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error("OgaHouse Error:", error, errorInfo);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-background p-4">
+          <div className="max-w-md w-full bg-red-50 p-6 rounded-lg border border-red-200">
+            <h1 className="text-xl font-bold text-red-900 mb-2">Something went wrong</h1>
+            <p className="text-sm text-red-700 mb-4">The OgaHouse dashboard encountered an error.</p>
+            <pre className="bg-white p-3 rounded text-xs text-red-800 overflow-auto max-h-40">
+              {this.state.error?.message}
+            </pre>
+            <Button className="mt-4 w-full" onClick={() => window.location.reload()}>
+              Reload Page
+            </Button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+function OgaHouseContent() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState<Section>("dashboard");
@@ -106,7 +138,7 @@ export default function OgaHouse() {
   const isAdmin = !!user?.email && ADMIN_EMAILS.includes(user.email);
   const shouldFetchAdminData = !loading && isAdmin;
   
-  const { data: opportunities } = useOpportunities({ types: [], states: [], search: "" });
+  const { data: opportunities } = useOpportunities({ types: [], states: [], search: "" }, { enabled: shouldFetchAdminData });
   const createOpportunity = useCreateOpportunity();
   const deleteOpportunity = useDeleteOpportunity();
   const updateOpportunity = useUpdateOpportunity();
@@ -114,7 +146,7 @@ export default function OgaHouse() {
   const approvePost = useApprovePost();
   const rejectPost = useRejectPost();
   const { data: users, isLoading: usersLoading } = useRegisteredUsers({ enabled: shouldFetchAdminData });
-  const { data: siteAlert } = useSiteAlert();
+  const { data: siteAlert } = useSiteAlert({ enabled: shouldFetchAdminData });
   const updateSiteAlert = useUpdateSiteAlert();
 
   const [form, setForm] = useState({
@@ -441,6 +473,14 @@ export default function OgaHouse() {
         />
       )}
     </div>
+  );
+}
+
+export default function OgaHouse() {
+  return (
+    <ErrorBoundary>
+      <OgaHouseContent />
+    </ErrorBoundary>
   );
 }
 

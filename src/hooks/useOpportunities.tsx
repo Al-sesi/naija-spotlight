@@ -24,9 +24,10 @@ interface OpportunityFilters {
   search: string;
 }
 
-export function useOpportunities(filters: OpportunityFilters) {
+export function useOpportunities(filters: OpportunityFilters, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ["opportunities", filters],
+    enabled: options?.enabled,
     queryFn: async () => {
       let query = supabase
         .from("opportunities")
@@ -57,11 +58,15 @@ export function useOpportunities(filters: OpportunityFilters) {
       }
 
       const { data, error } = await query;
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching opportunities:", error);
+        throw error;
+      }
       
       // Smart sorting: active (future deadline) at top, expired at bottom
       const now = new Date();
-      const sorted = (data as Opportunity[]).sort((a, b) => {
+      const safeData = data || [];
+      const sorted = (safeData as Opportunity[]).sort((a, b) => {
         const aDeadline = a.deadline ? new Date(a.deadline) : null;
         const bDeadline = b.deadline ? new Date(b.deadline) : null;
         
