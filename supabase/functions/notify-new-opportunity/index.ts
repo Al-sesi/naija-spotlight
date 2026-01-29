@@ -280,11 +280,21 @@ const handler = async (req: Request): Promise<Response> => {
       throw profilesError;
     }
 
-    const recipients =
-      profiles?.filter((p) => p.email).map((p) => ({
-        email: p.email as string,
-        fullName: p.full_name,
-      })) ?? [];
+    // Deduplicate recipients by email to prevent double sending
+    const uniqueEmails = new Set<string>();
+    const recipients: { email: string; fullName: string | null }[] = [];
+
+    if (profiles) {
+      for (const p of profiles) {
+        if (p.email && !uniqueEmails.has(p.email)) {
+          uniqueEmails.add(p.email);
+          recipients.push({
+            email: p.email,
+            fullName: p.full_name,
+          });
+        }
+      }
+    }
 
     // Initialize Brevo Transporter
     const transporter = nodemailer.createTransport({
@@ -327,12 +337,16 @@ The NAIJALIFT Team`;
         await transporter.sendMail({
           from: '"Naijalift" <info@naijalift.space>',
           to: recipient.email,
-          subject: `✨ New ${formatCategoryLabel(opportunity.category)} on NAIJALIFT`,
+          replyTo: "info@naijalift.space",
+          subject: `New ${formatCategoryLabel(opportunity.category)}: ${opportunity.title}`,
           html: emailHtml,
           text: textBody,
           headers: {
             "List-Unsubscribe": "<https://naijalift.space/dashboard/settings>",
-            "X-Entity-Ref-ID": opportunity.id
+            "X-Entity-Ref-ID": opportunity.id,
+            "X-Auto-Response-Suppress": "OOF, DR, RN, NRN, AutoReply",
+            "Precedence": "list",
+            "Importance": "normal"
           }
         });
         sentCount += 1;
