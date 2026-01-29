@@ -120,14 +120,7 @@ export function useCreateOpportunity() {
       return data as Opportunity;
     },
     onSuccess: async (created) => {
-      const { data, error } = await supabase.functions.invoke("notify-new-opportunity", {
-        body: { opportunity: created },
-      });
-
-      if (error) {
-        console.error("notify-new-opportunity error", error, "response data:", data);
-      }
-
+      // Email notification is handled by DB trigger 'on_opportunity_created_notify'
       queryClient.invalidateQueries({ queryKey: ["opportunities"] });
     },
   });
