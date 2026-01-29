@@ -562,6 +562,18 @@ function BroadcastMessage({
             </p>
           </div>
 
+          <div className="flex items-center gap-2 border p-3 rounded-lg bg-muted/20">
+            <Switch 
+              id="broadcast_test_mode" 
+              checked={form.is_test_mode} 
+              onCheckedChange={(c) => setForm({ ...form, is_test_mode: c })} 
+            />
+            <div className="flex flex-col">
+              <Label htmlFor="broadcast_test_mode" className="text-sm font-medium">Test Mode</Label>
+              <span className="text-xs text-muted-foreground">Send only to admin emails (no real users will be contacted)</span>
+            </div>
+          </div>
+
           <Button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700" disabled={isLoading}>
             {isLoading ? "Sending Broadcast..." : "Send Broadcast"}
           </Button>
