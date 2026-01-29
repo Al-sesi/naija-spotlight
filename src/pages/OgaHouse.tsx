@@ -4,7 +4,7 @@ import { formatDistanceToNow, format } from "date-fns";
 import { 
   Shield, Plus, Link as LinkIcon, Users, MessageSquare, CheckCircle, XCircle, 
   Trash2, ToggleLeft, Home, FileText, Bell, UserCheck, Menu, X,
-  Megaphone, ChevronRight, Calendar, Send, Trophy, Download
+  Megaphone, ChevronRight, Calendar, Send, Trophy, Download, ChevronsUpDown, Check
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -17,6 +17,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { useAuth } from "@/hooks/useAuth";
 import { useOpportunities, useCreateOpportunity, useDeleteOpportunity, useUpdateOpportunity } from "@/hooks/useOpportunities";
 import { usePendingPosts, useApprovePost, useRejectPost, useRegisteredUsers, useAppInstalls, AppInstall } from "@/hooks/useAdminData";
@@ -38,7 +40,7 @@ interface OpportunityFormState {
   link: string;
   deadline: string;
   event_date: string;
-  state: string;
+  state: string[];
   is_verified: boolean;
   is_remote: boolean;
   level: string;
@@ -161,7 +163,7 @@ function OgaHouseContent() {
     link: "",
     deadline: "",
     event_date: "",
-    state: "Nationwide",
+    state: ["Nationwide"],
     is_verified: true,
     is_remote: false,
     level: "",
@@ -251,7 +253,7 @@ function OgaHouseContent() {
         link: form.link,
         deadline: form.deadline ? new Date(form.deadline).toISOString() : null,
         event_date: form.event_date ? new Date(form.event_date).toISOString() : null,
-        state: form.state,
+        state: form.state.join(", "),
         is_verified: true, // Admin posts are always verified
         is_remote: form.is_remote,
         level: form.level || null,
@@ -259,7 +261,7 @@ function OgaHouseContent() {
       toast.success("Opportunity added successfully!");
       setForm({
         title: "", provider: "", category: "", description: "", link: "",
-        deadline: "", event_date: "", state: "Nationwide", is_verified: true, is_remote: false, level: "",
+        deadline: "", event_date: "", state: ["Nationwide"], is_verified: true, is_remote: false, level: "",
       });
     } catch {
       toast.error("Failed to add opportunity");
@@ -696,13 +698,58 @@ function AddOpportunityForm({
               </Select>
             </div>
             <div className="space-y-2">
-              <Label className="text-sm">State</Label>
-              <Select value={form.state} onValueChange={(v) => setForm({ ...form, state: v })}>
-                <SelectTrigger className="bg-background text-sm"><SelectValue /></SelectTrigger>
-                <SelectContent className="bg-popover max-h-[200px]">
-                  {NIGERIAN_STATES.filter(s => s !== "All States").map(s => <SelectItem key={s} value={s} className="text-sm">{s}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <Label className="text-sm">State (Select Multiple)</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    className="w-full justify-between text-sm font-normal bg-background"
+                  >
+                    {form.state.length > 0
+                      ? (form.state.length === 1 ? form.state[0] : `${form.state.length} selected`)
+                      : "Select states"}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[300px] p-0" align="start">
+                  <Command>
+                    <CommandInput placeholder="Search state..." />
+                    <CommandList>
+                      <CommandEmpty>No state found.</CommandEmpty>
+                      <CommandGroup>
+                        {NIGERIAN_STATES.filter(s => s !== "All States").map((state) => (
+                          <CommandItem
+                            key={state}
+                            value={state}
+                            onSelect={() => {
+                              const isSelected = form.state.includes(state);
+                              let newStates;
+                              if (isSelected) {
+                                newStates = form.state.filter((s) => s !== state);
+                              } else {
+                                newStates = [...form.state, state];
+                              }
+                              setForm({ ...form, state: newStates });
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                form.state.includes(state) ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            {state}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+              <p className="text-xs text-muted-foreground truncate">
+                Selected: {form.state.join(", ")}
+              </p>
             </div>
           </div>
 

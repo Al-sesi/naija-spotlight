@@ -39,17 +39,24 @@ export function useOpportunities(filters: OpportunityFilters, options?: { enable
       }
 
       if (filters.states.length > 0 && !filters.states.includes("All States")) {
-        const stateFilters = filters.states.map(s => {
-          if (s === "Remote") return "is_remote.eq.true";
-          if (s === "Nationwide") return "state.eq.Nationwide";
-          return `state.eq.${s}`;
-        });
-        
-        // Handle state filtering with OR conditions
+        const orConditions: string[] = [];
+
+        // Always include Nationwide for any state filter (unless user specifically wants to exclude it? 
+        // Current logic assumes Nationwide is always relevant when filtering by location)
+        orConditions.push("state.eq.Nationwide");
+
         if (filters.states.includes("Remote")) {
-          query = query.or(`is_remote.eq.true,state.in.(${filters.states.filter(s => s !== "Remote").join(",")}),state.eq.Nationwide`);
-        } else {
-          query = query.or(`state.in.(${filters.states.join(",")}),state.eq.Nationwide`);
+          orConditions.push("is_remote.eq.true");
+        }
+
+        const specificStates = filters.states.filter(s => s !== "Remote" && s !== "All States");
+        specificStates.forEach(s => {
+          // Use ilike to match state in comma-separated list (e.g. "Lagos, Abuja")
+          orConditions.push(`state.ilike.%${s}%`);
+        });
+
+        if (orConditions.length > 0) {
+          query = query.or(orConditions.join(","));
         }
       }
 
