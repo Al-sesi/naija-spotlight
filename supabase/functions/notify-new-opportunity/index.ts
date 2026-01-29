@@ -268,30 +268,40 @@ const handler = async (req: Request): Promise<Response> => {
     const { opportunity }: NewOpportunityPayload = await req.json();
 
     const supabase = createClient(supabaseUrl, serviceRoleKey);
+    let recipients: { email: string; fullName: string | null }[] = [];
 
-    const { data: profiles, error: profilesError } = await supabase
-      .from("profiles")
-      .select("id, email, full_name") as {
-      data: ProfileRow[] | null;
-      error: unknown;
-    };
+    // Check for Test Mode
+    // Note: The 'is_test_mode' property might not exist on old rows or type definition yet, 
+    // so we access it safely. We should update the interface above too, but this works for runtime.
+    const isTestMode = (opportunity as any).is_test_mode === true;
 
-    if (profilesError) {
-      throw profilesError;
-    }
+    if (isTestMode) {
+      console.log("Test Mode enabled: Sending only to admins.");
+      const adminEmails = ["abdulmajeedsesiadam@gmail.com", "naijalift01@gmail.com"];
+      recipients = adminEmails.map(email => ({ email, fullName: "Admin" }));
+    } else {
+      const { data: profiles, error: profilesError } = await supabase
+        .from("profiles")
+        .select("id, email, full_name") as {
+        data: ProfileRow[] | null;
+        error: unknown;
+      };
 
-    // Deduplicate recipients by email to prevent double sending
-    const uniqueEmails = new Set<string>();
-    const recipients: { email: string; fullName: string | null }[] = [];
+      if (profilesError) {
+        throw profilesError;
+      }
 
-    if (profiles) {
-      for (const p of profiles) {
-        if (p.email && !uniqueEmails.has(p.email)) {
-          uniqueEmails.add(p.email);
-          recipients.push({
-            email: p.email,
-            fullName: p.full_name,
-          });
+      // Deduplicate recipients by email to prevent double sending
+      const uniqueEmails = new Set<string>();
+      if (profiles) {
+        for (const p of profiles) {
+          if (p.email && !uniqueEmails.has(p.email)) {
+            uniqueEmails.add(p.email);
+            recipients.push({
+              email: p.email,
+              fullName: p.full_name,
+            });
+          }
         }
       }
     }

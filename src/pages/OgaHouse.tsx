@@ -44,12 +44,14 @@ interface OpportunityFormState {
   is_verified: boolean;
   is_remote: boolean;
   level: string;
+  is_test_mode: boolean;
 }
 
 interface BroadcastFormState {
   subject: string;
   message: string;
   audience: "all" | "premium" | "free";
+  is_test_mode: boolean;
 }
 
 interface SiteAlertFormState {
@@ -167,6 +169,7 @@ function OgaHouseContent() {
     is_verified: true,
     is_remote: false,
     level: "",
+    is_test_mode: false,
   });
 
   const [alertForm, setAlertForm] = useState({
@@ -179,6 +182,7 @@ function OgaHouseContent() {
     subject: "",
     message: "",
     audience: "all" as "all" | "premium" | "free",
+    is_test_mode: false,
   });
 
   const broadcastMutation = useMutation({
@@ -257,11 +261,12 @@ function OgaHouseContent() {
         is_verified: true, // Admin posts are always verified
         is_remote: form.is_remote,
         level: form.level || null,
+        is_test_mode: form.is_test_mode,
       });
       toast.success("Opportunity added successfully!");
       setForm({
         title: "", provider: "", category: "", description: "", link: "",
-        deadline: "", event_date: "", state: ["Nationwide"], is_verified: true, is_remote: false, level: "",
+        deadline: "", event_date: "", state: ["Nationwide"], is_verified: true, is_remote: false, level: "", is_test_mode: false,
       });
     } catch {
       toast.error("Failed to add opportunity");
@@ -789,6 +794,10 @@ function AddOpportunityForm({
             <div className="flex items-center gap-2">
               <Switch id="remote" checked={form.is_remote} onCheckedChange={(c) => setForm({ ...form, is_remote: c })} />
               <Label htmlFor="remote" className="text-sm">Remote</Label>
+            </div>
+            <div className="flex items-center gap-2">
+              <Switch id="test_mode" checked={form.is_test_mode} onCheckedChange={(c) => setForm({ ...form, is_test_mode: c })} />
+              <Label htmlFor="test_mode" className="text-sm text-amber-600 font-medium">Test Mode</Label>
             </div>
             <Badge variant="secondary" className="flex items-center gap-1">
               <CheckCircle className="h-3 w-3" />

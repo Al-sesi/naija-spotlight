@@ -15,6 +15,7 @@ export interface Opportunity {
   is_verified: boolean;
   is_remote: boolean;
   level: string | null;
+  is_test_mode?: boolean;
   created_at: string;
 }
 
