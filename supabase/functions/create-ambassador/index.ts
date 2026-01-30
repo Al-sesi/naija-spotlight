@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import nodemailer from "npm:nodemailer@6.9.13";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -24,6 +25,7 @@ serve(async (req) => {
     // 1. Check Environment Variables
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const BREVO_SMTP_KEY = Deno.env.get("BREVO_SMTP_KEY");
 
     if (!supabaseUrl || !serviceRoleKey) {
       console.error("Missing env vars: SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
@@ -57,12 +59,6 @@ serve(async (req) => {
     // 4. Create User in Auth
     console.log("Creating user in Auth...");
     let userId: string;
-    
-    // Check if user already exists first to avoid ambiguity
-    const { data: existingUsers, error: searchError } = await supabase.auth.admin.listUsers();
-    // listUsers might be heavy, better to just try create and handle error, or use listUsers with filter if supported
-    // But listUsers doesn't support filter by email easily in all versions. 
-    // Let's stick to createUser and handle error.
     
     const { data: userData, error: createError } = await supabase.auth.admin.createUser({
       email,
@@ -130,14 +126,64 @@ serve(async (req) => {
 
     console.log("Profile updated successfully.");
 
-    // 6. Return Success
+    // 6. Send Welcome Email (Isolated Try-Catch)
+    let emailSent = false;
+    let emailError = null;
+    
+    if (BREVO_SMTP_KEY) {
+        try {
+            console.log("Attempting to send email via Brevo SMTP...");
+            const transporter = nodemailer.createTransport({
+                host: "smtp-relay.brevo.com",
+                port: 587,
+                secure: false,
+                auth: {
+                    user: "a06962001@smtp-brevo.com",
+                    pass: BREVO_SMTP_KEY,
+                },
+            });
+
+            const firstName = fullName.split(" ")[0] || "Ambassador";
+            const subject = "Welcome to the Naijalift Ambassador Team! 🚀";
+            const html = `
+            <div style="font-family: sans-serif; padding: 20px; color: #333;">
+                <h2>Hi ${firstName},</h2>
+                <p>You have been officially added as a <strong>Naijalift Ambassador</strong>!</p>
+                <p>Your unique referral code is: <strong style="font-size: 1.2em; color: #008751;">${referralCode}</strong></p>
+                <p>Use this code to invite others and track your impact. We are excited to have you on board!</p>
+                <br>
+                <p>Best,</p>
+                <p>The Naijalift Team</p>
+            </div>
+            `;
+
+            const info = await transporter.sendMail({
+                from: '"Naijalift" <info@naijalift.space>',
+                to: email,
+                subject: subject,
+                html: html,
+            });
+
+            console.log("Email sent successfully:", info.messageId);
+            emailSent = true;
+        } catch (mailErr: any) {
+            console.error("Email sending FAILED:", mailErr);
+            emailError = mailErr.message;
+        }
+    } else {
+        console.warn("BREVO_SMTP_KEY missing, skipping email.");
+        emailError = "SMTP Key missing in server configuration";
+    }
+
+    // 7. Return Success
     return new Response(
       JSON.stringify({
         success: true,
         message: "Ambassador created successfully",
         userId,
         referralCode,
-        emailSent: false, // Explicitly false for now
+        emailSent,
+        emailError,
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -153,11 +199,11 @@ serve(async (req) => {
       JSON.stringify({
         success: false,
         error: err.message || "Unknown server error",
-        stack: err.stack, // Optional: remove in production if sensitive
+        stack: err.stack, 
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200, // <--- INTENTIONALLY 200
+        status: 200, 
       }
     );
   }

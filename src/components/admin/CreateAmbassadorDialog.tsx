@@ -34,7 +34,11 @@ export function CreateAmbassadorDialog() {
       return result;
     },
     onSuccess: (data) => {
-      toast.success(`Ambassador created! Code: ${data.referralCode}`);
+      if (data.emailSent) {
+        toast.success(`Ambassador created! Code: ${data.referralCode}. Email sent.`);
+      } else {
+        toast.warning(`Ambassador created (Code: ${data.referralCode}), but email failed to send: ${data.emailError || "Unknown error"}`);
+      }
       setOpen(false);
       setFormData({ fullName: "", email: "", phoneNumber: "" });
     },
