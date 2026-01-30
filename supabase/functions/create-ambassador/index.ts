@@ -34,6 +34,10 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("Supabase environment variables are not configured");
     }
 
+    if (!BREVO_SMTP_KEY) {
+      throw new Error("BREVO_SMTP_KEY is not configured");
+    }
+
     const { fullName, email, phoneNumber }: CreateAmbassadorPayload = await req.json();
 
     if (!email || !fullName) {
