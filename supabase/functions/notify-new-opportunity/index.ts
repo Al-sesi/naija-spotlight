@@ -265,7 +265,12 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("Supabase environment variables are not configured");
     }
 
-    const { opportunity }: NewOpportunityPayload = await req.json();
+    const payload = await req.json();
+    const opportunity = payload.opportunity || payload.record;
+
+    if (!opportunity) {
+      throw new Error("No opportunity data found in payload");
+    }
 
     const supabase = createClient(supabaseUrl, serviceRoleKey);
     let recipients: { email: string; fullName: string | null }[] = [];
@@ -348,7 +353,7 @@ The NAIJALIFT Team`;
           from: '"Naijalift" <info@naijalift.space>',
           to: recipient.email,
           replyTo: "info@naijalift.space",
-          subject: `New ${formatCategoryLabel(opportunity.category)}: ${opportunity.title}`,
+          subject: `${isTestMode ? "[TEST MODE] " : ""}New ${formatCategoryLabel(opportunity.category)}: ${opportunity.title}`,
           html: emailHtml,
           text: textBody,
           headers: {

@@ -105,7 +105,7 @@ const handler = async (req: Request): Promise<Response> => {
         await transporter.sendMail({
           from: '"Naijalift Team" <info@naijalift.space>',
           to: recipient.email,
-          subject: subject,
+          subject: is_test_mode ? `[TEST MODE] ${subject}` : subject,
           html: html,
           text: message
         });
