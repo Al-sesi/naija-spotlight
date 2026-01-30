@@ -1,8 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import nodemailer from "npm:nodemailer@6.9.13";
-
-const BREVO_SMTP_KEY = Deno.env.get("BREVO_SMTP_KEY");
+// Remove static import to prevent boot crash
+// import nodemailer from "npm:nodemailer@6.9.13";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -27,8 +26,19 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    // Dynamic import to catch load errors
+    let nodemailer;
+    try {
+        const mod = await import("npm:nodemailer@6.9.13");
+        nodemailer = mod.default || mod;
+    } catch (importErr: any) {
+        console.error("Failed to import nodemailer:", importErr);
+        throw new Error(`Failed to load email library: ${importErr.message}`);
+    }
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const BREVO_SMTP_KEY = Deno.env.get("BREVO_SMTP_KEY");
 
     if (!supabaseUrl || !serviceRoleKey) {
       throw new Error("Supabase environment variables are not configured");
