@@ -1,7 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-// Remove static import to prevent boot crash
-// import nodemailer from "npm:nodemailer@6.9.13";
+import nodemailer from "npm:nodemailer@6.9.13";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -21,42 +20,55 @@ const generateReferralCode = () => {
 };
 
 const handler = async (req: Request): Promise<Response> => {
+  // Handle CORS preflight request
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Dynamic import to catch load errors
-    let nodemailer;
-    try {
-        const mod = await import("npm:nodemailer@6.9.13");
-        nodemailer = mod.default || mod;
-    } catch (importErr: any) {
-        console.error("Failed to import nodemailer:", importErr);
-        throw new Error(`Failed to load email library: ${importErr.message}`);
-    }
-
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const BREVO_SMTP_KEY = Deno.env.get("BREVO_SMTP_KEY");
 
+    // 1. Validate Environment
     if (!supabaseUrl || !serviceRoleKey) {
-      throw new Error("Supabase environment variables are not configured");
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: "Server misconfiguration: Missing Supabase keys." 
+      }), {
+        status: 200, // Return 200 to ensure client parses JSON
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
     }
 
-    if (!BREVO_SMTP_KEY) {
-      throw new Error("BREVO_SMTP_KEY is not configured");
+    // 2. Parse Payload
+    let payload: CreateAmbassadorPayload;
+    try {
+      payload = await req.json();
+    } catch (e) {
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: "Invalid request body: Failed to parse JSON." 
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
     }
 
-    const { fullName, email, phoneNumber }: CreateAmbassadorPayload = await req.json();
-
+    const { fullName, email, phoneNumber } = payload;
     if (!email || !fullName) {
-      throw new Error("Email and Full Name are required");
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: "Missing required fields: email and fullName are required." 
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
     }
 
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
-    // 1. Create User
+    // 3. Create User (Auth)
     let userId: string;
     const { data: userData, error: createError } = await supabase.auth.admin.createUser({
       email,
@@ -65,26 +77,31 @@ const handler = async (req: Request): Promise<Response> => {
     });
 
     if (createError) {
-      // If user already exists, fetch their ID
       if (createError.message.includes("already has been registered")) {
         const { data: existingUser, error: fetchError } = await supabase.from("profiles").select("id").eq("email", email).single();
-        if (fetchError || !existingUser) throw new Error("User exists but could not be found");
+        if (fetchError || !existingUser) {
+           return new Response(JSON.stringify({ 
+            success: false, 
+            error: "User exists but could not be found in profiles." 
+          }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
         userId = existingUser.id;
       } else {
-        throw createError;
+         return new Response(JSON.stringify({ 
+          success: false, 
+          error: `Failed to create user: ${createError.message}` 
+        }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
     } else {
       userId = userData.user.id;
     }
 
-    // 2. Generate Referral Code and Update Profile
-    // Retry logic for uniqueness could be added here, but for simplicity we'll try once
+    // 4. Update Profile (DB)
     let referralCode = generateReferralCode();
-    
-    // Check if code exists (simple collision check)
+    // Simple collision check
     const { data: existingCode } = await supabase.from("profiles").select("id").eq("referral_code", referralCode).maybeSingle();
     if (existingCode) {
-        referralCode = generateReferralCode(); // Try one more time
+        referralCode = generateReferralCode();
     }
 
     const { error: updateError } = await supabase
@@ -93,39 +110,36 @@ const handler = async (req: Request): Promise<Response> => {
         role: "ambassador",
         referral_code: referralCode,
         phone_number: phoneNumber,
-        full_name: fullName, // Ensure name is synced
+        full_name: fullName,
       })
       .eq("id", userId);
 
-    if (updateError) throw updateError;
+    if (updateError) {
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: `Failed to update profile: ${updateError.message}. Ensure database migrations are applied.` 
+      }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
 
-    // 3. Send Welcome Email
-    const transporter = nodemailer.createTransport({
-      host: "smtp-relay.brevo.com",
-      port: 587,
-      secure: false,
-      auth: {
-        user: "a06962001@smtp-brevo.com",
-        pass: BREVO_SMTP_KEY,
-      },
-    });
+    // 5. Send Email (Isolated Try/Catch)
+    let emailStatus = "sent";
+    if (!BREVO_SMTP_KEY) {
+      emailStatus = "skipped_missing_key";
+      console.warn("BREVO_SMTP_KEY missing, skipping email.");
+    } else {
+      try {
+        const transporter = nodemailer.createTransport({
+          host: "smtp-relay.brevo.com",
+          port: 587,
+          secure: false,
+          auth: {
+            user: "a06962001@smtp-brevo.com",
+            pass: BREVO_SMTP_KEY,
+          },
+        });
 
-    const firstName = fullName.split(" ")[0];
-    const subject = "Welcome to the Naijalift Ambassador Team! 🚀";
-    const message = `
-      Hi ${firstName},
-      
-      You have been officially added as a Naijalift Ambassador!
-      
-      Your unique referral code is: ${referralCode}
-      
-      Use this code to invite others and track your impact. We are excited to have you on board!
-      
-      Best,
-      The Naijalift Team
-    `;
-
-    const html = `
+        const firstName = fullName.split(" ")[0];
+        const html = `
 <!DOCTYPE html>
 <html>
 <head>
@@ -133,49 +147,55 @@ const handler = async (req: Request): Promise<Response> => {
   body { font-family: sans-serif; background-color: #f0fdf4; padding: 20px; }
   .container { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; }
   .header { color: #008751; font-size: 24px; font-weight: bold; margin-bottom: 20px; }
-  .content { line-height: 1.6; color: #333; white-space: pre-line; }
   .code { display: inline-block; background: #008751; color: white; padding: 10px 20px; border-radius: 5px; font-weight: bold; font-size: 18px; margin: 20px 0; }
-  .footer { margin-top: 30px; font-size: 12px; color: #666; text-align: center; }
 </style>
 </head>
 <body>
   <div class="container">
     <div class="header">Welcome to the Team! 🚀</div>
-    <div class="content">
-      <p>Hi ${firstName},</p>
-      <p>You have been officially added as a Naijalift Ambassador!</p>
-      <p>Your unique referral code is:</p>
-      <div class="code">${referralCode}</div>
-      <p>Use this code to invite others and track your impact. We are excited to have you on board!</p>
-      <p>Best,<br>The Naijalift Team</p>
-    </div>
-    <div class="footer">
-      <p>You received this message because you are a Naijalift Ambassador.</p>
-    </div>
+    <p>Hi ${firstName},</p>
+    <p>You have been officially added as a Naijalift Ambassador!</p>
+    <p>Your unique referral code is:</p>
+    <div class="code">${referralCode}</div>
+    <p>Use this code to invite others.</p>
+    <p>Best,<br>The Naijalift Team</p>
   </div>
 </body>
 </html>
-    `;
+        `;
 
-    await transporter.sendMail({
-      from: '"Naijalift Team" <info@naijalift.space>',
-      to: email,
-      subject: subject,
-      html: html,
-      text: message,
-    });
+        await transporter.sendMail({
+          from: '"Naijalift Team" <info@naijalift.space>',
+          to: email,
+          subject: "Welcome to the Naijalift Ambassador Team! 🚀",
+          html: html,
+          text: `Hi ${firstName}, Your referral code is: ${referralCode}`,
+        });
+      } catch (emailError: any) {
+        console.error("Email sending failed:", emailError);
+        emailStatus = `failed: ${emailError.message}`;
+        // Do NOT throw here; user is already created/updated.
+      }
+    }
 
-    return new Response(JSON.stringify({ success: true, referralCode }), {
+    // Success Response
+    return new Response(JSON.stringify({ 
+      success: true, 
+      referralCode, 
+      emailStatus 
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
 
-  } catch (error: any) {
-    console.error("Error creating ambassador:", error);
-    // Return 200 with error details to ensure the client receives the message
-    // instead of a generic "FunctionsHttpError"
-    return new Response(JSON.stringify({ success: false, error: error.message, stack: error.stack }), {
-      status: 200, 
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+  } catch (globalError: any) {
+    // Catch-all for unexpected runtime errors
+    return new Response(JSON.stringify({ 
+      success: false, 
+      error: `Unexpected System Error: ${globalError.message}`,
+      stack: globalError.stack
+    }), {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" }
     });
   }
 };
