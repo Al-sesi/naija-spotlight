@@ -21,8 +21,16 @@ export function CreateAmbassadorDialog() {
       const { data: result, error } = await supabase.functions.invoke("create-ambassador", {
         body: data,
       });
-      if (error) throw error;
-      if (result.error) throw new Error(result.error);
+      
+      if (error) {
+        console.error("Invocation error:", error);
+        throw error;
+      }
+      
+      if (result.error || result.success === false) {
+        throw new Error(result.error || "Unknown error occurred");
+      }
+      
       return result;
     },
     onSuccess: (data) => {

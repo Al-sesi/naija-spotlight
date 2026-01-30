@@ -161,8 +161,10 @@ const handler = async (req: Request): Promise<Response> => {
 
   } catch (error: any) {
     console.error("Error creating ambassador:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
+    // Return 200 with error details to ensure the client receives the message
+    // instead of a generic "FunctionsHttpError"
+    return new Response(JSON.stringify({ success: false, error: error.message, stack: error.stack }), {
+      status: 200, 
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
