@@ -1,9 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import nodemailer from "npm:nodemailer@6.9.13";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-const BREVO_SMTP_KEY = Deno.env.get("BREVO_SMTP_KEY");
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -85,117 +83,150 @@ function buildEmailHtml(opportunity: NewOpportunityPayload["opportunity"], first
     body {
       margin: 0;
       padding: 0;
-      background-color: #f0fdf4;
+      background-color: #020617;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
-    a { color: #008751; text-decoration: none; }
+    a { color: #fb923c; text-decoration: none; }
     .wrapper {
       width: 100%;
       padding: 24px 0;
-      background-color: #f0fdf4;
+      background-color: #020617;
     }
     .container {
       max-width: 560px;
       margin: 0 auto;
       border-radius: 18px;
-      border: 1px solid #dcfce7;
-      background: #ffffff;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      border: 1px solid #1e293b;
+      background: radial-gradient(circle at top, rgba(251,146,60,0.16), transparent 55%) #020617;
       overflow: hidden;
     }
     .header {
       padding: 22px 22px 14px 22px;
       text-align: center;
-      background: linear-gradient(135deg, #008751 0%, #005c36 100%);
+      background: radial-gradient(circle at top, #fb923c 0, #020617 55%);
     }
     .logo {
-      font-size: 24px;
+      font-size: 20px;
       font-weight: 800;
-      color: #ffffff;
-      letter-spacing: -0.5px;
-      margin: 0;
+      color: #f9fafb;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+    .tagline {
+      margin-top: 4px;
+      font-size: 11px;
+      color: #e5e7eb;
+      opacity: 0.9;
+    }
+    .pill {
+      display: inline-block;
+      margin-top: 14px;
+      padding: 5px 12px;
+      border-radius: 999px;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      background-color: rgba(15,23,42,0.9);
+      color: #fed7aa;
+      border: 1px solid rgba(251,146,60,0.6);
     }
     .content {
-      padding: 32px 24px;
-      color: #1f2937;
+      padding: 22px 22px 6px 22px;
+      color: #e5e7eb;
     }
-    .greeting {
-      font-size: 16px;
-      color: #374151;
-      margin-bottom: 24px;
+    .hello {
+      font-size: 13px;
+      color: #9ca3af;
+      margin-bottom: 4px;
     }
     .title {
-      font-size: 24px;
+      font-size: 20px;
       font-weight: 700;
-      color: #111827;
       line-height: 1.3;
-      margin: 0 0 8px 0;
+      margin-bottom: 12px;
+      color: #f9fafb;
     }
-    .provider {
-      font-size: 16px;
-      color: #4b5563;
-      margin: 0 0 24px 0;
-      font-weight: 500;
+    .title span {
+      color: #fed7aa;
     }
-    .meta-row {
-      display: flex;
-      gap: 16px;
-      margin-bottom: 24px;
-      flex-wrap: wrap;
-    }
-    .meta-tag {
-      background-color: #f0fdf4;
-      color: #166534;
-      padding: 4px 10px;
-      border-radius: 6px;
+    .lead {
       font-size: 13px;
+      line-height: 1.7;
+      color: #d1d5db;
+      margin-bottom: 18px;
+    }
+    .card {
+      border-radius: 14px;
+      border: 1px solid #1f2937;
+      background: linear-gradient(135deg, rgba(15,23,42,0.98), rgba(17,24,39,0.98));
+      padding: 14px 16px 12px 16px;
+      margin-bottom: 16px;
+    }
+    .card-tag {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      color: #a5b4fc;
+      margin-bottom: 4px;
+    }
+    .card-title {
+      font-size: 15px;
       font-weight: 600;
-      border: 1px solid #bbf7d0;
+      color: #f9fafb;
+      margin-bottom: 4px;
     }
-    .description {
-      font-size: 16px;
-      line-height: 1.6;
-      color: #4b5563;
-      margin-bottom: 32px;
-    }
-    .btn-container {
-      text-align: center;
-      margin-bottom: 32px;
-    }
-    .btn {
-      display: inline-block;
-      background-color: #008751;
-      color: #ffffff !important;
-      font-weight: 600;
-      padding: 14px 32px;
-      border-radius: 12px;
-      font-size: 16px;
-      box-shadow: 0 4px 6px -1px rgba(0, 135, 81, 0.2);
-      transition: background-color 0.2s;
-    }
-    .btn:hover {
-      background-color: #006d41;
-    }
-    .footer {
-      background-color: #f9fafb;
-      padding: 24px;
-      text-align: center;
-      border-top: 1px solid #f3f4f6;
-    }
-    .footer-text {
+    .card-provider {
       font-size: 12px;
       color: #9ca3af;
-      line-height: 1.5;
-      margin: 0;
+      margin-bottom: 8px;
     }
-    .footer-links {
-      margin-top: 12px;
-    }
-    .footer-links a {
+    .card-body {
       font-size: 12px;
+      color: #d1d5db;
+      line-height: 1.7;
+      margin-bottom: 8px;
+    }
+    .meta {
+      font-size: 11px;
+      color: #9ca3af;
+      margin-bottom: 10px;
+    }
+    .meta strong {
+      color: #e5e7eb;
+    }
+    .cta-wrap {
+      text-align: center;
+      padding: 6px 22px 22px 22px;
+    }
+    .button {
+      display: inline-block;
+      padding: 11px 26px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, #fb923c, #f97316);
+      color: #111827;
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+    }
+    .button span {
+      display: block;
+      font-size: 11px;
+      text-transform: none;
+      letter-spacing: normal;
+      margin-top: 2px;
+      font-weight: 500;
+      color: #111827;
+    }
+    .footer {
+      font-size: 11px;
       color: #6b7280;
+      padding: 10px 22px 18px 22px;
+      border-top: 1px solid #111827;
+    }
+    .footer a {
+      color: #9ca3af;
       text-decoration: underline;
-      margin: 0 8px;
     }
   </style>
 </head>
@@ -203,39 +234,50 @@ function buildEmailHtml(opportunity: NewOpportunityPayload["opportunity"], first
   <div class="wrapper">
     <div class="container">
       <div class="header">
-        <h1 class="logo">NAIJALIFT</h1>
+        <div class="logo">NAIJALIFT</div>
+        <div class="tagline">Fresh, curated opportunities for Nigerians who are serious.</div>
+        <div class="pill">New drop just for you</div>
       </div>
+
       <div class="content">
-        <div class="greeting">Hello ${firstName},</div>
-        
-        <h2 class="title">${opportunity.title}</h2>
-        <p class="provider">by ${opportunity.provider}</p>
-        
-        <div class="meta-row">
-          <span class="meta-tag">${categoryLabel}</span>
-          <span class="meta-tag">📍 ${location}</span>
-          <span class="meta-tag">📅 Ends: ${deadlineText}</span>
-        </div>
-        
-        <p class="description">
-          ${safeDescription}
+        <p class="hello">Hi ${firstName || "Champion"},</p>
+        <p class="title">
+          A <span>${categoryLabel}</span> just landed on NAIJALIFT.
         </p>
-        
-        <div class="btn-container">
-          <a href="${opportunity.link}" class="btn">View & Apply Now</a>
+        <p class="lead">
+          We just added a handpicked opportunity that could move you closer to your next big win.
+        </p>
+
+        <div class="card">
+          <div class="card-tag">${categoryLabel}</div>
+          <div class="card-title">${opportunity.title}</div>
+          <div class="card-provider">${opportunity.provider}</div>
+          <div class="card-body">
+            ${safeDescription}
+          </div>
+          <div class="meta">
+            <strong>Deadline:</strong> ${deadlineText} · <strong>Location:</strong> ${location}
+          </div>
+          <a href="${opportunity.link}" target="_blank" rel="noopener noreferrer" style="font-size:12px;color:#fb923c;font-weight:500;">
+            View full details and apply →
+          </a>
         </div>
       </div>
-      
+
+      <div class="cta-wrap">
+        <a href="https://naijalift.space/dashboard" class="button" target="_blank" rel="noopener noreferrer">
+          VIEW MORE OPPORTUNITIES
+          <span>Log in to NAIJALIFT to see everything waiting for you</span>
+        </a>
+      </div>
+
       <div class="footer">
-        <p class="footer-text">
-          You received this email because you subscribed to ${categoryLabel} alerts on NAIJALIFT.
+        <p>
+          You are receiving this because you turned on email alerts in NAIJALIFT.
+          If this is too much, you can pause alerts in your dashboard.
         </p>
-        <div class="footer-links">
-          <a href="https://naijalift.space/dashboard/settings">Manage Alerts</a>
-          <a href="https://naijalift.space/dashboard/settings">Unsubscribe</a>
-        </div>
-        <p class="footer-text" style="margin-top: 16px;">
-          &copy; ${new Date().getFullYear()} NAIJALIFT. All rights reserved.
+        <p style="margin-top:6px;">
+          © ${new Date().getFullYear()} NAIJALIFT. All rights reserved.
         </p>
       </div>
     </div>
@@ -258,6 +300,10 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    if (!RESEND_API_KEY) {
+      throw new Error("RESEND_API_KEY is not configured");
+    }
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
@@ -265,62 +311,26 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("Supabase environment variables are not configured");
     }
 
-    const payload = await req.json();
-    const opportunity = payload.opportunity || payload.record;
-
-    if (!opportunity) {
-      throw new Error("No opportunity data found in payload");
-    }
+    const { opportunity }: NewOpportunityPayload = await req.json();
 
     const supabase = createClient(supabaseUrl, serviceRoleKey);
-    let recipients: { email: string; fullName: string | null }[] = [];
 
-    // Check for Test Mode
-    // Note: The 'is_test_mode' property might not exist on old rows or type definition yet, 
-    // so we access it safely. We should update the interface above too, but this works for runtime.
-    const isTestMode = (opportunity as any).is_test_mode === true;
+    const { data: profiles, error: profilesError } = await supabase
+      .from("profiles")
+      .select("id, email, full_name") as {
+      data: ProfileRow[] | null;
+      error: unknown;
+    };
 
-    if (isTestMode) {
-      console.log("Test Mode enabled: Sending only to admins.");
-      const adminEmails = ["abdulmajeedsesiadam@gmail.com", "naijalift01@gmail.com"];
-      recipients = adminEmails.map(email => ({ email, fullName: "Admin" }));
-    } else {
-      const { data: profiles, error: profilesError } = await supabase
-        .from("profiles")
-        .select("id, email, full_name") as {
-        data: ProfileRow[] | null;
-        error: unknown;
-      };
-
-      if (profilesError) {
-        throw profilesError;
-      }
-
-      // Deduplicate recipients by email to prevent double sending
-      const uniqueEmails = new Set<string>();
-      if (profiles) {
-        for (const p of profiles) {
-          if (p.email && !uniqueEmails.has(p.email)) {
-            uniqueEmails.add(p.email);
-            recipients.push({
-              email: p.email,
-              fullName: p.full_name,
-            });
-          }
-        }
-      }
+    if (profilesError) {
+      throw profilesError;
     }
 
-    // Initialize Brevo Transporter
-    const transporter = nodemailer.createTransport({
-      host: "smtp-relay.brevo.com",
-      port: 587,
-      secure: false,
-      auth: {
-        user: "a06962001@smtp-brevo.com",
-        pass: BREVO_SMTP_KEY,
-      },
-    });
+    const recipients =
+      profiles?.filter((p) => p.email).map((p) => ({
+        email: p.email as string,
+        fullName: p.full_name,
+      })) ?? [];
 
     let sentCount = 0;
     for (const recipient of recipients) {
@@ -331,44 +341,27 @@ const handler = async (req: Request): Promise<Response> => {
 
       const emailHtml = buildEmailHtml(opportunity, firstName);
 
-      try {
-        const textBody = `Hi ${firstName},
-
-A new ${formatCategoryLabel(opportunity.category)} is available on NAIJALIFT:
-${opportunity.title} by ${opportunity.provider}
-
-${opportunity.description ? opportunity.description.substring(0, 200) + (opportunity.description.length > 200 ? "..." : "") : "Check it out on our platform."}
-
-Deadline: ${formatDeadline(opportunity.deadline)}
-Location: ${formatLocation(opportunity.state, opportunity.is_remote)}
-
-View full details: ${opportunity.link}
-
-To manage your alerts, visit https://naijalift.space/dashboard/settings
-
-Best,
-The NAIJALIFT Team`;
-
-        await transporter.sendMail({
-          from: '"Naijalift" <info@naijalift.space>',
-          to: recipient.email,
-          replyTo: "info@naijalift.space",
-          subject: `${isTestMode ? "[TEST MODE] " : ""}New ${formatCategoryLabel(opportunity.category)}: ${opportunity.title}`,
+      const res = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${RESEND_API_KEY}`,
+        },
+        body: JSON.stringify({
+          from: "NAIJALIFT <onboarding@resend.dev>",
+          to: [recipient.email],
+          subject: `✨ New ${formatCategoryLabel(opportunity.category)} on NAIJALIFT`,
           html: emailHtml,
-          text: textBody,
-          headers: {
-            "List-Unsubscribe": "<https://naijalift.space/dashboard/settings>",
-            "X-Entity-Ref-ID": opportunity.id,
-            "X-Auto-Response-Suppress": "OOF, DR, RN, NRN, AutoReply",
-            "Precedence": "list",
-            "Importance": "normal"
-          }
-        });
-        sentCount += 1;
-      } catch (err) {
-        console.error("Brevo sending error for", recipient.email, err);
-        // Continue to next recipient even if one fails
+        }),
+      });
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error("Resend error for", recipient.email, errorText);
+        continue;
       }
+
+      sentCount += 1;
     }
 
     return new Response(

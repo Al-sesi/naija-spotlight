@@ -10,10 +10,9 @@ export interface SiteAlert {
   updated_at: string;
 }
 
-export function useSiteAlert(options?: { enabled?: boolean }) {
+export function useSiteAlert() {
   return useQuery({
     queryKey: ["site-alert"],
-    enabled: options?.enabled,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("site_alerts")

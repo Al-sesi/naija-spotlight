@@ -12,7 +12,6 @@ import { Button } from "@/components/ui/button";
 import { ArrowUpDown, Search, Trophy, Users, CreditCard, Clock } from "lucide-react";
 import { useReferralStats, ReferralStat } from "@/hooks/useReferralStats";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { CreateAmbassadorDialog } from "./CreateAmbassadorDialog";
 
 export function ReferralStatsTable() {
   const { data: stats, isLoading } = useReferralStats();
@@ -47,17 +46,14 @@ export function ReferralStatsTable() {
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <div className="space-y-1">
-          <CardTitle className="flex items-center gap-2">
-            <Trophy className="h-6 w-6 text-yellow-500" />
-            Ambassador Performance
-          </CardTitle>
-          <CardDescription>
-            Track top performing ambassadors, subscriptions, and trial conversions.
-          </CardDescription>
-        </div>
-        <CreateAmbassadorDialog />
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Trophy className="h-6 w-6 text-yellow-500" />
+          Ambassador Performance
+        </CardTitle>
+        <CardDescription>
+          Track top performing ambassadors, subscriptions, and trial conversions.
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="flex items-center py-4">

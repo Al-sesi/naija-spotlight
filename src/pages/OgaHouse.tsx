@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { formatDistanceToNow, format } from "date-fns";
 import { 
   Shield, Plus, Link as LinkIcon, Users, MessageSquare, CheckCircle, XCircle, 
   Trash2, ToggleLeft, Home, FileText, Bell, UserCheck, Menu, X,
-  Megaphone, ChevronRight, Calendar, Send, Trophy, Download, ChevronsUpDown, Check
+  Megaphone, ChevronRight, Calendar, Send
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -17,13 +17,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { useAuth } from "@/hooks/useAuth";
 import { useOpportunities, useCreateOpportunity, useDeleteOpportunity, useUpdateOpportunity } from "@/hooks/useOpportunities";
-import { usePendingPosts, useApprovePost, useRejectPost, useRegisteredUsers, useAppInstalls, AppInstall } from "@/hooks/useAdminData";
+import { usePendingPosts, useApprovePost, useRejectPost, useRegisteredUsers } from "@/hooks/useAdminData";
 import { useSiteAlert, useUpdateSiteAlert } from "@/hooks/useSiteAlert";
-import { ReferralStatsTable } from "@/components/admin/ReferralStatsTable";
 import { NIGERIAN_STATES, OPPORTUNITY_TYPES, OpportunityType } from "@/lib/constants";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -40,18 +37,16 @@ interface OpportunityFormState {
   link: string;
   deadline: string;
   event_date: string;
-  state: string[];
+  state: string;
   is_verified: boolean;
   is_remote: boolean;
   level: string;
-  is_test_mode: boolean;
 }
 
 interface BroadcastFormState {
   subject: string;
   message: string;
   audience: "all" | "premium" | "free";
-  is_test_mode: boolean;
 }
 
 interface SiteAlertFormState {
@@ -85,7 +80,7 @@ interface AdminUser {
   created_at: string | null;
 }
 
-type Section = "dashboard" | "add" | "manage" | "posts" | "users" | "team" | "alerts" | "broadcast" | "ambassadors" | "installs";
+type Section = "dashboard" | "add" | "manage" | "posts" | "users" | "team" | "alerts" | "broadcast";
 
 const sidebarItems: { id: Section; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { id: "dashboard", label: "Dashboard", icon: Home },
@@ -93,46 +88,12 @@ const sidebarItems: { id: Section; label: string; icon: React.ComponentType<{ cl
   { id: "manage", label: "Manage Opps", icon: FileText },
   { id: "posts", label: "Review Posts", icon: MessageSquare },
   { id: "users", label: "Users", icon: Users },
-  { id: "ambassadors", label: "Ambassadors", icon: Trophy },
-  { id: "installs", label: "App Installs", icon: Download },
   { id: "team", label: "Team (Lifters)", icon: UserCheck },
   { id: "alerts", label: "Site Alerts", icon: Megaphone },
   { id: "broadcast", label: "Broadcast", icon: Send },
 ];
 
-class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasError: boolean, error: Error | null}> {
-  constructor(props: {children: React.ReactNode}) {
-    super(props);
-    this.state = { hasError: false, error: null };
-  }
-  static getDerivedStateFromError(error: Error) {
-    return { hasError: true, error };
-  }
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error("OgaHouse Error:", error, errorInfo);
-  }
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div className="min-h-screen flex items-center justify-center bg-background p-4">
-          <div className="max-w-md w-full bg-red-50 p-6 rounded-lg border border-red-200">
-            <h1 className="text-xl font-bold text-red-900 mb-2">Something went wrong</h1>
-            <p className="text-sm text-red-700 mb-4">The OgaHouse dashboard encountered an error.</p>
-            <pre className="bg-white p-3 rounded text-xs text-red-800 overflow-auto max-h-40">
-              {this.state.error?.message}
-            </pre>
-            <Button className="mt-4 w-full" onClick={() => window.location.reload()}>
-              Reload Page
-            </Button>
-          </div>
-        </div>
-      );
-    }
-    return this.props.children;
-  }
-}
-
-function OgaHouseContent() {
+export default function OgaHouse() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState<Section>("dashboard");
@@ -141,20 +102,16 @@ function OgaHouseContent() {
   useEffect(() => {
     console.log("OgaHouse mounted. User:", user?.email, "Loading:", loading);
   }, [user, loading]);
-
-  const isAdmin = !!user?.email && ADMIN_EMAILS.includes(user.email);
-  const shouldFetchAdminData = !loading && isAdmin;
   
-  const { data: opportunities } = useOpportunities({ types: [], states: [], search: "" }, { enabled: shouldFetchAdminData });
+  const { data: opportunities } = useOpportunities({ types: [], states: [], search: "" });
   const createOpportunity = useCreateOpportunity();
   const deleteOpportunity = useDeleteOpportunity();
   const updateOpportunity = useUpdateOpportunity();
-  const { data: pendingPosts, isLoading: postsLoading } = usePendingPosts({ enabled: shouldFetchAdminData });
+  const { data: pendingPosts, isLoading: postsLoading } = usePendingPosts();
   const approvePost = useApprovePost();
   const rejectPost = useRejectPost();
-  const { data: users, isLoading: usersLoading } = useRegisteredUsers({ enabled: shouldFetchAdminData });
-  const { data: appInstalls, isLoading: installsLoading } = useAppInstalls();
-  const { data: siteAlert } = useSiteAlert({ enabled: shouldFetchAdminData });
+  const { data: users, isLoading: usersLoading } = useRegisteredUsers();
+  const { data: siteAlert } = useSiteAlert();
   const updateSiteAlert = useUpdateSiteAlert();
 
   const [form, setForm] = useState({
@@ -165,11 +122,10 @@ function OgaHouseContent() {
     link: "",
     deadline: "",
     event_date: "",
-    state: ["Nationwide"],
+    state: "Nationwide",
     is_verified: true,
     is_remote: false,
     level: "",
-    is_test_mode: false,
   });
 
   const [alertForm, setAlertForm] = useState({
@@ -182,7 +138,6 @@ function OgaHouseContent() {
     subject: "",
     message: "",
     audience: "all" as "all" | "premium" | "free",
-    is_test_mode: false,
   });
 
   const broadcastMutation = useMutation({
@@ -212,13 +167,6 @@ function OgaHouseContent() {
     }
   }, [siteAlert]);
 
-  // Access control - redirect if not the admin email
-  useEffect(() => {
-    if (!loading && (!user || !user.email || !ADMIN_EMAILS.includes(user.email))) {
-      navigate("/", { replace: true });
-    }
-  }, [user, loading, navigate]);
-
   // Show loading state while auth is loading
   if (loading) {
     return (
@@ -232,6 +180,13 @@ function OgaHouseContent() {
       </div>
     );
   }
+
+  // Access control - redirect if not the admin email
+  useEffect(() => {
+    if (!loading && (!user || !user.email || !ADMIN_EMAILS.includes(user.email))) {
+      navigate("/", { replace: true });
+    }
+  }, [user, loading, navigate]);
 
   if (!user || !user.email || !ADMIN_EMAILS.includes(user.email)) {
     return (
@@ -257,16 +212,15 @@ function OgaHouseContent() {
         link: form.link,
         deadline: form.deadline ? new Date(form.deadline).toISOString() : null,
         event_date: form.event_date ? new Date(form.event_date).toISOString() : null,
-        state: form.state.join(", "),
+        state: form.state,
         is_verified: true, // Admin posts are always verified
         is_remote: form.is_remote,
         level: form.level || null,
-        is_test_mode: form.is_test_mode,
       });
       toast.success("Opportunity added successfully!");
       setForm({
         title: "", provider: "", category: "", description: "", link: "",
-        deadline: "", event_date: "", state: ["Nationwide"], is_verified: true, is_remote: false, level: "", is_test_mode: false,
+        deadline: "", event_date: "", state: "Nationwide", is_verified: true, is_remote: false, level: "",
       });
     } catch {
       toast.error("Failed to add opportunity");
@@ -369,10 +323,6 @@ function OgaHouseContent() {
         />;
       case "users":
         return <UserManagement users={users || []} isLoading={usersLoading} />;
-      case "ambassadors":
-        return <ReferralStatsTable />;
-      case "installs":
-        return <AppInstallsList installs={appInstalls || []} isLoading={installsLoading} />;
       case "team":
         return <TeamManagement />;
       case "alerts":
@@ -491,14 +441,6 @@ function OgaHouseContent() {
   );
 }
 
-export default function OgaHouse() {
-  return (
-    <ErrorBoundary>
-      <OgaHouseContent />
-    </ErrorBoundary>
-  );
-}
-
 // Broadcast Message Component
 function BroadcastMessage({
   form,
@@ -560,18 +502,6 @@ function BroadcastMessage({
             <p className="text-xs text-muted-foreground">
               Note: This will be sent as an email. Line breaks will be preserved.
             </p>
-          </div>
-
-          <div className="flex items-center gap-2 border p-3 rounded-lg bg-muted/20">
-            <Switch 
-              id="broadcast_test_mode" 
-              checked={form.is_test_mode} 
-              onCheckedChange={(c) => setForm({ ...form, is_test_mode: c })} 
-            />
-            <div className="flex flex-col">
-              <Label htmlFor="broadcast_test_mode" className="text-sm font-medium">Test Mode</Label>
-              <span className="text-xs text-muted-foreground">Send only to admin emails (no real users will be contacted)</span>
-            </div>
           </div>
 
           <Button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700" disabled={isLoading}>
@@ -715,58 +645,13 @@ function AddOpportunityForm({
               </Select>
             </div>
             <div className="space-y-2">
-              <Label className="text-sm">State (Select Multiple)</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    role="combobox"
-                    className="w-full justify-between text-sm font-normal bg-background"
-                  >
-                    {form.state.length > 0
-                      ? (form.state.length === 1 ? form.state[0] : `${form.state.length} selected`)
-                      : "Select states"}
-                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[300px] p-0" align="start">
-                  <Command>
-                    <CommandInput placeholder="Search state..." />
-                    <CommandList>
-                      <CommandEmpty>No state found.</CommandEmpty>
-                      <CommandGroup>
-                        {NIGERIAN_STATES.filter(s => s !== "All States").map((state) => (
-                          <CommandItem
-                            key={state}
-                            value={state}
-                            onSelect={() => {
-                              const isSelected = form.state.includes(state);
-                              let newStates;
-                              if (isSelected) {
-                                newStates = form.state.filter((s) => s !== state);
-                              } else {
-                                newStates = [...form.state, state];
-                              }
-                              setForm({ ...form, state: newStates });
-                            }}
-                          >
-                            <Check
-                              className={cn(
-                                "mr-2 h-4 w-4",
-                                form.state.includes(state) ? "opacity-100" : "opacity-0"
-                              )}
-                            />
-                            {state}
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
-              <p className="text-xs text-muted-foreground truncate">
-                Selected: {form.state.join(", ")}
-              </p>
+              <Label className="text-sm">State</Label>
+              <Select value={form.state} onValueChange={(v) => setForm({ ...form, state: v })}>
+                <SelectTrigger className="bg-background text-sm"><SelectValue /></SelectTrigger>
+                <SelectContent className="bg-popover max-h-[200px]">
+                  {NIGERIAN_STATES.filter(s => s !== "All States").map(s => <SelectItem key={s} value={s} className="text-sm">{s}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
@@ -806,10 +691,6 @@ function AddOpportunityForm({
             <div className="flex items-center gap-2">
               <Switch id="remote" checked={form.is_remote} onCheckedChange={(c) => setForm({ ...form, is_remote: c })} />
               <Label htmlFor="remote" className="text-sm">Remote</Label>
-            </div>
-            <div className="flex items-center gap-2">
-              <Switch id="test_mode" checked={form.is_test_mode} onCheckedChange={(c) => setForm({ ...form, is_test_mode: c })} />
-              <Label htmlFor="test_mode" className="text-sm text-amber-600 font-medium">Test Mode</Label>
             </div>
             <Badge variant="secondary" className="flex items-center gap-1">
               <CheckCircle className="h-3 w-3" />
@@ -1071,80 +952,6 @@ function UserManagement({ users, isLoading }: { users: AdminUser[]; isLoading: b
                         <CheckCircle className="h-3 w-3 mr-1" />
                         Verified
                       </Badge>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
-// App Installs List Component
-function AppInstallsList({ installs, isLoading }: { installs: AppInstall[]; isLoading: boolean }) {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-lg flex items-center gap-2">
-          <Download className="h-5 w-5 text-emerald-600" />
-          App Installations (PWA)
-        </CardTitle>
-        <CardDescription>{installs.length} installations tracked via browser prompt</CardDescription>
-      </CardHeader>
-      <CardContent>
-        {isLoading ? (
-          <div className="space-y-2">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="animate-pulse h-12 bg-muted rounded" />
-            ))}
-          </div>
-        ) : !installs.length ? (
-          <p className="text-muted-foreground text-center py-8">No installations recorded yet.</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>User</TableHead>
-                  <TableHead>Outcome</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead className="max-w-[200px]">User Agent</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {installs.map((install) => (
-                  <TableRow key={install.id}>
-                    <TableCell className="font-medium">
-                      {install.profile ? (
-                        <div className="flex items-center gap-2">
-                          <Avatar className="h-6 w-6">
-                            <AvatarFallback className="text-xs">
-                              {(install.profile.full_name?.[0] || install.profile.email?.[0] || "U").toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex flex-col">
-                            <span className="text-sm">{install.profile.full_name || "Unknown"}</span>
-                            <span className="text-xs text-muted-foreground">{install.profile.email}</span>
-                          </div>
-                        </div>
-                      ) : (
-                        <span className="text-muted-foreground italic">Guest / Unauthenticated</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={install.outcome === 'accepted' ? 'default' : 'secondary'} 
-                        className={install.outcome === 'accepted' ? 'bg-emerald-600' : ''}>
-                        {install.outcome || 'Unknown'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {format(new Date(install.created_at), "MMM d, yyyy HH:mm")}
-                    </TableCell>
-                    <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate" title={install.user_agent || ""}>
-                      {install.user_agent}
                     </TableCell>
                   </TableRow>
                 ))}

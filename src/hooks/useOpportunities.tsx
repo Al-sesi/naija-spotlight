@@ -15,7 +15,6 @@ export interface Opportunity {
   is_verified: boolean;
   is_remote: boolean;
   level: string | null;
-  is_test_mode?: boolean;
   created_at: string;
 }
 
@@ -25,10 +24,9 @@ interface OpportunityFilters {
   search: string;
 }
 
-export function useOpportunities(filters: OpportunityFilters, options?: { enabled?: boolean }) {
+export function useOpportunities(filters: OpportunityFilters) {
   return useQuery({
     queryKey: ["opportunities", filters],
-    enabled: options?.enabled,
     queryFn: async () => {
       let query = supabase
         .from("opportunities")
@@ -40,24 +38,17 @@ export function useOpportunities(filters: OpportunityFilters, options?: { enable
       }
 
       if (filters.states.length > 0 && !filters.states.includes("All States")) {
-        const orConditions: string[] = [];
-
-        // Always include Nationwide for any state filter (unless user specifically wants to exclude it? 
-        // Current logic assumes Nationwide is always relevant when filtering by location)
-        orConditions.push("state.eq.Nationwide");
-
-        if (filters.states.includes("Remote")) {
-          orConditions.push("is_remote.eq.true");
-        }
-
-        const specificStates = filters.states.filter(s => s !== "Remote" && s !== "All States");
-        specificStates.forEach(s => {
-          // Use ilike to match state in comma-separated list (e.g. "Lagos, Abuja")
-          orConditions.push(`state.ilike.%${s}%`);
+        const stateFilters = filters.states.map(s => {
+          if (s === "Remote") return "is_remote.eq.true";
+          if (s === "Nationwide") return "state.eq.Nationwide";
+          return `state.eq.${s}`;
         });
-
-        if (orConditions.length > 0) {
-          query = query.or(orConditions.join(","));
+        
+        // Handle state filtering with OR conditions
+        if (filters.states.includes("Remote")) {
+          query = query.or(`is_remote.eq.true,state.in.(${filters.states.filter(s => s !== "Remote").join(",")}),state.eq.Nationwide`);
+        } else {
+          query = query.or(`state.in.(${filters.states.join(",")}),state.eq.Nationwide`);
         }
       }
 
@@ -66,15 +57,11 @@ export function useOpportunities(filters: OpportunityFilters, options?: { enable
       }
 
       const { data, error } = await query;
-      if (error) {
-        console.error("Error fetching opportunities:", error);
-        throw error;
-      }
+      if (error) throw error;
       
       // Smart sorting: active (future deadline) at top, expired at bottom
       const now = new Date();
-      const safeData = data || [];
-      const sorted = (safeData as Opportunity[]).sort((a, b) => {
+      const sorted = (data as Opportunity[]).sort((a, b) => {
         const aDeadline = a.deadline ? new Date(a.deadline) : null;
         const bDeadline = b.deadline ? new Date(b.deadline) : null;
         
@@ -121,7 +108,14 @@ export function useCreateOpportunity() {
       return data as Opportunity;
     },
     onSuccess: async (created) => {
-      // Email notification is handled by DB trigger 'on_opportunity_created_notify'
+      const { data, error } = await supabase.functions.invoke("notify-new-opportunity", {
+        body: { opportunity: created },
+      });
+
+      if (error) {
+        console.error("notify-new-opportunity error", error, "response data:", data);
+      }
+
       queryClient.invalidateQueries({ queryKey: ["opportunities"] });
     },
   });

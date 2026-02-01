@@ -1,1 +1,0 @@
-ALTER TABLE public.opportunities ADD COLUMN IF NOT EXISTS is_test_mode BOOLEAN DEFAULT FALSE;

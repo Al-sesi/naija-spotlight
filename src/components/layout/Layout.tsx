@@ -9,7 +9,7 @@ interface LayoutProps {
 
 export function Layout({ children }: LayoutProps) {
   const location = useLocation();
-  const isStandalone = location.pathname === "/verification-success" || location.pathname === "/ogahouse";
+  const isStandalone = location.pathname === "/verification-success";
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
