@@ -93,7 +93,7 @@ const sidebarItems: { id: Section; label: string; icon: React.ComponentType<{ cl
   { id: "posts", label: "Review Posts", icon: MessageSquare },
   { id: "users", label: "Users", icon: Users },
   { id: "installs", label: "App Installs", icon: Smartphone },
-  { id: "team", label: "Team (Lifters)", icon: UserCheck },
+  { id: "team", label: "Ambassadors", icon: UserCheck },
   { id: "alerts", label: "Site Alerts", icon: Megaphone },
   { id: "broadcast", label: "Broadcast", icon: Send },
 ];
@@ -606,7 +606,7 @@ function DashboardOverview({
           </Button>
           <Button variant="outline" onClick={() => onNavigate("team")}>
             <UserCheck className="h-4 w-4 mr-2" />
-            Manage Team
+            Ambassadors
           </Button>
         </CardContent>
       </Card>
@@ -991,7 +991,7 @@ function TeamManagement({
   onRemove: (id: string) => Promise<void>;
 }) {
   const [email, setEmail] = useState("");
-  const [role, setRole] = useState("admin");
+  const [role, setRole] = useState("ambassador"); // Default to ambassador
   const [isAdding, setIsAdding] = useState(false);
 
   const handleAdd = async (e: React.FormEvent) => {
@@ -1026,9 +1026,9 @@ function TeamManagement({
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
             <UserCheck className="h-5 w-5 text-emerald-600" />
-            Add Team Member
+            Add Team Member / Ambassador
           </CardTitle>
-          <CardDescription>Grant staff or admin access to a registered user</CardDescription>
+          <CardDescription>Grant staff, admin, or ambassador access to a registered user</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleAdd} className="flex gap-4 items-end">
@@ -1049,6 +1049,7 @@ function TeamManagement({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="ambassador">Ambassador</SelectItem>
                   <SelectItem value="admin">Admin</SelectItem>
                   <SelectItem value="moderator">Moderator</SelectItem>
                   <SelectItem value="editor">Editor</SelectItem>
@@ -1064,8 +1065,8 @@ function TeamManagement({
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Team Members</CardTitle>
-          <CardDescription>Current staff and administrators</CardDescription>
+          <CardTitle className="text-lg">Team Members & Ambassadors</CardTitle>
+          <CardDescription>Current staff, administrators, and ambassadors</CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
