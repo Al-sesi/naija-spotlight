@@ -63,6 +63,9 @@ export default {
         },
         category: {
           government: "hsl(var(--category-government))",
+          recruitment: "hsl(var(--category-recruitment))",
+          internship: "hsl(var(--category-internship))",
+          competition: "hsl(var(--category-competition))",
           ngo: "hsl(var(--category-ngo))",
           tech: "hsl(var(--category-tech))",
           career: "hsl(var(--category-career))",

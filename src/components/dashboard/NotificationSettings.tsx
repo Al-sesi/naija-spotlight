@@ -20,9 +20,9 @@ const CATEGORIES = [
   },
   { 
     key: "government", 
-    label: "Government Jobs", 
+    label: "Recruitments", 
     icon: Building2, 
-    description: "Federal & state positions",
+    description: "Job vacancies & recruitment",
     color: "bg-category-government/10 text-category-government"
   },
   { 

@@ -42,6 +42,9 @@
 
     /* Category colors */
     --category-government: 147 76% 27%;
+    --category-recruitment: 147 76% 27%; /* Same as government forest green */
+    --category-internship: 199 89% 48%; /* Sky Blue */
+    --category-competition: 32 95% 44%; /* Deep Orange */
     --category-ngo: 262 83% 58%;
     --category-tech: 217 91% 60%;
     --category-career: 43 96% 56%;

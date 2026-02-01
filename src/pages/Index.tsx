@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, Filter, Briefcase, GraduationCap, Zap, Users, Award, PartyPopper, X } from "lucide-react";
+import { Search, Filter, Briefcase, GraduationCap, Zap, Users, Award, PartyPopper, X, Trophy, Compass } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -11,8 +11,10 @@ import { OpportunityType } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
 const quickCategories = [
-  { type: "government", label: "Recruitment", icon: Briefcase },
+  { type: "recruitment", label: "Recruitments", icon: Briefcase },
+  { type: "internship", label: "Internships", icon: Compass },
   { type: "scholarship", label: "Scholarships", icon: GraduationCap },
+  { type: "competition", label: "Competitions", icon: Trophy },
   { type: "ngo", label: "Grants", icon: Award },
   { type: "tech", label: "Tech Events", icon: Zap },
   { type: "social", label: "Social Events", icon: PartyPopper },

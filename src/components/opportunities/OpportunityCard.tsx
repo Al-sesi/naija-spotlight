@@ -14,7 +14,25 @@ const categoryStyles: Record<string, { bg: string; text: string; border: string;
     bg: "bg-category-government/10",
     text: "text-category-government",
     border: "border-category-government/30",
-    label: "Recruitment",
+    label: "Recruitments",
+  },
+  recruitment: {
+    bg: "bg-category-recruitment/10",
+    text: "text-category-recruitment",
+    border: "border-category-recruitment/30",
+    label: "Recruitments",
+  },
+  internship: {
+    bg: "bg-category-internship/10",
+    text: "text-category-internship",
+    border: "border-category-internship/30",
+    label: "Internships",
+  },
+  competition: {
+    bg: "bg-category-competition/10",
+    text: "text-category-competition",
+    border: "border-category-competition/30",
+    label: "Competitions",
   },
   ngo: {
     bg: "bg-category-ngo/10",

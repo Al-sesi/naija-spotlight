@@ -127,12 +127,7 @@ export function FilterSidebar({
                   <span 
                     className={cn(
                       "w-2 h-2 rounded-full",
-                      type.value === "government" && "bg-category-government",
-                      type.value === "ngo" && "bg-category-ngo",
-                      type.value === "tech" && "bg-category-tech",
-                      type.value === "career" && "bg-category-career",
-                      type.value === "scholarship" && "bg-category-scholarship",
-                      type.value === "social" && "bg-category-social"
+                      type.color
                     )}
                   />
                   {type.label}

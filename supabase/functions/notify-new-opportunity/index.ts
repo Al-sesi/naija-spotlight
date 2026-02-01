@@ -35,7 +35,12 @@ interface ProfileRow {
 function formatCategoryLabel(category: OpportunityCategory): string {
   switch (category) {
     case "government":
-      return "Government Opportunity";
+    case "recruitment":
+      return "Recruitments";
+    case "internship":
+      return "Internship / Fellowship";
+    case "competition":
+      return "Competition";
     case "ngo":
       return "Grant / NGO Opportunity";
     case "tech":
