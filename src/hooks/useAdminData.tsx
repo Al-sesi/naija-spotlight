@@ -47,31 +47,76 @@ export function useTeamMembers() {
   return useQuery({
     queryKey: ["team-members"],
     queryFn: async () => {
+      // 1. Fetch from user_roles (Admin/Moderator)
       const { data: roles, error } = await supabase
         .from("user_roles")
-        .select("*")
-        .order("created_at", { ascending: false });
+        .select("*");
 
       if (error) throw error;
 
-      // Fetch profiles
-      const userIds = [...new Set(roles?.map(r => r.user_id).filter(Boolean) || [])];
+      // 2. Fetch from profiles (Ambassadors)
+      const { data: ambassadors, error: ambError } = await supabase
+        .from("profiles")
+        .select("id, full_name, email, role, created_at")
+        .eq("role", "ambassador");
+
+      if (ambError) throw ambError;
+
+      // Collect all user IDs to fetch profiles for roles
+      const roleUserIds = roles?.map(r => r.user_id) || [];
       
       let profiles: any[] = [];
-      if (userIds.length > 0) {
+      if (roleUserIds.length > 0) {
         const { data } = await supabase
           .from("profiles")
-          .select("id, full_name, email")
-          .in("id", userIds);
+          .select("id, full_name, email, created_at")
+          .in("id", roleUserIds);
         profiles = data || [];
       }
 
       const profileMap = new Map(profiles.map(p => [p.id, p]));
+      
+      const teamMembers: TeamMember[] = [];
 
-      return roles?.map(role => ({
-        ...role,
-        profile: profileMap.get(role.user_id) || null,
-      })) as TeamMember[];
+      // Add roles (Admin/Moderator)
+      roles?.forEach(role => {
+        const profile = profileMap.get(role.user_id);
+        teamMembers.push({
+          id: role.id,
+          user_id: role.user_id,
+          role: role.role,
+          created_at: profile?.created_at || new Date().toISOString(), // Use profile creation as fallback
+          profile: profile ? { full_name: profile.full_name, email: profile.email } : null,
+        });
+      });
+
+      // Add ambassadors (if not already in list - usually mutually exclusive but good to check)
+      ambassadors?.forEach(amb => {
+        // Check if this user is already added (e.g. an admin who is also marked as ambassador)
+        // Note: user_roles usually takes precedence for access control, but we want to show all roles.
+        // If we want to show them as separate entries (one for admin, one for ambassador), we can just push.
+        // But usually one user row is better. However, TeamMember interface assumes one role per entry.
+        // Let's just add them.
+        const existing = teamMembers.find(m => m.user_id === amb.id && m.role === 'ambassador');
+        if (!existing) {
+           teamMembers.push({
+             id: amb.id, // Use user_id as ID for this 'virtual' role entry
+             user_id: amb.id,
+             role: 'ambassador',
+             created_at: amb.created_at,
+             profile: { full_name: amb.full_name, email: amb.email }
+           });
+        }
+      });
+
+      // Sort by role importance then name
+      return teamMembers.sort((a, b) => {
+        const roleOrder: Record<string, number> = { admin: 0, moderator: 1, ambassador: 2, editor: 3 };
+        const orderA = roleOrder[a.role] ?? 99;
+        const orderB = roleOrder[b.role] ?? 99;
+        if (orderA !== orderB) return orderA - orderB;
+        return (a.profile?.full_name || "").localeCompare(b.profile?.full_name || "");
+      });
     },
   });
 }
