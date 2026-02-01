@@ -338,7 +338,14 @@ export default function OgaHouse() {
       case "users":
         return <UserManagement users={users || []} isLoading={usersLoading} />;
       case "team":
-        return <TeamManagement />;
+        return <TeamManagement 
+          members={teamMembers || []} 
+          isLoading={teamLoading} 
+          onAdd={async (email, role) => await addTeamMember.mutateAsync({ email, role })}
+          onRemove={async (id) => await removeTeamMember.mutateAsync(id)}
+        />;
+      case "installs":
+        return <AppInstallStats installs={installs || []} isLoading={installsLoading} />;
       case "alerts":
         return <SiteAlerts form={alertForm} setForm={setAlertForm} onSubmit={handleUpdateAlert} isLoading={updateSiteAlert.isPending} />;
       case "broadcast":
@@ -988,7 +995,7 @@ function TeamManagement({
   members: TeamMember[]; 
   isLoading: boolean;
   onAdd: (email: string, role: string) => Promise<void>;
-  onRemove: (id: string) => Promise<void>;
+  onRemove: (params: { id: string; role: string; userId: string }) => Promise<void>;
 }) {
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("ambassador"); // Default to ambassador
@@ -1010,10 +1017,10 @@ function TeamManagement({
     }
   };
 
-  const handleRemove = async (id: string) => {
+  const handleRemove = async (member: TeamMember) => {
     if (!confirm("Are you sure you want to remove this team member?")) return;
     try {
-      await onRemove(id);
+      await onRemove({ id: member.id, role: member.role, userId: member.user_id });
       toast.success("Team member removed");
     } catch {
       toast.error("Failed to remove team member");
@@ -1110,7 +1117,7 @@ function TeamManagement({
                         variant="ghost" 
                         size="sm" 
                         className="text-destructive hover:text-destructive"
-                        onClick={() => handleRemove(member.id)}
+                        onClick={() => handleRemove(member)}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>

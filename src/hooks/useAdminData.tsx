@@ -135,11 +135,19 @@ export function useAddTeamMember() {
       
       if (profileError || !profiles) throw new Error("User not found with this email");
 
-      const { error } = await supabase
-        .from("user_roles")
-        .insert({ user_id: profiles.id, role });
-
-      if (error) throw error;
+      if (role === 'ambassador') {
+        const { error } = await supabase
+          .from("profiles")
+          .update({ role: 'ambassador' })
+          .eq("id", profiles.id);
+        if (error) throw error;
+      } else {
+        // For admin/moderator, use user_roles
+        const { error } = await supabase
+          .from("user_roles")
+          .insert({ user_id: profiles.id, role });
+        if (error) throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["team-members"] });
@@ -151,12 +159,20 @@ export function useRemoveTeamMember() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (roleId: string) => {
-      const { error } = await supabase
-        .from("user_roles")
-        .delete()
-        .eq("id", roleId);
-      if (error) throw error;
+    mutationFn: async ({ id, role, userId }: { id: string; role: string; userId: string }) => {
+      if (role === 'ambassador') {
+        const { error } = await supabase
+          .from("profiles")
+          .update({ role: 'user' })
+          .eq("id", userId);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("user_roles")
+          .delete()
+          .eq("id", id);
+        if (error) throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["team-members"] });
