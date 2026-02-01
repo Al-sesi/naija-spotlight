@@ -61,7 +61,7 @@ export function useOpportunities(filters: OpportunityFilters) {
       
       // Smart sorting: active (future deadline) at top, expired at bottom
       const now = new Date();
-      const sorted = (data as Opportunity[]).sort((a, b) => {
+      const sorted = ((data || []) as Opportunity[]).sort((a, b) => {
         const aDeadline = a.deadline ? new Date(a.deadline) : null;
         const bDeadline = b.deadline ? new Date(b.deadline) : null;
         
