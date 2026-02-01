@@ -4,7 +4,7 @@ import { formatDistanceToNow, format } from "date-fns";
 import { 
   Shield, Plus, Link as LinkIcon, Users, MessageSquare, CheckCircle, XCircle, 
   Trash2, ToggleLeft, Home, FileText, Bell, UserCheck, Menu, X,
-  Megaphone, ChevronRight, Calendar, Send
+  Megaphone, ChevronRight, Calendar, Send, Smartphone
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -19,7 +19,11 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAuth } from "@/hooks/useAuth";
 import { useOpportunities, useCreateOpportunity, useDeleteOpportunity, useUpdateOpportunity } from "@/hooks/useOpportunities";
-import { usePendingPosts, useApprovePost, useRejectPost, useRegisteredUsers } from "@/hooks/useAdminData";
+import { 
+  usePendingPosts, useApprovePost, useRejectPost, useRegisteredUsers, 
+  useAppInstalls, useTeamMembers, useAddTeamMember, useRemoveTeamMember,
+  AppInstall, TeamMember
+} from "@/hooks/useAdminData";
 import { useSiteAlert, useUpdateSiteAlert } from "@/hooks/useSiteAlert";
 import { NIGERIAN_STATES, OPPORTUNITY_TYPES, OpportunityType } from "@/lib/constants";
 import { toast } from "sonner";
@@ -80,7 +84,7 @@ interface AdminUser {
   created_at: string | null;
 }
 
-type Section = "dashboard" | "add" | "manage" | "posts" | "users" | "team" | "alerts" | "broadcast";
+type Section = "dashboard" | "add" | "manage" | "posts" | "users" | "team" | "alerts" | "broadcast" | "installs";
 
 const sidebarItems: { id: Section; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { id: "dashboard", label: "Dashboard", icon: Home },
@@ -88,6 +92,7 @@ const sidebarItems: { id: Section; label: string; icon: React.ComponentType<{ cl
   { id: "manage", label: "Manage Opps", icon: FileText },
   { id: "posts", label: "Review Posts", icon: MessageSquare },
   { id: "users", label: "Users", icon: Users },
+  { id: "installs", label: "App Installs", icon: Smartphone },
   { id: "team", label: "Team (Lifters)", icon: UserCheck },
   { id: "alerts", label: "Site Alerts", icon: Megaphone },
   { id: "broadcast", label: "Broadcast", icon: Send },
@@ -111,6 +116,10 @@ export default function OgaHouse() {
   const approvePost = useApprovePost();
   const rejectPost = useRejectPost();
   const { data: users, isLoading: usersLoading } = useRegisteredUsers();
+  const { data: installs, isLoading: installsLoading } = useAppInstalls();
+  const { data: teamMembers, isLoading: teamLoading } = useTeamMembers();
+  const addTeamMember = useAddTeamMember();
+  const removeTeamMember = useRemoveTeamMember();
   const { data: siteAlert } = useSiteAlert();
   const updateSiteAlert = useUpdateSiteAlert();
 
@@ -970,25 +979,218 @@ function UserManagement({ users, isLoading }: { users: AdminUser[]; isLoading: b
 }
 
 // Team Management Component
-function TeamManagement() {
+function TeamManagement({ 
+  members, 
+  isLoading,
+  onAdd,
+  onRemove
+}: { 
+  members: TeamMember[]; 
+  isLoading: boolean;
+  onAdd: (email: string, role: string) => Promise<void>;
+  onRemove: (id: string) => Promise<void>;
+}) {
+  const [email, setEmail] = useState("");
+  const [role, setRole] = useState("admin");
+  const [isAdding, setIsAdding] = useState(false);
+
+  const handleAdd = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) return;
+    
+    setIsAdding(true);
+    try {
+      await onAdd(email, role);
+      toast.success("Team member added successfully");
+      setEmail("");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to add team member");
+    } finally {
+      setIsAdding(false);
+    }
+  };
+
+  const handleRemove = async (id: string) => {
+    if (!confirm("Are you sure you want to remove this team member?")) return;
+    try {
+      await onRemove(id);
+      toast.success("Team member removed");
+    } catch {
+      toast.error("Failed to remove team member");
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <UserCheck className="h-5 w-5 text-emerald-600" />
+            Add Team Member
+          </CardTitle>
+          <CardDescription>Grant staff or admin access to a registered user</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleAdd} className="flex gap-4 items-end">
+            <div className="flex-1 space-y-2">
+              <Label htmlFor="email">User Email</Label>
+              <Input 
+                id="email" 
+                value={email} 
+                onChange={(e) => setEmail(e.target.value)} 
+                placeholder="Enter registered email address"
+                required 
+              />
+            </div>
+            <div className="w-[180px] space-y-2">
+              <Label htmlFor="role">Role</Label>
+              <Select value={role} onValueChange={setRole}>
+                <SelectTrigger id="role">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="moderator">Moderator</SelectItem>
+                  <SelectItem value="editor">Editor</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700" disabled={isAdding}>
+              {isAdding ? "Adding..." : "Add Member"}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Team Members</CardTitle>
+          <CardDescription>Current staff and administrators</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="space-y-2">
+              {[1, 2].map(i => (
+                <div key={i} className="animate-pulse h-12 bg-muted rounded" />
+              ))}
+            </div>
+          ) : !members.length ? (
+            <p className="text-muted-foreground text-center py-8">No team members found.</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>User</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Added</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {members.map((member) => (
+                  <TableRow key={member.id}>
+                    <TableCell className="font-medium">
+                      {member.profile?.full_name || "Unknown"}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {member.profile?.email || "No email"}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={member.role === "admin" ? "default" : "secondary"} className="capitalize">
+                        {member.role}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground text-sm">
+                      {format(new Date(member.created_at), "MMM d, yyyy")}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => handleRemove(member.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// App Install Stats Component
+function AppInstallStats({ installs, isLoading }: { installs: AppInstall[]; isLoading: boolean }) {
   return (
     <Card>
       <CardHeader>
         <CardTitle className="text-lg flex items-center gap-2">
-          <UserCheck className="h-5 w-5 text-emerald-600" />
-          Team Management (Lifters)
+          <Smartphone className="h-5 w-5 text-emerald-600" />
+          App Installs
         </CardTitle>
-        <CardDescription>Manage staff badges and team roles</CardDescription>
+        <CardDescription>Track PWA installations and user devices</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="text-center py-12">
-          <UserCheck className="h-16 w-16 mx-auto mb-4 text-muted-foreground/50" />
-          <h3 className="font-semibold text-lg mb-2">Coming Soon</h3>
-          <p className="text-muted-foreground max-w-md mx-auto">
-            This section will allow you to view Tally form applications and grant 'Staff' badges to team members. 
-            For now, manage team roles directly in the database.
-          </p>
-        </div>
+        {isLoading ? (
+          <div className="space-y-2">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="animate-pulse h-12 bg-muted rounded" />
+            ))}
+          </div>
+        ) : !installs.length ? (
+          <p className="text-muted-foreground text-center py-8">No installation data available.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>User</TableHead>
+                  <TableHead>Device / Agent</TableHead>
+                  <TableHead>Outcome</TableHead>
+                  <TableHead>Date</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {installs.map((install) => (
+                  <TableRow key={install.id}>
+                    <TableCell className="font-medium">
+                      <div className="flex items-center gap-2">
+                        <Avatar className="h-8 w-8">
+                          <AvatarFallback className="bg-emerald-100 text-emerald-700 text-sm">
+                            {(install.profile?.full_name?.[0] || install.profile?.email?.[0] || "U").toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="text-sm font-medium">{install.profile?.full_name || "Anonymous"}</p>
+                          {install.profile?.email && (
+                            <p className="text-xs text-muted-foreground">{install.profile.email}</p>
+                          )}
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="max-w-[200px] truncate text-muted-foreground text-sm" title={install.user_agent || ""}>
+                      {install.user_agent || "Unknown"}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={install.outcome === "accepted" ? "default" : "outline"} className={install.outcome === "accepted" ? "bg-emerald-600" : ""}>
+                        {install.outcome || "Unknown"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground text-sm">
+                      {format(new Date(install.created_at), "MMM d, yyyy HH:mm")}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

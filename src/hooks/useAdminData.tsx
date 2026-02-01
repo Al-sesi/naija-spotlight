@@ -32,6 +32,93 @@ export interface AppInstall {
   } | null;
 }
 
+export interface TeamMember {
+  id: string;
+  user_id: string;
+  role: string;
+  created_at: string;
+  profile?: {
+    full_name: string | null;
+    email: string | null;
+  } | null;
+}
+
+export function useTeamMembers() {
+  return useQuery({
+    queryKey: ["team-members"],
+    queryFn: async () => {
+      const { data: roles, error } = await supabase
+        .from("user_roles")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      // Fetch profiles
+      const userIds = [...new Set(roles?.map(r => r.user_id).filter(Boolean) || [])];
+      
+      let profiles: any[] = [];
+      if (userIds.length > 0) {
+        const { data } = await supabase
+          .from("profiles")
+          .select("id, full_name, email")
+          .in("id", userIds);
+        profiles = data || [];
+      }
+
+      const profileMap = new Map(profiles.map(p => [p.id, p]));
+
+      return roles?.map(role => ({
+        ...role,
+        profile: profileMap.get(role.user_id) || null,
+      })) as TeamMember[];
+    },
+  });
+}
+
+export function useAddTeamMember() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ email, role }: { email: string; role: string }) => {
+      // First find the user by email
+      const { data: profiles, error: profileError } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("email", email)
+        .single();
+      
+      if (profileError || !profiles) throw new Error("User not found with this email");
+
+      const { error } = await supabase
+        .from("user_roles")
+        .insert({ user_id: profiles.id, role });
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["team-members"] });
+    },
+  });
+}
+
+export function useRemoveTeamMember() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (roleId: string) => {
+      const { error } = await supabase
+        .from("user_roles")
+        .delete()
+        .eq("id", roleId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["team-members"] });
+    },
+  });
+}
+
 export function useAppInstalls() {
   return useQuery({
     queryKey: ["app-installs"],
