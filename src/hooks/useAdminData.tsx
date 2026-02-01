@@ -78,13 +78,18 @@ export function usePendingPosts() {
       if (error) throw error;
 
       // Fetch profiles separately
-      const userIds = [...new Set(posts?.map(p => p.user_id) || [])];
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("id, full_name, email")
-        .in("id", userIds);
+      const userIds = [...new Set(posts?.map(p => p.user_id).filter(Boolean) || [])];
+      
+      let profiles: any[] = [];
+      if (userIds.length > 0) {
+        const { data } = await supabase
+          .from("profiles")
+          .select("id, full_name, email")
+          .in("id", userIds);
+        profiles = data || [];
+      }
 
-      const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+      const profileMap = new Map(profiles.map(p => [p.id, p]));
 
       return posts?.map(post => ({
         ...post,

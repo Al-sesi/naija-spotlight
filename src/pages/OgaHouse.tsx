@@ -167,7 +167,18 @@ export default function OgaHouse() {
     }
   }, [siteAlert]);
 
-  // Show loading state while auth is loading
+  // Access control - redirect if not the admin email
+  useEffect(() => {
+    if (!loading) {
+      const userEmail = user?.email?.toLowerCase();
+      const isAllowed = userEmail && ADMIN_EMAILS.includes(userEmail);
+      
+      if (!isAllowed) {
+        navigate("/", { replace: true });
+      }
+    }
+  }, [user, loading, navigate]);
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -181,14 +192,8 @@ export default function OgaHouse() {
     );
   }
 
-  // Access control - redirect if not the admin email
-  useEffect(() => {
-    if (!loading && (!user || !user.email || !ADMIN_EMAILS.includes(user.email))) {
-      navigate("/", { replace: true });
-    }
-  }, [user, loading, navigate]);
-
-  if (!user || !user.email || !ADMIN_EMAILS.includes(user.email)) {
+  const userEmail = user?.email?.toLowerCase();
+  if (!userEmail || !ADMIN_EMAILS.includes(userEmail)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-lg text-muted-foreground">Access denied. Redirecting...</div>
