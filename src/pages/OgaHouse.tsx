@@ -240,7 +240,7 @@ export default function OgaHouse() {
       console.error("Error adding opportunity:", error);
       const errorMessage = error.message || error.error_description || "Failed to add opportunity";
       toast.error(errorMessage);
-      alert(`Debug Error: ${errorMessage}\nDetails: ${error.details || ''}\nHint: ${error.hint || ''}`);
+      alert(`Debug Error: ${errorMessage}\nDetails: ${error.details || ''}\nHint: ${error.hint || ''}\nCode: ${error.code || ''}`);
     }
   };
 
