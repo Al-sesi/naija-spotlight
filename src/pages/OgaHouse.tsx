@@ -236,9 +236,11 @@ export default function OgaHouse() {
         title: "", provider: "", category: "", description: "", link: "",
         deadline: "", event_date: "", state: "Nationwide", is_verified: true, is_remote: false, level: "",
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error adding opportunity:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to add opportunity");
+      const errorMessage = error.message || error.error_description || "Failed to add opportunity";
+      toast.error(errorMessage);
+      alert(`Debug Error: ${errorMessage}\nDetails: ${error.details || ''}\nHint: ${error.hint || ''}`);
     }
   };
 
