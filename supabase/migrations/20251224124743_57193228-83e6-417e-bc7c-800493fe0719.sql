@@ -7,7 +7,7 @@ CREATE TABLE public.subscriptions (
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
     category subscription_category NOT NULL,
     is_active BOOLEAN NOT NULL DEFAULT true,
-    price_naira INTEGER NOT NULL DEFAULT 197,
+    price_naira INTEGER NOT NULL DEFAULT 430,
     billing_cycle TEXT NOT NULL DEFAULT 'monthly', -- 'monthly' or 'yearly'
     started_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
     expires_at TIMESTAMP WITH TIME ZONE,

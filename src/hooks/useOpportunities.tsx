@@ -24,6 +24,80 @@ interface OpportunityFilters {
   search: string;
 }
 
+// Natural language search keywords
+const searchKeywords = {
+  categories: {
+    scholarship: ["scholarship", "scholarships", "grant", "grants", "tuition", "fee", "financial aid"],
+    recruitment: ["job", "jobs", "recruitment", "recruitments", "work", "career", "employment"],
+    internship: ["intern", "interns", "internship", "internships"],
+    competition: ["competition", "competitions", "contest", "contests", "hackathon", "hackathons"],
+    tech: ["tech", "technology", "event", "events", "workshop", "workshops", "bootcamp", "bootcamps"],
+    ngo: ["ngo", "ngos", "non-profit", "nonprofit"],
+    career: ["career", "careers", "professional", "professionals"],
+    social: ["social", "community", "volunteer", "volunteering"]
+  },
+  location: {
+    remote: ["remote", "work from home", "wfh", "virtual"],
+    nationwide: ["nationwide", "all nigeria", "anywhere in nigeria"],
+    states: {
+      lagos: ["lagos", "lag"],
+      abuja: ["abuja", "fct"],
+      kano: ["kano"],
+      kaduna: ["kaduna"],
+      "port harcourt": ["port harcourt", "ph", "rivers"],
+      benin: ["benin", "edo"],
+      ibadan: ["ibadan", "oyo"],
+      enugu: ["enugu"]
+    }
+  },
+  level: {
+    entry: ["entry", "entry level", "beginner", "fresh graduate", "new graduate"],
+    intermediate: ["intermediate", "mid-level", "associate"],
+    professional: ["professional", "senior", "executive", "expert"]
+  }
+};
+
+function parseNaturalLanguageSearch(search: string): {
+  categories: string[],
+  locations: string[],
+  levels: string[],
+  keywords: string
+} {
+  const lowerSearch = search.toLowerCase();
+  const result = {
+    categories: [] as string[],
+    locations: [] as string[],
+    levels: [] as string[],
+    keywords: search
+  };
+
+  // Check for category keywords
+  for (const [category, keywords] of Object.entries(searchKeywords.categories)) {
+    if (keywords.some(keyword => lowerSearch.includes(keyword))) {
+      result.categories.push(category);
+    }
+  }
+
+  // Check for location keywords
+  if (searchKeywords.location.remote.some(keyword => lowerSearch.includes(keyword))) {
+    result.locations.push("Remote");
+  }
+  for (const [state, keywords] of Object.entries(searchKeywords.location.states)) {
+    if (keywords.some(keyword => lowerSearch.includes(keyword))) {
+      result.locations.push(state.charAt(0).toUpperCase() + state.slice(1));
+    }
+  }
+
+  // Check for level keywords
+  for (const [level, keywords] of Object.entries(searchKeywords.level)) {
+    if (keywords.some(keyword => lowerSearch.includes(keyword))) {
+      result.levels.push(level);
+    }
+  }
+
+  return result;
+}
+
 export function useOpportunities(filters: OpportunityFilters) {
   return useQuery({
     queryKey: ["opportunities", filters],
@@ -33,22 +107,39 @@ export function useOpportunities(filters: OpportunityFilters) {
         .select("*")
         .order("deadline", { ascending: true, nullsFirst: false });
 
-      if (filters.types.length > 0) {
-        query = query.in("category", filters.types);
+      // Parse natural language search
+      let searchParams = filters.search ? parseNaturalLanguageSearch(filters.search) : null;
+      
+      // Combine user-selected categories with parsed categories
+      let effectiveTypes = [...filters.types];
+      let effectiveStates = [...filters.states];
+      
+      if (searchParams) {
+        if (searchParams.categories.length > 0) {
+          // Filter by parsed categories
+          effectiveTypes = [...new Set([...effectiveTypes, ...searchParams.categories] as OpportunityType[])];
+        }
+        if (searchParams.locations.length > 0) {
+          effectiveStates = [...new Set([...effectiveStates, ...searchParams.locations])];
+        }
       }
 
-      if (filters.states.length > 0 && !filters.states.includes("All States")) {
-        const stateFilters = filters.states.map(s => {
+      if (effectiveTypes.length > 0) {
+        query = query.in("category", effectiveTypes);
+      }
+
+      if (effectiveStates.length > 0 && !effectiveStates.includes("All States")) {
+        const stateFilters = effectiveStates.map(s => {
           if (s === "Remote") return "is_remote.eq.true";
           if (s === "Nationwide") return "state.eq.Nationwide";
           return `state.eq.${s}`;
         });
         
         // Handle state filtering with OR conditions
-        if (filters.states.includes("Remote")) {
-          query = query.or(`is_remote.eq.true,state.in.(${filters.states.filter(s => s !== "Remote").join(",")}),state.eq.Nationwide`);
+        if (effectiveStates.includes("Remote")) {
+          query = query.or(`is_remote.eq.true,state.in.(${effectiveStates.filter(s => s !== "Remote").join(",")}),state.eq.Nationwide`);
         } else {
-          query = query.or(`state.in.(${filters.states.join(",")}),state.eq.Nationwide`);
+          query = query.or(`state.in.(${effectiveStates.join(",")}),state.eq.Nationwide`);
         }
       }
 

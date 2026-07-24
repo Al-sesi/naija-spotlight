@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS public.app_installs (
 ALTER TABLE public.app_installs ENABLE ROW LEVEL SECURITY;
 
 -- Policies
+DROP POLICY IF EXISTS "Admins can view all app installs" ON public.app_installs;
 CREATE POLICY "Admins can view all app installs"
 ON public.app_installs
 FOR SELECT
@@ -25,12 +26,14 @@ USING (
   )
 );
 
+DROP POLICY IF EXISTS "Users can insert their own install stats" ON public.app_installs;
 CREATE POLICY "Users can insert their own install stats"
 ON public.app_installs
 FOR INSERT
 TO authenticated
 WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Anyone can insert install stats (for non-logged in users)" ON public.app_installs;
 CREATE POLICY "Anyone can insert install stats (for non-logged in users)"
 ON public.app_installs
 FOR INSERT

@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { differenceInDays, format, isPast, parseISO } from "date-fns";
 import { BadgeCheck, Calendar, Clock, MapPin, ExternalLink, Bookmark, BookmarkCheck, GraduationCap, Lock } from "lucide-react";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
@@ -5,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Opportunity } from "@/hooks/useOpportunities";
 import { useSaveApplication, useUserApplications, useRemoveApplication } from "@/hooks/useApplications";
+import { useUserBehavior } from "@/hooks/useUserBehavior";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -76,9 +78,14 @@ export function OpportunityCard({ opportunity, style }: OpportunityCardProps) {
   const { data: applications } = useUserApplications();
   const saveApplication = useSaveApplication();
   const removeApplication = useRemoveApplication();
+  const { trackView, trackSave, trackApply } = useUserBehavior();
 
   const savedApplication = applications?.find(a => a.opportunity_id === opportunity.id);
   const isSaved = !!savedApplication;
+
+  useEffect(() => {
+    trackView(opportunity.id);
+  }, [opportunity.id, trackView]);
 
   // Check if email is confirmed
   const isEmailConfirmed = session?.user?.email_confirmed_at != null;
@@ -107,6 +114,7 @@ export function OpportunityCard({ opportunity, style }: OpportunityCardProps) {
         toast.success("Removed from saved");
       } else {
         await saveApplication.mutateAsync({ opportunityId: opportunity.id });
+        trackSave(opportunity.id);
         toast.success("Saved to your dashboard");
       }
     } catch (error) {
@@ -126,6 +134,7 @@ export function OpportunityCard({ opportunity, style }: OpportunityCardProps) {
     }
 
     window.open(opportunity.link, "_blank", "noopener,noreferrer");
+    trackApply(opportunity.id);
     if (user && !isSaved) {
       saveApplication.mutate({ opportunityId: opportunity.id, status: "applied" });
     }

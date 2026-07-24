@@ -9,7 +9,8 @@ interface LayoutProps {
 
 export function Layout({ children }: LayoutProps) {
   const location = useLocation();
-  const isStandalone = location.pathname === "/verification-success";
+  const standaloneRoutes = new Set(["/verification-success", "/admin", "/ogahouse"]);
+  const isStandalone = standaloneRoutes.has(location.pathname);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">

@@ -43,7 +43,7 @@ export default function Auth() {
 
   useEffect(() => {
     if (user && isEmailConfirmed) {
-      navigate("/");
+      navigate("/dashboard");
     }
   }, [user, isEmailConfirmed, navigate]);
 

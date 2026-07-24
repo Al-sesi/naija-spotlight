@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
-import { Shield, Plus, Link as LinkIcon, Users, MessageSquare, CheckCircle, XCircle, Trash2, Edit, ToggleLeft } from "lucide-react";
+import { Shield, Plus, Link as LinkIcon, Users, MessageSquare, CheckCircle, XCircle, Trash2, Edit, ToggleLeft, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 import { useOpportunities, useCreateOpportunity, useDeleteOpportunity, useUpdateOpportunity } from "@/hooks/useOpportunities";
 import { usePendingPosts, useApprovePost, useRejectPost, useRegisteredUsers } from "@/hooks/useAdminData";
+import { AdminAnalytics } from "@/components/admin/AdminAnalytics";
 import { NIGERIAN_STATES, OPPORTUNITY_TYPES, OpportunityType } from "@/lib/constants";
 import { toast } from "sonner";
 
@@ -139,7 +140,11 @@ export default function Admin() {
       </div>
 
       <Tabs defaultValue="add" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4 max-w-lg">
+        <TabsList className="grid w-full grid-cols-5 max-w-2xl">
+          <TabsTrigger value="analytics" className="text-xs sm:text-sm">
+            <BarChart3 className="h-4 w-4 mr-1 sm:mr-2" />
+            <span className="hidden sm:inline">Analytics</span>
+          </TabsTrigger>
           <TabsTrigger value="add" className="text-xs sm:text-sm">
             <Plus className="h-4 w-4 mr-1 sm:mr-2" />
             <span className="hidden sm:inline">Add</span>
@@ -162,6 +167,11 @@ export default function Admin() {
             <span className="hidden sm:inline">Users</span>
           </TabsTrigger>
         </TabsList>
+
+        {/* Analytics Tab */}
+        <TabsContent value="analytics">
+          <AdminAnalytics />
+        </TabsContent>
 
         {/* Add Opportunity Tab */}
         <TabsContent value="add">

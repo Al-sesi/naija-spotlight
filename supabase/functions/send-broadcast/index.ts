@@ -3,6 +3,10 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import nodemailer from "npm:nodemailer@6.9.13";
 
 const BREVO_SMTP_KEY = Deno.env.get("BREVO_SMTP_KEY");
+const OWNER_EMAILS = new Set([
+  "abdulmajeedsesiadam@gmail.com",
+  "naijalift01@gmail.com",
+]);
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -14,6 +18,18 @@ interface BroadcastPayload {
   message: string;
   audience: "all" | "premium" | "free";
   is_test_mode?: boolean;
+}
+
+interface ProfileRecipient {
+  email: string | null;
+  full_name: string | null;
+}
+
+function jsonResponse(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -29,8 +45,53 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("Supabase environment variables are not configured");
     }
 
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return jsonResponse({ error: "Missing authorization header" }, 401);
+    }
+
+    const adminClient = createClient(supabaseUrl, serviceRoleKey);
+    const userClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY") ?? "", {
+      global: {
+        headers: {
+          Authorization: authHeader,
+        },
+      },
+    });
+
+    const {
+      data: { user },
+      error: authError,
+    } = await userClient.auth.getUser();
+
+    if (authError || !user) {
+      return jsonResponse({ error: "Unauthorized" }, 401);
+    }
+
+    const normalizedEmail = (user.email ?? "").toLowerCase();
+    const isOwner = OWNER_EMAILS.has(normalizedEmail);
+
+    let isAdmin = isOwner;
+    if (!isAdmin) {
+      const { data: roleRow, error: roleError } = await adminClient
+        .from("user_roles")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("role", "admin")
+        .maybeSingle();
+
+      if (roleError) {
+        throw roleError;
+      }
+
+      isAdmin = Boolean(roleRow);
+    }
+
+    if (!isAdmin) {
+      return jsonResponse({ error: "Forbidden" }, 403);
+    }
+
     const { subject, message, audience, is_test_mode }: BroadcastPayload = await req.json();
-    const supabase = createClient(supabaseUrl, serviceRoleKey);
     let recipients: { email: string; fullName: string | null }[] = [];
 
     if (is_test_mode) {
@@ -38,7 +99,7 @@ const handler = async (req: Request): Promise<Response> => {
       const adminEmails = ["abdulmajeedsesiadam@gmail.com", "naijalift01@gmail.com"];
       recipients = adminEmails.map(email => ({ email, fullName: "Admin" }));
     } else {
-      let query = supabase.from("profiles").select("email, full_name");
+      let query = adminClient.from("profiles").select("email, full_name");
       
       if (audience === "premium") {
         query = query.eq("plan_type", "premium_lifter");
@@ -51,7 +112,7 @@ const handler = async (req: Request): Promise<Response> => {
 
       if (profiles) {
          const uniqueEmails = new Set<string>();
-         profiles.forEach((p: any) => {
+         profiles.forEach((p: ProfileRecipient) => {
              if (p.email && !uniqueEmails.has(p.email)) {
                  uniqueEmails.add(p.email);
                  recipients.push({ email: p.email, fullName: p.full_name });
@@ -115,15 +176,11 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
-    return new Response(JSON.stringify({ success: true, stats: { success: sentCount, failed: recipients.length - sentCount } }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" }
-    });
+    return jsonResponse({ success: true, stats: { success: sentCount, failed: recipients.length - sentCount } });
 
-  } catch (error: any) {
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" }
-    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return jsonResponse({ error: message }, 500);
   }
 };
 

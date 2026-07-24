@@ -7,8 +7,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "14.1"
   }
@@ -143,6 +141,65 @@ export type Database = {
         }
         Relationships: []
       }
+      opportunity_metadata: {
+        Row: {
+          id: string
+          opportunity_id: string
+          eligibility_requirements: string | null
+          age_requirement: string | null
+          education_requirement: string | null
+          language_requirement: string | null
+          keywords: string[] | null
+          tags: string[] | null
+          location_requirement: string | null
+          industry: string | null
+          salary_range: string | null
+          benefits: string[] | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          opportunity_id: string
+          eligibility_requirements?: string | null
+          age_requirement?: string | null
+          education_requirement?: string | null
+          language_requirement?: string | null
+          keywords?: string[] | null
+          tags?: string[] | null
+          location_requirement?: string | null
+          industry?: string | null
+          salary_range?: string | null
+          benefits?: string[] | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          opportunity_id?: string
+          eligibility_requirements?: string | null
+          age_requirement?: string | null
+          education_requirement?: string | null
+          language_requirement?: string | null
+          keywords?: string[] | null
+          tags?: string[] | null
+          location_requirement?: string | null
+          industry?: string | null
+          salary_range?: string | null
+          benefits?: string[] | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "opportunity_metadata_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: true
+            referencedRelation: "opportunities"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       post_likes: {
         Row: {
           created_at: string | null
@@ -169,7 +226,7 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "community_posts"
             referencedColumns: ["id"]
-          },
+          }
         ]
       }
       profiles: {
@@ -187,6 +244,29 @@ export type Database = {
           subscription_status: string
           trial_ends_at: string | null
           updated_at: string | null
+          phone_number: string | null
+          gender: string | null
+          age: number | null
+          date_of_birth: string | null
+          country: string | null
+          state: string | null
+          lga: string | null
+          highest_qualification: string | null
+          field_of_study: string | null
+          institution: string | null
+          is_current_student: boolean | null
+          graduation_year: number | null
+          career_statuses: string[] | null
+          skills: string[] | null
+          interests: string[] | null
+          preferred_location: string | null
+          preferred_industries: string[] | null
+          opportunity_level: string | null
+          notification_frequency: string | null
+          onboarding_completed: boolean | null
+          role: string | null
+          referral_code: string | null
+          referred_by: string | null
         }
         Insert: {
           avatar_url?: string | null
@@ -202,6 +282,29 @@ export type Database = {
           subscription_status?: string
           trial_ends_at?: string | null
           updated_at?: string | null
+          phone_number?: string | null
+          gender?: string | null
+          age?: number | null
+          date_of_birth?: string | null
+          country?: string | null
+          state?: string | null
+          lga?: string | null
+          highest_qualification?: string | null
+          field_of_study?: string | null
+          institution?: string | null
+          is_current_student?: boolean | null
+          graduation_year?: number | null
+          career_statuses?: string[] | null
+          skills?: string[] | null
+          interests?: string[] | null
+          preferred_location?: string | null
+          preferred_industries?: string[] | null
+          opportunity_level?: string | null
+          notification_frequency?: string | null
+          onboarding_completed?: boolean | null
+          role?: string | null
+          referral_code?: string | null
+          referred_by?: string | null
         }
         Update: {
           avatar_url?: string | null
@@ -217,8 +320,126 @@ export type Database = {
           subscription_status?: string
           trial_ends_at?: string | null
           updated_at?: string | null
+          phone_number?: string | null
+          gender?: string | null
+          age?: number | null
+          date_of_birth?: string | null
+          country?: string | null
+          state?: string | null
+          lga?: string | null
+          highest_qualification?: string | null
+          field_of_study?: string | null
+          institution?: string | null
+          is_current_student?: boolean | null
+          graduation_year?: number | null
+          career_statuses?: string[] | null
+          skills?: string[] | null
+          interests?: string[] | null
+          preferred_location?: string | null
+          preferred_industries?: string[] | null
+          opportunity_level?: string | null
+          notification_frequency?: string | null
+          onboarding_completed?: boolean | null
+          role?: string | null
+          referral_code?: string | null
+          referred_by?: string | null
         }
         Relationships: []
+      }
+      recommendations: {
+        Row: {
+          id: string
+          user_id: string
+          opportunity_id: string
+          match_score: number
+          match_reasons: string[] | null
+          is_top_match: boolean | null
+          is_trending: boolean | null
+          is_hidden_gem: boolean | null
+          expires_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          opportunity_id: string
+          match_score: number
+          match_reasons?: string[] | null
+          is_top_match?: boolean | null
+          is_trending?: boolean | null
+          is_hidden_gem?: boolean | null
+          expires_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          opportunity_id?: string
+          match_score?: number
+          match_reasons?: string[] | null
+          is_top_match?: boolean | null
+          is_trending?: boolean | null
+          is_hidden_gem?: boolean | null
+          expires_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recommendations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recommendations_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "opportunities"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      recommendation_analytics: {
+        Row: {
+          id: string
+          opportunity_id: string
+          total_recommendations: number | null
+          total_clicks: number | null
+          total_saves: number | null
+          total_applications: number | null
+          date_recorded: string
+        }
+        Insert: {
+          id?: string
+          opportunity_id: string
+          total_recommendations?: number | null
+          total_clicks?: number | null
+          total_saves?: number | null
+          total_applications?: number | null
+          date_recorded?: string
+        }
+        Update: {
+          id?: string
+          opportunity_id?: string
+          total_recommendations?: number | null
+          total_clicks?: number | null
+          total_saves?: number | null
+          total_applications?: number | null
+          date_recorded?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recommendation_analytics_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "opportunities"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       site_alerts: {
         Row: {
@@ -318,7 +539,103 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "opportunities"
             referencedColumns: ["id"]
+          }
+        ]
+      }
+      user_behavior: {
+        Row: {
+          id: string
+          user_id: string
+          opportunity_id: string
+          action_type: string
+          action_timestamp: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          opportunity_id: string
+          action_type: string
+          action_timestamp?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          opportunity_id?: string
+          action_type?: string
+          action_timestamp?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_behavior_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "user_behavior_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "opportunities"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      user_notifications: {
+        Row: {
+          id: string
+          user_id: string
+          title: string
+          body: string
+          type: string
+          related_opportunity_id: string | null
+          is_read: boolean | null
+          read_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          title: string
+          body: string
+          type: string
+          related_opportunity_id?: string | null
+          is_read?: boolean | null
+          read_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          title?: string
+          body?: string
+          type?: string
+          related_opportunity_id?: string | null
+          is_read?: boolean | null
+          read_at?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_notifications_related_opportunity_id_fkey"
+            columns: ["related_opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "opportunities"
+            referencedColumns: ["id"]
+          }
         ]
       }
       user_roles: {
@@ -344,6 +661,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_match_score: {
+        Args: {
+          p_user_id: string
+          p_opportunity_id: string
+        }
+        Returns: number
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -358,6 +682,9 @@ export type Database = {
       application_status: "saved" | "applied" | "shortlisted" | "rejected"
       opportunity_type:
         | "government"
+        | "recruitment"
+        | "internship"
+        | "competition"
         | "ngo"
         | "tech"
         | "career"
@@ -499,6 +826,9 @@ export const Constants = {
       application_status: ["saved", "applied", "shortlisted", "rejected"],
       opportunity_type: [
         "government",
+        "recruitment",
+        "internship",
+        "competition",
         "ngo",
         "tech",
         "career",

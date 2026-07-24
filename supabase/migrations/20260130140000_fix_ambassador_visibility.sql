@@ -3,6 +3,7 @@ ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
 -- 2. Create a policy allowing Admins to view all profiles
 -- We check against the user_roles table for the 'admin' role
+DROP POLICY IF EXISTS "Admins can view all profiles" ON public.profiles;
 CREATE POLICY "Admins can view all profiles"
 ON public.profiles
 FOR SELECT

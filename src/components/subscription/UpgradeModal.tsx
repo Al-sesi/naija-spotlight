@@ -61,7 +61,7 @@ export function UpgradeModal({ open, onOpenChange, feature }: UpgradeModalProps)
             </Badge>
             <div className="text-center pt-2">
               <div className="flex items-baseline justify-center gap-1">
-                <span className="text-3xl sm:text-4xl font-bold text-amber-600 dark:text-amber-400">₦197</span>
+                <span className="text-3xl sm:text-4xl font-bold text-amber-600 dark:text-amber-400">₦430</span>
                 <span className="text-sm text-muted-foreground">/month</span>
               </div>
               <p className="text-xs sm:text-sm text-muted-foreground mt-1">

@@ -54,24 +54,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
-      setLoading(false);
 
       if (session?.user) {
         setTimeout(() => {
-          checkAdminRole(session.user);
+          void (async () => {
+            setLoading(true);
+            const adminStatus = await checkAdminRole(session.user);
+            setIsAdmin(adminStatus);
+            setLoading(false);
+          })();
         }, 0);
       } else {
         setIsAdmin(false);
+        setLoading(false);
       }
     });
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-      setLoading(false);
 
       if (session?.user) {
-        checkAdminRole(session.user);
+        const adminStatus = await checkAdminRole(session.user);
+        setIsAdmin(adminStatus);
+        setLoading(false);
+      } else {
+        setLoading(false);
       }
     });
 
@@ -83,8 +91,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // even if role rows haven't been copied into the new database yet.
     const email = (authUser.email || "").toLowerCase();
     if (OWNER_EMAILS.includes(email)) {
-      setIsAdmin(true);
-      return;
+      return true;
     }
 
     const { data } = await supabase
@@ -94,7 +101,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .eq("role", "admin")
       .maybeSingle();
 
-    setIsAdmin(!!data);
+    return !!data;
   };
 
   const signIn = async (email: string, password: string) => {

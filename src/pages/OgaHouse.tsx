@@ -31,8 +31,6 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useMutation } from "@tanstack/react-query";
 
-const ADMIN_EMAILS = ["abdulmajeedsesiadam@gmail.com", "naijalift01@gmail.com"];
-
 interface OpportunityFormState {
   title: string;
   provider: string;
@@ -99,15 +97,11 @@ const sidebarItems: { id: Section; label: string; icon: React.ComponentType<{ cl
 ];
 
 export default function OgaHouse() {
-  const { user, loading } = useAuth();
+  const { user, loading, isAdmin } = useAuth();
   const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState<Section>("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
-  useEffect(() => {
-    console.log("OgaHouse mounted. User:", user?.email, "Loading:", loading);
-  }, [user, loading]);
-  
   const { data: opportunities } = useOpportunities({ types: [], states: [], search: "" });
   const createOpportunity = useCreateOpportunity();
   const deleteOpportunity = useDeleteOpportunity();
@@ -179,14 +173,11 @@ export default function OgaHouse() {
   // Access control - redirect if not the admin email
   useEffect(() => {
     if (!loading) {
-      const userEmail = user?.email?.toLowerCase();
-      const isAllowed = userEmail && ADMIN_EMAILS.includes(userEmail);
-      
-      if (!isAllowed) {
+      if (!user || !isAdmin) {
         navigate("/", { replace: true });
       }
     }
-  }, [user, loading, navigate]);
+  }, [user, loading, isAdmin, navigate]);
 
   if (loading) {
     return (
@@ -201,8 +192,7 @@ export default function OgaHouse() {
     );
   }
 
-  const userEmail = user?.email?.toLowerCase();
-  if (!userEmail || !ADMIN_EMAILS.includes(userEmail)) {
+  if (!user || !isAdmin) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-lg text-muted-foreground">Access denied. Redirecting...</div>
@@ -236,11 +226,10 @@ export default function OgaHouse() {
         title: "", provider: "", category: "", description: "", link: "",
         deadline: "", event_date: "", state: "Nationwide", is_verified: true, is_remote: false, level: "",
       });
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error adding opportunity:", error);
-      const errorMessage = error.message || error.error_description || "Failed to add opportunity";
+      const errorMessage = error instanceof Error ? error.message : "Failed to add opportunity";
       toast.error(errorMessage);
-      alert(`Debug Error: ${errorMessage}\nDetails: ${error.details || ''}\nHint: ${error.hint || ''}\nCode: ${error.code || ''}`);
     }
   };
 
@@ -366,12 +355,12 @@ export default function OgaHouse() {
   return (
     <div className="min-h-screen bg-background">
       {/* Mobile Header */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-emerald-600 text-white flex items-center justify-between px-4 z-50">
+      <div className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-primary text-primary-foreground flex items-center justify-between px-4 z-50">
         <div className="flex items-center gap-2">
           <Shield className="h-5 w-5" />
           <span className="font-display font-bold">OgaHouse</span>
         </div>
-        <Button variant="ghost" size="icon" className="text-white hover:bg-emerald-700" onClick={() => setSidebarOpen(!sidebarOpen)}>
+        <Button variant="ghost" size="icon" className="text-primary-foreground hover:bg-primary/80" onClick={() => setSidebarOpen(!sidebarOpen)}>
           {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </Button>
       </div>
@@ -379,18 +368,18 @@ export default function OgaHouse() {
       <div className="flex">
         {/* Sidebar */}
         <aside className={cn(
-          "fixed lg:sticky top-0 left-0 h-screen bg-emerald-600 text-white transition-all duration-300 z-40",
+          "fixed lg:sticky top-0 left-0 h-screen bg-primary text-primary-foreground transition-all duration-300 z-40",
           sidebarOpen ? "w-64" : "w-0 lg:w-16",
           "lg:top-0 pt-14 lg:pt-0"
         )}>
-          <div className="p-4 border-b border-emerald-500 hidden lg:flex items-center gap-3">
+          <div className="p-4 border-b border-primary/70 hidden lg:flex items-center gap-3">
             <div className="h-10 w-10 rounded-lg bg-white/10 flex items-center justify-center">
               <Shield className="h-5 w-5" />
             </div>
             {sidebarOpen && (
               <div>
                 <h1 className="font-display font-bold">OgaHouse</h1>
-                <p className="text-xs text-emerald-200">Admin Portal</p>
+                <p className="text-xs text-primary-foreground/80">Admin Portal</p>
               </div>
             )}
           </div>
@@ -408,7 +397,7 @@ export default function OgaHouse() {
                     "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all text-left",
                     activeSection === item.id
                       ? "bg-white/20 text-white font-medium"
-                      : "text-emerald-100 hover:bg-white/10"
+                      : "text-primary-foreground/80 hover:bg-white/10 hover:text-white"
                   )}
                 >
                   <item.icon className="h-5 w-5 flex-shrink-0" />
@@ -428,7 +417,7 @@ export default function OgaHouse() {
           {/* Toggle button for desktop */}
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="hidden lg:flex absolute -right-3 top-20 h-6 w-6 rounded-full bg-emerald-600 border-2 border-white items-center justify-center hover:bg-emerald-700"
+            className="hidden lg:flex absolute -right-3 top-20 h-6 w-6 rounded-full bg-primary border-2 border-white items-center justify-center hover:bg-primary/90"
           >
             <ChevronRight className={cn("h-3 w-3 transition-transform", sidebarOpen && "rotate-180")} />
           </button>
@@ -481,7 +470,7 @@ function BroadcastMessage({
     <Card className="max-w-2xl">
       <CardHeader>
         <CardTitle className="text-lg flex items-center gap-2">
-          <Send className="h-5 w-5 text-emerald-600" />
+          <Send className="h-5 w-5 text-primary" />
           Broadcast Message
         </CardTitle>
         <CardDescription>Send an email to all registered users or specific groups.</CardDescription>
@@ -528,7 +517,7 @@ function BroadcastMessage({
             </p>
           </div>
 
-          <Button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700" disabled={isLoading}>
+          <Button type="submit" className="w-full bg-primary hover:bg-primary/90" disabled={isLoading}>
             {isLoading ? "Sending Broadcast..." : "Send Broadcast"}
           </Button>
         </form>
@@ -602,7 +591,7 @@ function DashboardOverview({
           <CardTitle className="text-lg">Quick Actions</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <Button onClick={() => onNavigate("add")} className="bg-emerald-600 hover:bg-emerald-700">
+              <Button onClick={() => onNavigate("add")} className="bg-primary hover:bg-primary/90">
             <Plus className="h-4 w-4 mr-2" />
             Add Opportunity
           </Button>
@@ -640,7 +629,7 @@ function AddOpportunityForm({
     <Card className="max-w-2xl">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-lg">
-          <Plus className="h-5 w-5 text-emerald-600" />
+              <Plus className="h-5 w-5 text-primary" />
           Add New Opportunity
         </CardTitle>
         <CardDescription>All opportunities created here will be automatically verified.</CardDescription>
@@ -722,7 +711,7 @@ function AddOpportunityForm({
             </Badge>
           </div>
 
-          <Button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700" disabled={isLoading}>
+              <Button type="submit" className="w-full bg-primary hover:bg-primary/90" disabled={isLoading}>
             {isLoading ? "Adding..." : "Add Opportunity"}
           </Button>
         </form>
@@ -790,7 +779,7 @@ function ManageOpportunities({
                         )}
                       </TableCell>
                       <TableCell>
-                        <Badge variant={opp.is_verified ? "default" : "secondary"} className={opp.is_verified ? "bg-emerald-600" : ""}>
+                            <Badge variant={opp.is_verified ? "default" : "secondary"} className={opp.is_verified ? "bg-primary" : ""}>
                           {opp.is_verified ? "Verified" : "Unverified"}
                         </Badge>
                       </TableCell>
@@ -854,7 +843,7 @@ function ReviewPosts({
     <Card>
       <CardHeader>
         <CardTitle className="text-lg flex items-center gap-2">
-          <MessageSquare className="h-5 w-5 text-emerald-600" />
+            <MessageSquare className="h-5 w-5 text-primary" />
           Review Community Posts
         </CardTitle>
         <CardDescription>Approve or reject pending community posts</CardDescription>
@@ -871,7 +860,7 @@ function ReviewPosts({
           </div>
         ) : !posts.length ? (
           <div className="text-center py-8">
-            <CheckCircle className="h-12 w-12 mx-auto mb-4 text-emerald-600" />
+            <CheckCircle className="h-12 w-12 mx-auto mb-4 text-primary" />
             <p className="text-muted-foreground">No pending posts to review.</p>
           </div>
         ) : (
@@ -880,7 +869,7 @@ function ReviewPosts({
               <div key={post.id} className="border rounded-lg p-4">
                 <div className="flex items-center gap-3 mb-3">
                   <Avatar className="h-8 w-8">
-                    <AvatarFallback className="bg-emerald-100 text-emerald-700 text-sm font-semibold">
+                        <AvatarFallback className="bg-primary/10 text-primary text-sm font-semibold">
                       {(post.profile?.full_name?.[0] || post.profile?.email?.[0] || "U").toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
@@ -906,7 +895,7 @@ function ReviewPosts({
                   </Button>
                   <Button
                     size="sm"
-                    className="bg-emerald-600 hover:bg-emerald-700"
+                    className="bg-primary hover:bg-primary/90"
                     onClick={() => onApprove(post.id)}
                     disabled={approvePending}
                   >
@@ -929,7 +918,7 @@ function UserManagement({ users, isLoading }: { users: AdminUser[]; isLoading: b
     <Card>
       <CardHeader>
         <CardTitle className="text-lg flex items-center gap-2">
-          <Users className="h-5 w-5 text-emerald-600" />
+            <Users className="h-5 w-5 text-primary" />
           Registered Users
         </CardTitle>
         <CardDescription>{users.length} users registered</CardDescription>
@@ -960,7 +949,7 @@ function UserManagement({ users, isLoading }: { users: AdminUser[]; isLoading: b
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-2">
                         <Avatar className="h-8 w-8">
-                          <AvatarFallback className="bg-emerald-100 text-emerald-700 text-sm">
+                              <AvatarFallback className="bg-primary/10 text-primary text-sm">
                             {(u.full_name?.[0] || u.email?.[0] || "U").toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
@@ -972,7 +961,7 @@ function UserManagement({ users, isLoading }: { users: AdminUser[]; isLoading: b
                       {u.created_at ? format(new Date(u.created_at), "MMM d, yyyy") : "N/A"}
                     </TableCell>
                     <TableCell>
-                      <Badge variant="secondary" className="bg-emerald-100 text-emerald-700">
+                          <Badge variant="secondary" className="bg-primary/10 text-primary">
                         <CheckCircle className="h-3 w-3 mr-1" />
                         Verified
                       </Badge>
@@ -1013,8 +1002,9 @@ function TeamManagement({
       await onAdd(email, role);
       toast.success("Team member added successfully");
       setEmail("");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to add team member");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to add team member";
+      toast.error(message);
     } finally {
       setIsAdding(false);
     }
@@ -1035,10 +1025,10 @@ function TeamManagement({
       <Card>
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
-            <UserCheck className="h-5 w-5 text-emerald-600" />
+                <UserCheck className="h-5 w-5 text-primary" />
             Add Team Member / Ambassador
           </CardTitle>
-          <CardDescription>Grant staff, admin, or ambassador access to a registered user</CardDescription>
+      <CardDescription>Grant admin, moderator, or ambassador access to a registered user</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleAdd} className="flex gap-4 items-end">
@@ -1062,11 +1052,10 @@ function TeamManagement({
                   <SelectItem value="ambassador">Ambassador</SelectItem>
                   <SelectItem value="admin">Admin</SelectItem>
                   <SelectItem value="moderator">Moderator</SelectItem>
-                  <SelectItem value="editor">Editor</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700" disabled={isAdding}>
+                <Button type="submit" className="bg-primary hover:bg-primary/90" disabled={isAdding}>
               {isAdding ? "Adding..." : "Add Member"}
             </Button>
           </form>
@@ -1142,7 +1131,7 @@ function AppInstallStats({ installs, isLoading }: { installs: AppInstall[]; isLo
     <Card>
       <CardHeader>
         <CardTitle className="text-lg flex items-center gap-2">
-          <Smartphone className="h-5 w-5 text-emerald-600" />
+          <Smartphone className="h-5 w-5 text-primary" />
           App Installs
         </CardTitle>
         <CardDescription>Track PWA installations and user devices</CardDescription>
@@ -1173,7 +1162,7 @@ function AppInstallStats({ installs, isLoading }: { installs: AppInstall[]; isLo
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-2">
                         <Avatar className="h-8 w-8">
-                          <AvatarFallback className="bg-emerald-100 text-emerald-700 text-sm">
+                            <AvatarFallback className="bg-primary/10 text-primary text-sm">
                             {(install.profile?.full_name?.[0] || install.profile?.email?.[0] || "U").toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
@@ -1189,7 +1178,7 @@ function AppInstallStats({ installs, isLoading }: { installs: AppInstall[]; isLo
                       {install.user_agent || "Unknown"}
                     </TableCell>
                     <TableCell>
-                      <Badge variant={install.outcome === "accepted" ? "default" : "outline"} className={install.outcome === "accepted" ? "bg-emerald-600" : ""}>
+                          <Badge variant={install.outcome === "accepted" ? "default" : "outline"} className={install.outcome === "accepted" ? "bg-primary" : ""}>
                         {install.outcome || "Unknown"}
                       </Badge>
                     </TableCell>
@@ -1223,7 +1212,7 @@ function SiteAlerts({
     <Card className="max-w-2xl">
       <CardHeader>
         <CardTitle className="text-lg flex items-center gap-2">
-          <Megaphone className="h-5 w-5 text-emerald-600" />
+            <Megaphone className="h-5 w-5 text-primary" />
           Site-Wide Alert Banner
         </CardTitle>
         <CardDescription>Update the home page alert message</CardDescription>
@@ -1267,7 +1256,7 @@ function SiteAlerts({
             </Label>
           </div>
 
-          <Button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700" disabled={isLoading}>
+          <Button type="submit" className="w-full bg-primary hover:bg-primary/90" disabled={isLoading}>
             {isLoading ? "Updating..." : "Update Alert"}
           </Button>
         </form>

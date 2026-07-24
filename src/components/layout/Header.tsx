@@ -13,8 +13,9 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 
 const navLinks = [
-  { href: "/", label: "Opportunities" },
-  { href: "/dashboard", label: "My Applications" },
+  { href: "/", label: "Home" },
+  { href: "/opportunities", label: "Opportunities" },
+  { href: "/dashboard", label: "Dashboard" },
   { href: "/community", label: "Community" },
 ];
 
@@ -56,9 +57,9 @@ export function Header() {
           ))}
           {isAdmin && (
             <Link
-              to="/admin"
+              to="/ogahouse"
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
-                isActive("/admin")
+                isActive("/ogahouse")
                   ? "bg-primary text-primary-foreground"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted"
               }`}
@@ -72,40 +73,52 @@ export function Header() {
         {/* Auth Section */}
         <div className="flex items-center gap-2">
           {user ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="rounded-full">
-                  <User className="h-5 w-5" />
+            <>
+              <Link to="/dashboard" className="hidden sm:block">
+                <Button
+                  variant={isActive("/dashboard") ? "default" : "outline"}
+                  size="sm"
+                  className="gap-2"
+                >
+                  <LayoutDashboard className="h-4 w-4" />
+                  Dashboard
                 </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48 bg-popover">
-                <DropdownMenuItem asChild>
-                  <Link to="/dashboard" className="flex items-center gap-2 cursor-pointer">
-                    <LayoutDashboard className="h-4 w-4" />
-                    Dashboard
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/community" className="flex items-center gap-2 cursor-pointer">
-                    <MessageSquare className="h-4 w-4" />
-                    Community
-                  </Link>
-                </DropdownMenuItem>
-                {isAdmin && (
+              </Link>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="rounded-full">
+                    <User className="h-5 w-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48 bg-popover">
                   <DropdownMenuItem asChild>
-                    <Link to="/admin" className="flex items-center gap-2 cursor-pointer">
-                      <Shield className="h-4 w-4" />
-                      Admin Panel
+                    <Link to="/dashboard" className="flex items-center gap-2 cursor-pointer">
+                      <LayoutDashboard className="h-4 w-4" />
+                      Dashboard
                     </Link>
                   </DropdownMenuItem>
-                )}
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={signOut} className="flex items-center gap-2 cursor-pointer text-destructive">
-                  <LogOut className="h-4 w-4" />
-                  Sign Out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                  <DropdownMenuItem asChild>
+                    <Link to="/community" className="flex items-center gap-2 cursor-pointer">
+                      <MessageSquare className="h-4 w-4" />
+                      Community
+                    </Link>
+                  </DropdownMenuItem>
+                  {isAdmin && (
+                    <DropdownMenuItem asChild>
+                      <Link to="/ogahouse" className="flex items-center gap-2 cursor-pointer">
+                        <Shield className="h-4 w-4" />
+                        Admin Panel
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={signOut} className="flex items-center gap-2 cursor-pointer text-destructive">
+                    <LogOut className="h-4 w-4" />
+                    Sign Out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </>
           ) : (
             <Link to="/auth">
               <Button variant="default" size="sm" className="text-sm">
@@ -139,10 +152,10 @@ export function Header() {
                 ))}
                 {isAdmin && (
                   <Link
-                    to="/admin"
+                    to="/ogahouse"
                     onClick={() => setIsOpen(false)}
                     className={`px-4 py-3 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
-                      isActive("/admin")
+                      isActive("/ogahouse")
                         ? "bg-primary text-primary-foreground"
                         : "text-muted-foreground hover:text-foreground hover:bg-muted"
                     }`}

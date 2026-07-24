@@ -92,7 +92,7 @@ export function BillingSettings() {
 
   const categoriesCount = subscription?.premium_categories?.length ?? 0;
   const billedCategories = categoriesCount > 0 ? categoriesCount : 1;
-  const pricePerCategory = 197;
+  const pricePerCategory = 430;
   const totalPrice = billedCategories * pricePerCategory;
 
   return (
@@ -219,7 +219,7 @@ export function BillingSettings() {
                   className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-lg shadow-amber-500/30"
                 >
                   <Crown className="h-4 w-4 mr-2" />
-                  Upgrade to Premium • from ₦197/month
+                  Upgrade to Premium • from ₦430/month
                 </Button>
                 <p className="text-xs text-muted-foreground mt-3">
                   Start with a 30-day free trial

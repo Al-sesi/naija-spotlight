@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-access-token",
 };
 
 serve(async (req) => {
@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const authHeader = req.headers.get("Authorization");
+    const authHeader = req.headers.get("Authorization") || req.headers.get("x-access-token");
     if (!authHeader) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
@@ -19,7 +19,8 @@ serve(async (req) => {
       });
     }
 
-    const [, token] = authHeader.split(" ");
+    const tokenParts = authHeader.split(" ");
+    const token = tokenParts.length === 2 ? tokenParts[1] : tokenParts[0];
     if (!token) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
@@ -58,7 +59,7 @@ serve(async (req) => {
 
     const { plan } = await req.json();
 
-    const amount = 19700;
+    const amount = 43000;
 
     const paystackResponse = await fetch("https://api.paystack.co/transaction/initialize", {
       method: "POST",

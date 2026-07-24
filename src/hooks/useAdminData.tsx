@@ -1,5 +1,16 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { Tables } from "@/integrations/supabase/types";
+
+type ProfileSummary = Pick<Tables<"profiles">, "id" | "full_name" | "email" | "created_at">;
+type UserRoleRow = Tables<"user_roles">;
+type AppInstallRow = {
+  id: string;
+  user_id: string | null;
+  user_agent: string | null;
+  outcome: string | null;
+  created_at: string;
+};
 
 export interface PendingPost {
   id: string;
@@ -63,23 +74,23 @@ export function useTeamMembers() {
       if (ambError) throw ambError;
 
       // Collect all user IDs to fetch profiles for roles
-      const roleUserIds = roles?.map(r => r.user_id) || [];
+      const roleUserIds = roles?.map((role) => role.user_id) || [];
       
-      let profiles: any[] = [];
+      let profiles: ProfileSummary[] = [];
       if (roleUserIds.length > 0) {
         const { data } = await supabase
           .from("profiles")
           .select("id, full_name, email, created_at")
           .in("id", roleUserIds);
-        profiles = data || [];
+        profiles = (data as ProfileSummary[] | null) || [];
       }
 
-      const profileMap = new Map(profiles.map(p => [p.id, p]));
+      const profileMap = new Map(profiles.map((profile) => [profile.id, profile]));
       
       const teamMembers: TeamMember[] = [];
 
       // Add roles (Admin/Moderator)
-      roles?.forEach(role => {
+      roles?.forEach((role: UserRoleRow) => {
         const profile = profileMap.get(role.user_id);
         teamMembers.push({
           id: role.id,
@@ -91,27 +102,27 @@ export function useTeamMembers() {
       });
 
       // Add ambassadors (if not already in list - usually mutually exclusive but good to check)
-      ambassadors?.forEach(amb => {
+      ambassadors?.forEach((ambassador) => {
         // Check if this user is already added (e.g. an admin who is also marked as ambassador)
         // Note: user_roles usually takes precedence for access control, but we want to show all roles.
         // If we want to show them as separate entries (one for admin, one for ambassador), we can just push.
         // But usually one user row is better. However, TeamMember interface assumes one role per entry.
         // Let's just add them.
-        const existing = teamMembers.find(m => m.user_id === amb.id && m.role === 'ambassador');
+        const existing = teamMembers.find((member) => member.user_id === ambassador.id && member.role === "ambassador");
         if (!existing) {
            teamMembers.push({
-             id: amb.id, // Use user_id as ID for this 'virtual' role entry
-             user_id: amb.id,
-             role: 'ambassador',
-             created_at: amb.created_at,
-             profile: { full_name: amb.full_name, email: amb.email }
+             id: ambassador.id,
+             user_id: ambassador.id,
+             role: "ambassador",
+             created_at: ambassador.created_at,
+             profile: { full_name: ambassador.full_name, email: ambassador.email }
            });
         }
       });
 
       // Sort by role importance then name
       return teamMembers.sort((a, b) => {
-        const roleOrder: Record<string, number> = { admin: 0, moderator: 1, ambassador: 2, editor: 3 };
+        const roleOrder: Record<string, number> = { admin: 0, moderator: 1, ambassador: 2 };
         const orderA = roleOrder[a.role] ?? 99;
         const orderB = roleOrder[b.role] ?? 99;
         if (orderA !== orderB) return orderA - orderB;
@@ -135,17 +146,39 @@ export function useAddTeamMember() {
       
       if (profileError || !profiles) throw new Error("User not found with this email");
 
-      if (role === 'ambassador') {
+      if (role === "ambassador") {
+        const { data: existingAmbassador, error: existingAmbassadorError } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", profiles.id)
+          .maybeSingle();
+
+        if (existingAmbassadorError) throw existingAmbassadorError;
+        if (existingAmbassador?.role === "ambassador") {
+          throw new Error("This user is already an ambassador");
+        }
+
         const { error } = await supabase
           .from("profiles")
-          .update({ role: 'ambassador' })
+          .update({ role: "ambassador" })
           .eq("id", profiles.id);
         if (error) throw error;
       } else {
-        // For admin/moderator, use user_roles
+        const { data: existingRole, error: existingRoleError } = await supabase
+          .from("user_roles")
+          .select("id")
+          .eq("user_id", profiles.id)
+          .eq("role", role as UserRoleRow["role"])
+          .maybeSingle();
+
+        if (existingRoleError) throw existingRoleError;
+        if (existingRole) {
+          throw new Error(`This user is already a ${role}`);
+        }
+
         const { error } = await supabase
           .from("user_roles")
-          .insert({ user_id: profiles.id, role });
+          .insert({ user_id: profiles.id, role: role as UserRoleRow["role"] });
         if (error) throw error;
       }
     },
@@ -160,10 +193,10 @@ export function useRemoveTeamMember() {
 
   return useMutation({
     mutationFn: async ({ id, role, userId }: { id: string; role: string; userId: string }) => {
-      if (role === 'ambassador') {
+      if (role === "ambassador") {
         const { error } = await supabase
           .from("profiles")
-          .update({ role: 'user' })
+          .update({ role: "user" })
           .eq("id", userId);
         if (error) throw error;
       } else {
@@ -185,26 +218,26 @@ export function useAppInstalls() {
     queryKey: ["app-installs"],
     queryFn: async () => {
       const { data: installs, error } = await supabase
-        .from("app_installs" as any)
+        .from("app_installs")
         .select("*")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
 
-      // Fetch profiles for authenticated users
-      const userIds = [...new Set(installs?.filter((i: any) => i.user_id).map((i: any) => i.user_id) || [])];
+      const typedInstalls = (installs as AppInstallRow[] | null) || [];
+      const userIds = [...new Set(typedInstalls.map((install) => install.user_id).filter((userId): userId is string => Boolean(userId)))];
       
-      let profileMap = new Map();
+      let profileMap = new Map<string, ProfileSummary>();
       if (userIds.length > 0) {
         const { data: profiles } = await supabase
           .from("profiles")
           .select("id, full_name, email")
           .in("id", userIds);
           
-        profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+        profileMap = new Map(((profiles as ProfileSummary[] | null) || []).map((profile) => [profile.id, profile]));
       }
 
-      return installs?.map((install: any) => ({
+      return typedInstalls.map((install) => ({
         ...install,
         profile: install.user_id ? profileMap.get(install.user_id) || null : null,
       })) as AppInstall[];
@@ -228,16 +261,16 @@ export function usePendingPosts() {
       // Fetch profiles separately
       const userIds = [...new Set(posts?.map(p => p.user_id).filter(Boolean) || [])];
       
-      let profiles: any[] = [];
+      let profiles: ProfileSummary[] = [];
       if (userIds.length > 0) {
         const { data } = await supabase
           .from("profiles")
           .select("id, full_name, email")
           .in("id", userIds);
-        profiles = data || [];
+        profiles = (data as ProfileSummary[] | null) || [];
       }
 
-      const profileMap = new Map(profiles.map(p => [p.id, p]));
+      const profileMap = new Map(profiles.map((profile) => [profile.id, profile]));
 
       return posts?.map(post => ({
         ...post,
@@ -285,7 +318,7 @@ export function useRejectPost() {
 export function useRegisteredUsers(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ["registered-users"],
-    enabled: options?.enabled,
+    enabled: options?.enabled ?? true,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profiles")
