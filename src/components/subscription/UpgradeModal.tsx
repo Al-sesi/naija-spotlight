@@ -17,6 +17,8 @@ interface UpgradeModalProps {
 }
 
 const PREMIUM_FEATURES = [
+  { icon: Sparkles, label: "AI Opportunity Matching", description: "Personalized picks ranked for your profile" },
+  { icon: CheckCircle, label: "Unlimited Applications", description: "Apply to every opportunity, no limits" },
   { icon: Shield, label: "Verified Badge", description: "Stand out in the community" },
   { icon: MessageSquare, label: "SMS Alerts", description: "Never miss an opportunity" },
   { icon: Zap, label: "Early Access", description: "Get notified before others" },
@@ -46,7 +48,7 @@ export function UpgradeModal({ open, onOpenChange, feature }: UpgradeModalProps)
             Upgrade to Premium Lifter
           </DialogTitle>
           <DialogDescription className="text-sm sm:text-base">
-            {feature 
+            {feature
               ? `Unlock ${feature} and all premium features`
               : "Get the most out of NAIJALIFT"
             }
@@ -57,7 +59,7 @@ export function UpgradeModal({ open, onOpenChange, feature }: UpgradeModalProps)
           {/* Price Card */}
           <div className="relative p-4 sm:p-6 rounded-xl bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-950/30 dark:to-amber-900/20 border border-amber-200 dark:border-amber-800">
             <Badge className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-gradient-to-r from-amber-500 to-amber-600 text-white border-0 text-xs">
-              30 Days FREE Trial
+              Most Popular
             </Badge>
             <div className="text-center pt-2">
               <div className="flex items-baseline justify-center gap-1">
@@ -65,7 +67,7 @@ export function UpgradeModal({ open, onOpenChange, feature }: UpgradeModalProps)
                 <span className="text-sm text-muted-foreground">/month</span>
               </div>
               <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                First charge after trial ends
+                Unlimited applications • Cancel anytime
               </p>
             </div>
           </div>
@@ -101,7 +103,7 @@ export function UpgradeModal({ open, onOpenChange, feature }: UpgradeModalProps)
               ) : (
                 <span className="flex items-center gap-2">
                   <Crown className="h-4 w-4" />
-                  Start Free Trial
+                  Subscribe Now
                 </span>
               )}
             </Button>

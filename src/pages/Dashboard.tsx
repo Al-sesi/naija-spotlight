@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { format, parseISO } from "date-fns";
-import { Bookmark, ExternalLink, MapPin, Trash2, Bell, LayoutDashboard, CreditCard, Sparkles, Settings } from "lucide-react";
+import { Bookmark, ExternalLink, FileText, MapPin, Trash2, Bell, LayoutDashboard, CreditCard, Sparkles, Settings, ArrowRight, Crown, Lock, History, ScrollText, Download, Gift, Copy, Check, Users } from "lucide-react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -12,12 +13,18 @@ import { useUserApplications, useUpdateApplicationStatus, useRemoveApplication, 
 import { useOpportunityMatching } from "@/hooks/useOpportunityMatching";
 import { useUserNotifications } from "@/hooks/useNotifications";
 import { useUserBehavior } from "@/hooks/useUserBehavior";
+import { useMonthlyQuota, FREE_MONTHLY_APPLICATIONS } from "@/hooks/useMonthlyQuota";
+import { useIsPremium } from "@/hooks/useSubscription";
 import { APPLICATION_STATUSES, ApplicationStatus } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { NotificationSettings } from "@/components/dashboard/NotificationSettings";
 import { NotificationList } from "@/components/notifications/NotificationList";
-import { TrialCounter } from "@/components/dashboard/TrialCounter";
-import { BillingSettings } from "@/components/dashboard/BillingSettings";
+import { CVBuilder } from "@/components/dashboard/CVBuilder";
+import { UpgradeModal } from "@/components/subscription/UpgradeModal";
+import { QuotaWelcomeModal } from "@/components/subscription/QuotaWelcomeModal";
+import { useMyReferralStats } from "@/hooks/useReferralStats";
+import { useQuotaWelcomeModal } from "@/hooks/useQuotaWelcomeModal";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 
 export default function Dashboard() {
@@ -28,7 +35,18 @@ export default function Dashboard() {
   const saveOpportunity = useSaveApplication();
   const updateStatus = useUpdateApplicationStatus();
   const removeApplication = useRemoveApplication();
-  const { trackSave, trackClick } = useUserBehavior();
+  const { trackSave, trackClick, trackApply } = useUserBehavior();
+  const { data: quota, incrementQuotaOptimistic } = useMonthlyQuota();
+  const { isPremium } = useIsPremium();
+  const { data: myRefStats } = useMyReferralStats(user?.id);
+  const [showUpgradeFromRec, setShowUpgradeFromRec] = useState(false);
+  const [copiedRef, setCopiedRef] = useState(false);
+
+  const {
+    modalOpen: quotaModalOpen,
+    onModalChange: onQuotaModalChange,
+    onUpgrade: handleQuotaUpgrade,
+  } = useQuotaWelcomeModal(quota, isPremium);
 
   const handleRecommendationSave = async (opportunityId: string) => {
     try {
@@ -38,6 +56,42 @@ export default function Dashboard() {
     } catch (error) {
       console.error("Error saving recommendation:", error);
       toast.error("Could not save this opportunity");
+    }
+  };
+
+  const handleRecommendationApply = (link: string, opportunityId: string) => {
+    // For you tab: click-through to opportunity page counts toward monthly quota
+    if (!isPremium && quota && quota.isQuotaExceeded) {
+      setShowUpgradeFromRec(true);
+      return;
+    }
+    window.open(link, "_blank", "noopener,noreferrer");
+    trackApply(opportunityId);
+    incrementQuotaOptimistic();
+    const existing = applications?.find(a => a.opportunity_id === opportunityId);
+    if (!existing) {
+      saveOpportunity.mutate(
+        { opportunityId, status: "applied" },
+        {
+          onError: (err: any) => {
+            const msg = err?.message ?? String(err ?? "");
+            if (msg.toLowerCase().includes("quota") || msg.toLowerCase().includes("exceeded")) {
+              toast.error("Monthly application quota of 5 exceeded. Please upgrade to Premium.");
+              setShowUpgradeFromRec(true);
+            }
+          },
+        },
+      );
+    } else if (existing.status !== "applied") {
+      updateStatus.mutate({ id: existing.id, status: "applied" }, {
+        onError: (err: any) => {
+          const msg = err?.message ?? String(err ?? "");
+          if (msg.toLowerCase().includes("quota") || msg.toLowerCase().includes("exceeded")) {
+            toast.error("Monthly application quota of 5 exceeded. Please upgrade to Premium.");
+            setShowUpgradeFromRec(true);
+          }
+        },
+      });
     }
   };
 
@@ -55,6 +109,7 @@ export default function Dashboard() {
   }
 
   return (
+    <>
     <div className="container px-4 sm:px-6 py-6 sm:py-8">
       <div className="mb-6 space-y-1">
         <h1 className="text-2xl sm:text-3xl font-display font-bold">My Dashboard</h1>
@@ -63,10 +118,38 @@ export default function Dashboard() {
         </p>
       </div>
 
-      {/* Trial Counter */}
-      <div className="mb-6">
-        <TrialCounter />
-      </div>
+      {/* Application Quota Counter - for free users */}
+      {!isPremium && quota && (
+        <div className="mb-6">
+          <Card className="bg-gradient-to-r from-primary/10 to-primary/5 border-0">
+            <CardContent className="px-4 py-4 sm:px-6">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="h-5 w-5 text-primary" />
+                  <span className="font-semibold text-sm">Monthly Applications</span>
+                </div>
+                <span className="text-2xl font-bold font-display text-primary sm:text-3xl">
+                  {FREE_MONTHLY_APPLICATIONS - quota.applicationsThisMonth} / {FREE_MONTHLY_APPLICATIONS}
+                </span>
+              </div>
+              <Progress
+                value={(quota.applicationsThisMonth / FREE_MONTHLY_APPLICATIONS) * 100}
+                className="h-2"
+              />
+              <p className="text-xs text-muted-foreground mt-2">
+                {quota.isQuotaExceeded
+                  ? `You've used all ${FREE_MONTHLY_APPLICATIONS} free applications this month. ` +
+                    `Upgrade to apply to more — resets in ${quota.daysUntilReset ?? 30} day(s).`
+                  : `${quota.applicationsThisMonth} of ${FREE_MONTHLY_APPLICATIONS} used — ` +
+                    `${quota.remaining} application${quota.remaining === 1 ? "" : "s"} left this month. ` +
+                    quota.daysUntilReset != null && quota.daysUntilReset <= 7
+                      ? `Resets in ${quota.daysUntilReset} day(s).`
+                      : ""}
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       <Tabs defaultValue="recommendations" className="space-y-5 sm:space-y-6 max-w-full">
         <TabsList className="flex w-full max-w-full overflow-x-auto whitespace-nowrap rounded-xl bg-muted/60 p-1 shadow-sm gap-1">
@@ -79,6 +162,14 @@ export default function Dashboard() {
             <span className="sm:hidden">You</span>
           </TabsTrigger>
           <TabsTrigger
+            value="cv-builder"
+            className="flex min-w-[110px] flex-1 items-center justify-center gap-1 text-xs sm:text-sm"
+          >
+            <ScrollText className="h-4 w-4" />
+            <span className="hidden sm:inline">CV Builder</span>
+            <span className="sm:hidden">CV</span>
+          </TabsTrigger>
+          <TabsTrigger
             value="applications"
             className="flex min-w-[110px] flex-1 items-center justify-center gap-1 text-xs sm:text-sm"
           >
@@ -87,12 +178,28 @@ export default function Dashboard() {
             <span className="sm:hidden">Apps</span>
           </TabsTrigger>
           <TabsTrigger
+            value="cv-history"
+            className="flex min-w-[110px] flex-1 items-center justify-center gap-1 text-xs sm:text-sm"
+          >
+            <History className="h-4 w-4" />
+            <span className="hidden sm:inline">CV History</span>
+            <span className="sm:hidden">History</span>
+          </TabsTrigger>
+          <TabsTrigger
             value="notifications"
             className="flex min-w-[110px] flex-1 items-center justify-center gap-1 text-xs sm:text-sm"
           >
             <Bell className="h-4 w-4" />
             <span className="hidden sm:inline">Notifications</span>
             <span className="sm:hidden">Alerts</span>
+          </TabsTrigger>
+          <TabsTrigger
+            value="referrals"
+            className="flex min-w-[110px] flex-1 items-center justify-center gap-1 text-xs sm:text-sm"
+          >
+            <Gift className="h-4 w-4" />
+            <span className="hidden sm:inline">Referrals</span>
+            <span className="sm:hidden">Refs</span>
           </TabsTrigger>
           <TabsTrigger
             value="billing"
@@ -104,7 +211,56 @@ export default function Dashboard() {
         </TabsList>
 
         <TabsContent value="recommendations">
-          {matchesLoading ? (
+          {!isPremium ? (
+            <Card className="border-amber-500/40 bg-gradient-to-br from-amber-50/40 to-transparent dark:from-amber-950/20">
+              <CardContent className="py-12 sm:py-16 text-center space-y-6">
+                <div className="mx-auto h-20 w-20 rounded-full bg-gradient-to-br from-amber-100 to-amber-50 dark:from-amber-900/40 dark:to-amber-800/20 flex items-center justify-center shadow-lg shadow-amber-500/20">
+                  <Crown className="h-10 w-10 text-amber-500" />
+                </div>
+                <div className="space-y-2 max-w-lg mx-auto">
+                  <h3 className="text-xl sm:text-2xl font-display font-bold">
+                    AI Opportunity Matching is Premium
+                  </h3>
+                  <p className="text-sm sm:text-base text-muted-foreground">
+                    Our AI engine scans every opportunity and curates a personalized shortlist just for you — based on your profile, interests, skills, and past behavior. Upgrade to Premium Lifter to unlock your matches.
+                  </p>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
+                  <Button
+                    size="lg"
+                    onClick={() => setShowUpgradeFromRec(true)}
+                    className="gap-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-lg shadow-amber-500/30 font-semibold"
+                  >
+                    <Crown className="h-5 w-5" />
+                    Unlock AI Matching
+                  </Button>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 max-w-2xl mx-auto pt-4">
+                  <div className="rounded-lg bg-muted/50 border border-border/50 p-3 sm:p-4 text-left">
+                    <Sparkles className="h-5 w-5 text-primary mb-2" />
+                    <p className="text-xs sm:text-sm font-semibold">Personalized Picks</p>
+                    <p className="text-[11px] sm:text-xs text-muted-foreground mt-1">
+                      Matches ranked by how well they fit your profile.
+                    </p>
+                  </div>
+                  <div className="rounded-lg bg-muted/50 border border-border/50 p-3 sm:p-4 text-left">
+                    <Lock className="h-5 w-5 text-primary mb-2" />
+                    <p className="text-xs sm:text-sm font-semibold">Match Scores</p>
+                    <p className="text-[11px] sm:text-xs text-muted-foreground mt-1">
+                      See exactly why each opportunity is a good fit.
+                    </p>
+                  </div>
+                  <div className="rounded-lg bg-muted/50 border border-border/50 p-3 sm:p-4 text-left">
+                    <Crown className="h-5 w-5 text-primary mb-2" />
+                    <p className="text-xs sm:text-sm font-semibold">Updated Daily</p>
+                    <p className="text-[11px] sm:text-xs text-muted-foreground mt-1">
+                      New opportunities surfaced automatically every day.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ) : matchesLoading ? (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {[1, 2, 3].map(i => (
                 <Card key={i} className="animate-pulse">
@@ -180,22 +336,95 @@ export default function Dashboard() {
                         <Bookmark className="h-4 w-4 mr-2" />
                         Save
                       </Button>
-                      <Button size="sm" variant="outline" asChild>
-                        <a
-                          href={match.opportunity.link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={() => trackClick(match.opportunity.id)}
+                      {(!quota || !isPremium) && quota && quota.isQuotaExceeded ? (
+                        <Button
+                          size="sm"
+                          className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white"
+                          onClick={() => setShowUpgradeFromRec(true)}
                         >
-                          <ExternalLink className="h-4 w-4" />
-                        </a>
-                      </Button>
+                          <Crown className="h-4 w-4 mr-2" />
+                          Upgrade
+                        </Button>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() =>
+                            handleRecommendationApply(
+                              match.opportunity.link,
+                              match.opportunity.id
+                            )
+                          }
+                        >
+                          {!isPremium && quota ? (
+                            <span className="mr-1 text-[11px] opacity-80">
+                              {quota.remaining}/{FREE_MONTHLY_APPLICATIONS}
+                            </span>
+                          ) : null}
+                          Apply
+                          <ExternalLink className="h-4 w-4 ml-2" />
+                        </Button>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
               ))}
             </div>
           )}
+        </TabsContent>
+
+        <TabsContent value="cv-builder">
+          <CVBuilder />
+        </TabsContent>
+
+        <TabsContent value="cv-history">
+          <Card className="border-primary/15 bg-gradient-to-br from-primary/5 via-background to-background">
+            <CardContent className="py-8 sm:py-10 px-5 sm:px-8 text-center space-y-5">
+              <div className="mx-auto h-16 w-16 rounded-full bg-gradient-to-br from-primary/20 to-muted flex items-center justify-center shadow-inner">
+                <History className="h-8 w-8 text-primary" />
+              </div>
+              <div className="space-y-2 max-w-xl mx-auto">
+                <h3 className="text-xl sm:text-2xl font-display font-bold">
+                  CV Version History
+                </h3>
+                <p className="text-sm sm:text-base text-muted-foreground">
+                  Every CV and cover letter you generate is saved automatically. View, preview, re-download, or restore any past version with one click.
+                </p>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
+                <Button asChild size="lg" className="gap-2">
+                  <Link to="/cv-history">
+                    <History className="h-5 w-5" />
+                    Open Full CV History
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </Button>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 max-w-3xl mx-auto pt-4">
+                <div className="rounded-lg bg-muted/50 border border-border/50 p-3 sm:p-4 text-left">
+                  <FileText className="h-5 w-5 text-primary mb-2" />
+                  <p className="text-xs sm:text-sm font-semibold">All Past Versions</p>
+                  <p className="text-[11px] sm:text-xs text-muted-foreground mt-1">
+                    Browse every AI-generated CV with timestamps.
+                  </p>
+                </div>
+                <div className="rounded-lg bg-muted/50 border border-border/50 p-3 sm:p-4 text-left">
+                  <Download className="h-5 w-5 text-primary mb-2" />
+                  <p className="text-xs sm:text-sm font-semibold">Download PDFs</p>
+                  <p className="text-[11px] sm:text-xs text-muted-foreground mt-1">
+                    Download editable PDFs for any saved version.
+                  </p>
+                </div>
+                <div className="rounded-lg bg-muted/50 border border-border/50 p-3 sm:p-4 text-left">
+                  <ScrollText className="h-5 w-5 text-primary mb-2" />
+                  <p className="text-xs sm:text-sm font-semibold">Restore & Edit</p>
+                  <p className="text-[11px] sm:text-xs text-muted-foreground mt-1">
+                    Load any old version back into the builder.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="applications">
@@ -304,10 +533,229 @@ export default function Dashboard() {
           </Tabs>
         </TabsContent>
 
+        <TabsContent value="referrals">
+          <ReferralsDashboard
+            stats={myRefStats}
+            copiedRef={copiedRef}
+            setCopiedRef={setCopiedRef}
+          />
+        </TabsContent>
+
         <TabsContent value="billing">
-          <BillingSettings />
+          <Card className="border-amber-500/30 bg-gradient-to-br from-amber-50/50 to-transparent dark:from-amber-950/20">
+            <CardContent className="py-10 sm:py-12 text-center space-y-5">
+              <div className="mx-auto h-16 w-16 rounded-full bg-gradient-to-br from-amber-100 to-amber-50 dark:from-amber-900/40 dark:to-amber-800/20 flex items-center justify-center">
+                <CreditCard className="h-8 w-8 text-amber-500" />
+              </div>
+              <div className="space-y-2 max-w-md mx-auto">
+                <h3 className="text-xl sm:text-2xl font-display font-bold">
+                  Billing & Subscription
+                </h3>
+                <p className="text-sm sm:text-base text-muted-foreground">
+                  Manage your plan, upgrade to Premium, view your billing history, or cancel your subscription — all in one place.
+                </p>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
+                <Button asChild size="lg" className="gap-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-lg shadow-amber-500/30 font-semibold">
+                  <Link to="/billing">
+                    Open Billing Page
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                🔒 Secured by Paystack • Cancel anytime
+              </p>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
+    </div>
+
+    <UpgradeModal
+      open={showUpgradeFromRec}
+      onOpenChange={setShowUpgradeFromRec}
+      feature="Unlimited Applications"
+    />
+
+    <QuotaWelcomeModal
+      open={quotaModalOpen}
+      onOpenChange={onQuotaModalChange}
+      quota={quota ?? null}
+      onUpgrade={handleQuotaUpgrade}
+    />
+    </>
+  );
+}
+
+// User-facing Referrals Dashboard Component
+interface ReferralsDashboardProps {
+  stats?: {
+    referral_code: string | null;
+    total_referrals: number;
+    active_subscriptions: number;
+    trial_users: number;
+  };
+  copiedRef: boolean;
+  setCopiedRef: (v: boolean) => void;
+}
+
+function ReferralsDashboard({ stats, copiedRef, setCopiedRef }: ReferralsDashboardProps) {
+  const referralLink =
+    typeof window !== "undefined" && stats?.referral_code
+      ? `${window.location.origin}/sign-up?ref=${encodeURIComponent(stats.referral_code)}`
+      : "";
+
+  const handleCopy = async () => {
+    if (!referralLink) return;
+    try {
+      await navigator.clipboard.writeText(referralLink);
+      setCopiedRef(true);
+      toast.success("Referral link copied to clipboard!");
+      setTimeout(() => setCopiedRef(false), 2000);
+    } catch {
+      toast.error("Failed to copy link. Please copy it manually.");
+    }
+  };
+
+  const code = stats?.referral_code || null;
+  const total = stats?.total_referrals || 0;
+  const premium = stats?.active_subscriptions || 0;
+  const free = stats?.trial_users || 0;
+
+  return (
+    <div className="space-y-6">
+      {/* Hero card with link */}
+      <Card className="border-primary/20 bg-gradient-to-br from-primary/5 via-background to-background overflow-hidden relative">
+        <div className="absolute top-0 right-0 w-40 h-40 rounded-full bg-primary/10 blur-3xl -translate-y-1/2 translate-x-1/3" />
+        <CardContent className="px-5 py-6 sm:px-8 sm:py-8 relative">
+          <div className="flex items-start gap-4 sm:gap-6 flex-col sm:flex-row">
+            <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-primary to-primary/70 text-primary-foreground flex items-center justify-center shadow-lg shadow-primary/30 shrink-0">
+              <Gift className="h-7 w-7" />
+            </div>
+            <div className="flex-1 space-y-4 w-full">
+              <div>
+                <h3 className="text-xl sm:text-2xl font-display font-bold">
+                  Invite friends, unlock rewards
+                </h3>
+                <p className="text-sm sm:text-base text-muted-foreground mt-1">
+                  Share NaijaLift with your network using your unique link. Anyone who signs up
+                  through it will be credited to you.
+                </p>
+              </div>
+
+              {code ? (
+                <div className="space-y-2 max-w-2xl">
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <div className="relative flex-1">
+                      <Input
+                        readOnly
+                        value={referralLink}
+                        className="pr-10 font-mono text-xs sm:text-sm h-11"
+                      />
+                    </div>
+                    <Button onClick={handleCopy} className="h-11 gap-2">
+                      {copiedRef ? (
+                        <>
+                          <Check className="h-4 w-4 text-green-500" />
+                          Copied
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="h-4 w-4" />
+                          Copy Link
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Badge variant="outline" className="font-mono">
+                      Code: {code}
+                    </Badge>
+                    <span>Share via WhatsApp, Twitter, or email</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-muted/40 border border-dashed border-muted rounded-lg p-4 text-sm text-muted-foreground">
+                  You don&apos;t have a referral code yet. Ask an admin or ambassador to generate
+                  one for you and it will appear here!
+                </div>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Stats row */}
+      <div className="grid gap-3 sm:grid-cols-3">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <Users className="h-4 w-4 text-blue-500" />
+              Total Invited
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold font-display">{total}</div>
+            <p className="text-xs text-muted-foreground mt-1">people signed up via your link</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-amber-50/60 to-transparent dark:from-amber-950/20 border-amber-200/60 dark:border-amber-800/60">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-amber-700 dark:text-amber-300 flex items-center gap-2">
+              <Sparkles className="h-4 w-4" />
+              Premium Subs
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold font-display">{premium}</div>
+            <p className="text-xs text-muted-foreground mt-1">who upgraded to Premium</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <LayoutDashboard className="h-4 w-4 text-slate-500" />
+              Free / Trial
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold font-display">{free}</div>
+            <p className="text-xs text-muted-foreground mt-1">still on the free plan</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Conversion summary */}
+      {code && total > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-amber-500" />
+              Your Conversion
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Premium conversion rate</span>
+              <span className="font-bold">
+                {total > 0 ? Math.round((premium / total) * 100) : 0}%
+              </span>
+            </div>
+            <div className="w-full h-2.5 bg-muted rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-amber-400 to-amber-600 rounded-full"
+                style={{ width: `${total > 0 ? Math.min(100, (premium / total) * 100) : 0}%` }}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {premium} of your {total} referrals upgraded to Premium for ₦430/month.
+            </p>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "./useAuth";
+import { useIsPremium } from "./useSubscription";
 
 type Opportunity = Tables<"opportunities">;
 type OpportunityMetadata = Tables<"opportunity_metadata">;
@@ -20,20 +21,20 @@ const QUALIFICATION_ORDER = [
 
 const INTEREST_CATEGORY_MAP: Record<string, string[]> = {
   scholarships: ["scholarship"],
-  grants: ["ngo"],
-  jobs: ["recruitment", "career", "government"],
-  "remote jobs": ["recruitment", "career", "internship"],
+  grants: ["grant", "ngo"],
+  jobs: ["job", "recruitment", "career", "government"],
+  "remote jobs": ["job", "recruitment", "career", "internship"],
   internships: ["internship"],
   fellowships: ["internship", "career"],
   competitions: ["competition"],
   hackathons: ["competition", "tech"],
-  accelerators: ["ngo", "competition", "career"],
+  accelerators: ["grant", "ngo", "competition", "career"],
   "government programs": ["government", "recruitment"],
-  "ngo opportunities": ["ngo"],
-  "business funding": ["ngo", "competition"],
+  "ngo opportunities": ["grant", "ngo"],
+  "business funding": ["grant", "ngo", "competition"],
   conferences: ["tech", "social"],
   bootcamps: ["tech", "career"],
-  "volunteer programs": ["social", "ngo"],
+  "volunteer programs": ["social", "grant", "ngo"],
   "free courses": ["tech", "career"],
   "research opportunities": ["scholarship", "career"],
   events: ["social", "tech"],
@@ -41,17 +42,17 @@ const INTEREST_CATEGORY_MAP: Record<string, string[]> = {
 
 const CAREER_STATUS_CATEGORY_MAP: Record<string, string[]> = {
   student: ["scholarship", "internship", "competition", "tech"],
-  graduate: ["recruitment", "career", "internship"],
-  "nysc member": ["internship", "recruitment", "career"],
-  "job seeker": ["recruitment", "career"],
-  entrepreneur: ["ngo", "competition", "career"],
-  freelancer: ["career", "tech"],
-  professional: ["career", "recruitment"],
-  "ngo worker": ["ngo"],
+  graduate: ["job", "recruitment", "career", "internship"],
+  "nysc member": ["internship", "job", "recruitment", "career"],
+  "job seeker": ["job", "recruitment", "career"],
+  entrepreneur: ["grant", "ngo", "competition", "career"],
+  freelancer: ["career", "job", "tech"],
+  professional: ["career", "job", "recruitment"],
+  "ngo worker": ["grant", "ngo"],
   researcher: ["scholarship", "career"],
-  farmer: ["ngo", "career"],
+  farmer: ["grant", "ngo", "career"],
   creative: ["social", "career"],
-  developer: ["tech", "internship", "career"],
+  developer: ["tech", "internship", "career", "job"],
 };
 
 const CAREER_STATUS_KEYWORDS: Record<string, string[]> = {
@@ -72,17 +73,24 @@ export interface MatchResult {
 interface OpportunityMatchingResult {
   matches: MatchResult[];
   profileCompleted: boolean;
+  isPremium: boolean;
 }
 
 export function useOpportunityMatching() {
   const { user } = useAuth();
+  const { isPremium } = useIsPremium();
 
   const query = useQuery({
-    queryKey: ["opportunity-matching", user?.id],
+    queryKey: ["opportunity-matching", user?.id, isPremium],
     enabled: !!user,
     queryFn: async (): Promise<OpportunityMatchingResult> => {
       if (!user) {
-        return { matches: [], profileCompleted: false };
+        return { matches: [], profileCompleted: false, isPremium: false };
+      }
+
+      // AI Matching is a premium feature — free users do not get personalized matches
+      if (!isPremium) {
+        return { matches: [], profileCompleted: true, isPremium: false };
       }
 
       const { data: profile, error: profileError } = await supabase
@@ -96,7 +104,7 @@ export function useOpportunityMatching() {
       }
 
       if (!profile) {
-        return { matches: [], profileCompleted: false };
+        return { matches: [], profileCompleted: false, isPremium: true };
       }
 
       const { data: opportunities, error: opportunitiesError } = await supabase
@@ -144,6 +152,7 @@ export function useOpportunityMatching() {
       return {
         matches,
         profileCompleted: profile.onboarding_completed === true,
+        isPremium: true,
       };
     },
   });
@@ -151,6 +160,7 @@ export function useOpportunityMatching() {
   return {
     matches: query.data?.matches ?? [],
     profileCompleted: query.data?.profileCompleted ?? false,
+    isPremium: query.data?.isPremium ?? isPremium,
     loading: query.isLoading,
   };
 }

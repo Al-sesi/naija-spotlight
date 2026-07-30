@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 export function InstallPWA() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -28,6 +29,33 @@ export function InstallPWA() {
     };
   }, []);
 
+  const detectPlatform = () => {
+    if (typeof navigator === 'undefined') return 'web';
+    const ua = navigator.userAgent.toLowerCase();
+    if (/android/.test(ua)) return 'android';
+    if (/iphone|ipad|ipod/.test(ua)) return 'ios';
+    if (/macintosh|mac os x/.test(ua)) return 'macos';
+    if (/windows/.test(ua)) return 'windows';
+    if (/linux/.test(ua)) return 'linux';
+    return 'web';
+  };
+
+  const handleDismiss = async () => {
+    // Track user dismissing the banner
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      await supabase.from('app_installs').insert({
+        user_id: user?.id || null,
+        user_agent: window.navigator.userAgent,
+        platform: detectPlatform(),
+        outcome: 'dismissed'
+      });
+    } catch (error) {
+      console.error('Error tracking install dismiss:', error);
+    }
+    setIsVisible(false);
+  };
+
   const handleInstallClick = async () => {
     if (!deferredPrompt) return;
 
@@ -40,9 +68,10 @@ export function InstallPWA() {
     // Track the install outcome
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      await supabase.from('app_installs' as any).insert({
-        user_id: user?.id,
+      await supabase.from('app_installs').insert({
+        user_id: user?.id || null,
         user_agent: window.navigator.userAgent,
+        platform: detectPlatform(),
         outcome: outcome
       });
     } catch (error) {
@@ -80,7 +109,7 @@ export function InstallPWA() {
           Install
         </Button>
         <button 
-          onClick={() => setIsVisible(false)} 
+          onClick={handleDismiss} 
           className="text-white/80 hover:text-white p-1"
           aria-label="Close install banner"
         >

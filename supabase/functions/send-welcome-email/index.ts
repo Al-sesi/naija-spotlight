@@ -219,18 +219,20 @@ const handler = async (req: Request): Promise<Response> => {
       </p>
       
       <div class="highlight-box">
-        <h3>🎁 Your Premium Trial Includes:</h3>
+        <h3>🎁 Your Free Access Includes:</h3>
         <ul>
-          <li><strong>30 Days FREE</strong> Premium Access</li>
-          <li>Government Programs & Grants</li>
-          <li>Scholarships (Local & International)</li>
-          <li>Tech & Career Opportunities</li>
-          <li>NGO & Social Programs</li>
+          <li><strong>Browse 100% of opportunities</strong> — no limits</li>
+          <li><strong>Apply to 5 opportunities every month</strong> — totally free</li>
+          <li>AI-powered recommendations based on your profile</li>
+          <li>Save & track applications in your dashboard</li>
+          <li>Community &amp; networking with other ambitious Nigerians</li>
         </ul>
       </div>
-      
+
       <p class="message">
-        Start exploring opportunities that can transform your life and career. The best part? You're now part of an exclusive community of go-getters!
+        Upgrade to <strong>Premium Lifter (₦430/month)</strong> anytime to unlock
+        unlimited applications, SMS alerts, verified profile badge,
+        and priority early access to opportunities.
       </p>
       
       <a href="https://naijalift.space/dashboard" class="cta-button">
@@ -256,7 +258,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     const result = await sendEmail({
       to: email,
-      subject: "🎉 Welcome to NAIJALIFT — Your 30-Day Premium Trial Starts Now!",
+      subject: "🎉 Welcome to NAIJALIFT — Let's Find Your Next Big Opportunity!",
       html: emailHtml,
     });
 

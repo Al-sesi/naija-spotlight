@@ -30,6 +30,10 @@ interface ProfileRow {
   id: string;
   email: string | null;
   full_name: string | null;
+  email_scholarships: boolean | null;
+  email_government: boolean | null;
+  email_grants: boolean | null;
+  email_social_tech: boolean | null;
 }
 
 function formatCategoryLabel(category: OpportunityCategory): string {
@@ -320,22 +324,88 @@ const handler = async (req: Request): Promise<Response> => {
 
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
+    const categoryToPrefColumn: Record<string, keyof Pick<ProfileRow,
+      | "email_scholarships"
+      | "email_government"
+      | "email_grants"
+      | "email_social_tech">> = {
+      scholarship: "email_scholarships",
+      government: "email_government",
+      recruitment: "email_government",
+      ngo: "email_grants",
+      career: "email_grants",
+      tech: "email_social_tech",
+      social: "email_social_tech",
+      internship: "email_social_tech",
+      competition: "email_social_tech",
+    };
+    const prefColumn =
+      categoryToPrefColumn[opportunity.category as OpportunityCategory] ??
+      "email_social_tech";
+
     const { data: profiles, error: profilesError } = await supabase
       .from("profiles")
-      .select("id, email, full_name") as {
-      data: ProfileRow[] | null;
-      error: unknown;
-    };
+      .select("id, email, full_name");
 
     if (profilesError) {
       throw profilesError;
     }
 
-    const recipients =
-      profiles?.filter((p) => p.email).map((p) => ({
+    // Two tables both FK to auth.users (no direct FK between them), so join in-memory.
+    const { data: prefs, error: prefsError } = await supabase
+      .from("notification_preferences")
+      .select("user_id, email_scholarships, email_government, email_grants, email_social_tech");
+
+    if (prefsError) {
+      console.warn("notify-new-opportunity: could not fetch preferences, defaulting all to opt-in:", prefsError);
+    }
+
+    type PrefRow = {
+      user_id: string;
+      email_scholarships: boolean | null;
+      email_government: boolean | null;
+      email_grants: boolean | null;
+      email_social_tech: boolean | null;
+    };
+
+    const prefsByUser = new Map<string, PrefRow>();
+    (prefs ?? [] as PrefRow[]).forEach((row: PrefRow) => {
+      prefsByUser.set(row.user_id, {
+        user_id: row.user_id,
+        email_scholarships: row.email_scholarships ?? true,
+        email_government: row.email_government ?? true,
+        email_grants: row.email_grants ?? true,
+        email_social_tech: row.email_social_tech ?? true,
+      });
+    });
+
+    const normalized: ProfileRow[] = ((profiles ?? []) as ProfileRow[]).map((row) => {
+      const p = prefsByUser.get(row.id);
+      return {
+        id: row.id,
+        email: row.email,
+        full_name: row.full_name,
+        email_scholarships: p?.email_scholarships ?? true,
+        email_government: p?.email_government ?? true,
+        email_grants: p?.email_grants ?? true,
+        email_social_tech: p?.email_social_tech ?? true,
+      };
+    });
+
+    const uniqueEmails = new Set<string>();
+    const recipients: { email: string; fullName: string | null }[] =
+      normalized.filter((p) => {
+        if (!p.email) return false;
+        const lowerEmail = p.email.toLowerCase();
+        if (uniqueEmails.has(lowerEmail)) return false;
+        const optedIn = Boolean(p[prefColumn]);
+        if (!optedIn) return false;
+        uniqueEmails.add(lowerEmail);
+        return true;
+      }).map((p) => ({
         email: p.email as string,
         fullName: p.full_name,
-      })) ?? [];
+      }));
 
     let sentCount = 0;
     for (const recipient of recipients) {
@@ -393,6 +463,6 @@ const handler = async (req: Request): Promise<Response> => {
       }
     );
   }
-  }
+};
 
 serve(handler);

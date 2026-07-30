@@ -47,6 +47,15 @@ export default function Auth() {
     }
   }, [user, isEmailConfirmed, navigate]);
 
+  // Prefill referral code from ?ref= or ?referral= URL query param
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get("ref") || params.get("referral") || "";
+    if (ref && !formData.referralCode) {
+      setFormData((prev) => ({ ...prev, referralCode: ref }));
+    }
+  }, []);
+
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     const result = authSchema.safeParse(formData);
@@ -161,7 +170,7 @@ export default function Auth() {
             <CardTitle className="text-2xl font-display">Check Your Email</CardTitle>
             <CardDescription className="text-base">
               We've sent a verification link to <strong>{formData.email}</strong>.
-              Click the link to verify your email and start your 30-day free trial.
+              Click the link to verify your email, complete your profile, and start browsing opportunities.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -227,13 +236,26 @@ export default function Auth() {
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       id="signin-password"
-                      type="password"
+                      type={showPassword ? "text" : "password"}
                       placeholder="••••••••"
-                      className="pl-10 text-sm"
+                      className="pl-10 pr-10 text-sm"
                       value={formData.password}
                       onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                       required
                     />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4 text-muted-foreground" />
+                      ) : (
+                        <Eye className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </Button>
                   </div>
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>

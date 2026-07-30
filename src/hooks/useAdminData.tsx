@@ -29,6 +29,41 @@ export interface RegisteredUser {
   full_name: string | null;
   email: string | null;
   created_at: string | null;
+  subscription_status: string | null;
+  subscription_ends_at: string | null;
+  referral_code: string | null;
+  referred_by: string | null;
+}
+
+// Helper to generate a human-readable referral code
+function generateReferralCode(fullName?: string | null, email?: string | null): string {
+  // Build a base from name or email
+  let base = "";
+  if (fullName) {
+    base = fullName
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-zA-Z0-9]/g, "")
+      .toLowerCase();
+  }
+  if (!base && email) {
+    const emailName = email.split("@")[0] || "";
+    base = emailName
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-zA-Z0-9]/g, "")
+      .toLowerCase();
+  }
+  if (!base) base = "naija";
+  if (base.length > 10) base = base.slice(0, 10);
+
+  // 4 random uppercase chars/numbers (excluding confusing ones)
+  const chars = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+  let suffix = "";
+  for (let i = 0; i < 4; i++) {
+    suffix += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return `${base}${suffix}`;
 }
 
 export interface AppInstall {
@@ -137,53 +172,61 @@ export function useAddTeamMember() {
 
   return useMutation({
     mutationFn: async ({ email, role }: { email: string; role: string }) => {
-      // First find the user by email
+      if (!email) throw new Error("Email is required");
+      if (!role) throw new Error("Role is required");
+      const normalizedEmail = email.trim().toLowerCase();
+
       const { data: profiles, error: profileError } = await supabase
         .from("profiles")
         .select("id")
-        .eq("email", email)
-        .single();
-      
-      if (profileError || !profiles) throw new Error("User not found with this email");
+        .eq("email", normalizedEmail)
+        .maybeSingle();
+
+      if (profileError) throw profileError;
+      if (!profiles) throw new Error("No user found with that email. Make sure they have registered first.");
 
       if (role === "ambassador") {
-        const { data: existingAmbassador, error: existingAmbassadorError } = await supabase
+        const { data: existing, error: existingError } = await supabase
           .from("profiles")
           .select("role")
           .eq("id", profiles.id)
           .maybeSingle();
 
-        if (existingAmbassadorError) throw existingAmbassadorError;
-        if (existingAmbassador?.role === "ambassador") {
+        if (existingError) throw existingError;
+        if (existing?.role === "ambassador") {
           throw new Error("This user is already an ambassador");
         }
 
         const { error } = await supabase
           .from("profiles")
-          .update({ role: "ambassador" })
+          .update({ role: "ambassador", updated_at: new Date().toISOString() })
           .eq("id", profiles.id);
         if (error) throw error;
       } else {
-        const { data: existingRole, error: existingRoleError } = await supabase
+        const typedRole = role as UserRoleRow["role"];
+        const { data: existing, error: existingError } = await supabase
           .from("user_roles")
           .select("id")
           .eq("user_id", profiles.id)
-          .eq("role", role as UserRoleRow["role"])
+          .eq("role", typedRole)
           .maybeSingle();
 
-        if (existingRoleError) throw existingRoleError;
-        if (existingRole) {
+        if (existingError) throw existingError;
+        if (existing) {
           throw new Error(`This user is already a ${role}`);
         }
 
         const { error } = await supabase
           .from("user_roles")
-          .insert({ user_id: profiles.id, role: role as UserRoleRow["role"] });
+          .insert({ user_id: profiles.id, role: typedRole });
         if (error) throw error;
       }
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["team-members"] });
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["team-members"] }),
+        queryClient.invalidateQueries({ queryKey: ["registered-users"] }),
+      ]);
     },
   });
 }
@@ -193,10 +236,12 @@ export function useRemoveTeamMember() {
 
   return useMutation({
     mutationFn: async ({ id, role, userId }: { id: string; role: string; userId: string }) => {
+      if (!userId) throw new Error("Missing userId for team member");
+
       if (role === "ambassador") {
         const { error } = await supabase
           .from("profiles")
-          .update({ role: "user" })
+          .update({ role: "user", updated_at: new Date().toISOString() })
           .eq("id", userId);
         if (error) throw error;
       } else {
@@ -207,8 +252,11 @@ export function useRemoveTeamMember() {
         if (error) throw error;
       }
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["team-members"] });
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["team-members"] }),
+        queryClient.invalidateQueries({ queryKey: ["registered-users"] }),
+      ]);
     },
   });
 }
@@ -322,11 +370,76 @@ export function useRegisteredUsers(options?: { enabled?: boolean }) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, full_name, email, created_at")
+        .select(`
+          id, full_name, email, created_at, subscription_status, subscription_ends_at,
+          referral_code, referred_by
+        `)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
       return data as RegisteredUser[];
+    },
+  });
+}
+
+export function useGenerateReferralCode() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (userId: string) => {
+      if (!userId) throw new Error("User ID is required to generate referral code");
+
+      // First, look up the user's name/email to build a pretty code
+      const { data: user, error: fetchError } = await supabase
+        .from("profiles")
+        .select("full_name, email, referral_code")
+        .eq("id", userId)
+        .maybeSingle();
+
+      if (fetchError) throw fetchError;
+      if (!user) throw new Error("User not found");
+
+      // If user already has a code, just return it (no-op)
+      if (user.referral_code) {
+        return { referral_code: user.referral_code, regenerated: false };
+      }
+
+      // Try generating a unique code, retry up to 5 times on collision
+      let code = "";
+      for (let attempt = 0; attempt < 5; attempt++) {
+        code = generateReferralCode(user.full_name, user.email);
+        const { data: existing } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("referral_code", code)
+          .maybeSingle();
+
+        if (!existing) break;
+        // Collision — generate another
+        code = "";
+      }
+      if (!code) {
+        // Final fallback: fully random
+        code = "NL" + Math.random().toString(36).slice(2, 8).toUpperCase();
+      }
+
+      const { error: updateError } = await supabase
+        .from("profiles")
+        .update({
+          referral_code: code,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", userId);
+
+      if (updateError) throw updateError;
+      return { referral_code: code, regenerated: false };
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["registered-users"] }),
+        queryClient.invalidateQueries({ queryKey: ["referral-stats"] }),
+        queryClient.invalidateQueries({ queryKey: ["my-referral-stats"] }),
+      ]);
     },
   });
 }

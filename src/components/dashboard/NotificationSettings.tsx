@@ -30,7 +30,7 @@ const CATEGORIES = [
     label: "Grants", 
     icon: HandCoins, 
     description: "Business & personal funding",
-    color: "bg-category-ngo/10 text-category-ngo"
+    color: "bg-category-grant/10 text-category-grant"
   },
   { 
     key: "social_tech", 
@@ -101,12 +101,12 @@ export function NotificationSettings() {
             </Badge>
           ) : (
             <Badge variant="secondary" className="w-fit bg-primary/10 text-primary border-0 mt-3 mb-1">
-              🎉 Free during Beta Phase!
+              Free Plan
             </Badge>
           )}
         </CardHeader>
         <CardContent className="space-y-6 max-w-full">
-          {/* Phone Number for SMS / WhatsApp */}
+          {/* Phone Number for SMS */}
           <div className="space-y-3 p-4 rounded-lg bg-muted/50 max-w-full">
             {!isPremium && (
               <Badge variant="outline" className="text-xs gap-1 border-amber-500/50 text-amber-600 mb-1">
@@ -116,7 +116,7 @@ export function NotificationSettings() {
             )}
             <Label htmlFor="phone" className="flex items-center gap-2">
               <MessageSquare className="h-4 w-4" />
-              Phone Number (for SMS / WhatsApp alerts)
+              Phone Number (for SMS alerts)
             </Label>
             <div className="flex gap-2 max-w-full">
               <Input
@@ -131,8 +131,8 @@ export function NotificationSettings() {
             </div>
             <p className="text-xs text-muted-foreground">
               {isPremium 
-                ? "Enter your Nigerian phone number to receive SMS or WhatsApp alerts"
-                : "Upgrade to Premium to receive SMS and WhatsApp alerts for new opportunities"
+                ? "Enter your Nigerian phone number to receive SMS alerts"
+                : "Upgrade to Premium to receive SMS alerts for new opportunities"
               }
             </p>
           </div>
@@ -143,10 +143,8 @@ export function NotificationSettings() {
               const Icon = category.icon;
               const emailKey = `email_${category.key}` as keyof typeof preferences;
               const smsKey = `sms_${category.key}` as keyof typeof preferences;
-              const whatsappKey = `whatsapp_${category.key}` as keyof typeof preferences;
               const emailEnabled = preferences?.[emailKey] ?? false;
               const smsEnabled = preferences?.[smsKey] ?? false;
-              const whatsappEnabled = preferences?.[whatsappKey] ?? false;
 
               return (
                 <Card key={category.key} className="border-border/50">
@@ -190,20 +188,6 @@ export function NotificationSettings() {
                         />
                       </div>
 
-                      <div className="flex items-center justify-between">
-                        <Label htmlFor={`whatsapp-${category.key}`} className="flex items-center gap-2 text-sm cursor-pointer">
-                          <MessageSquare className="h-4 w-4 text-emerald-500" />
-                          WhatsApp Alerts
-                          {!isPremium && <Lock className="h-3 w-3 text-amber-500" />}
-                        </Label>
-                        <Switch
-                          id={`whatsapp-${category.key}`}
-                          checked={isPremium ? !!whatsappEnabled : false}
-                          onCheckedChange={(checked) => handleToggle("whatsapp", category.key, checked)}
-                          disabled={updatePreferences.isPending || !isPremium}
-                          className={!isPremium ? "opacity-50" : ""}
-                        />
-                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -217,15 +201,16 @@ export function NotificationSettings() {
               <CardContent className="pt-4">
                 <p className="text-sm font-medium mb-2">✨ Upgrade to Premium Lifter</p>
                 <div className="text-xs text-muted-foreground space-y-1">
-                  <p>• SMS & WhatsApp Alerts for new opportunities</p>
+                  <p>• SMS Alerts for new opportunities</p>
                   <p>• Verified badge on your profile</p>
                   <p>• Priority support & early access</p>
+                  <p>• Unlimited applications per month</p>
                 </div>
                 <div className="flex items-center gap-2 mt-3">
                   <Badge className="bg-gradient-to-r from-amber-500 to-amber-600 text-white border-0">
                     ₦430/month
                   </Badge>
-                  <span className="text-xs text-muted-foreground">• 30 days free trial</span>
+                  <span className="text-xs text-muted-foreground">• Browse always free • 5 applies/mo free</span>
                 </div>
               </CardContent>
             </Card>
@@ -236,7 +221,7 @@ export function NotificationSettings() {
       <UpgradeModal 
         open={showUpgradeModal} 
         onOpenChange={setShowUpgradeModal}
-        feature="SMS & WhatsApp Alerts"
+        feature="SMS Alerts"
       />
     </div>
   );

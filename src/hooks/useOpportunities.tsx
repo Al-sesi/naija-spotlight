@@ -27,13 +27,15 @@ interface OpportunityFilters {
 // Natural language search keywords
 const searchKeywords = {
   categories: {
-    scholarship: ["scholarship", "scholarships", "grant", "grants", "tuition", "fee", "financial aid"],
-    recruitment: ["job", "jobs", "recruitment", "recruitments", "work", "career", "employment"],
-    internship: ["intern", "interns", "internship", "internships"],
+    scholarship: ["scholarship", "scholarships", "tuition", "fee", "financial aid"],
+    job: ["job", "jobs", "full-time", "full time", "part-time", "part time", "permanent", "vacancy", "vacancies", "hiring", "hire"],
+    grant: ["grant", "grants", "funding", "fund", "funds", "ngo", "ngos", "non-profit", "nonprofit"],
+    recruitment: ["recruitment", "recruitments", "employment", "recruiting"],
+    internship: ["intern", "interns", "internship", "internships", "fellowship", "fellowships"],
     competition: ["competition", "competitions", "contest", "contests", "hackathon", "hackathons"],
     tech: ["tech", "technology", "event", "events", "workshop", "workshops", "bootcamp", "bootcamps"],
-    ngo: ["ngo", "ngos", "non-profit", "nonprofit"],
-    career: ["career", "careers", "professional", "professionals"],
+    ngo: ["ngo", "ngos", "non-profit", "nonprofit", "grant", "grants"],
+    career: ["career", "careers", "professional", "professionals", "work"],
     social: ["social", "community", "volunteer", "volunteering"]
   },
   location: {

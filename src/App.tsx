@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { Layout } from "@/components/layout/Layout";
 import { VerificationRedirectGuard } from "@/components/auth/VerificationRedirectGuard";
@@ -19,6 +19,8 @@ import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import Onboarding from "./pages/Onboarding";
 import PaymentCallback from "./pages/PaymentCallback";
+import Billing from "./pages/Billing";
+import CVHistory from "./pages/CVHistory";
 
 const queryClient = new QueryClient();
 
@@ -30,25 +32,36 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <VerificationRedirectGuard />
-          <OnboardingGuard>
-            <Layout>
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/opportunities" element={<Opportunities />} />
-                <Route path="/auth" element={<Auth />} />
-                <Route path="/onboarding" element={<Onboarding />} />
-                <Route path="/verification-success" element={<VerificationSuccess />} />
-                <Route path="/forgot-password" element={<ForgotPassword />} />
-                <Route path="/reset-password" element={<ResetPassword />} />
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/payment-callback" element={<PaymentCallback />} />
-                <Route path="/community" element={<Community />} />
-                <Route path="/admin" element={<Navigate to="/ogahouse" replace />} />
-                <Route path="/ogahouse" element={<OgaHouse />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </Layout>
-          </OnboardingGuard>
+          <Routes>
+            {/* Standalone admin routes - NOT wrapped in public Layout or OnboardingGuard */}
+            <Route path="/ogahouse" element={<OgaHouse />} />
+            <Route path="/admin" element={<Navigate to="/ogahouse" replace />} />
+
+            {/* Fully public landing + marketing pages — ALWAYS accessible, no guards, no loading.
+                First-time users searching "Naijalift" hit these directly. */}
+            <Route element={<Layout><Outlet /></Layout>}>
+              <Route path="/" element={<Index />} />
+              <Route path="/opportunities" element={<Opportunities />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/sign-up" element={<Auth />} />
+              <Route path="/signin" element={<Auth />} />
+              <Route path="/verification-success" element={<VerificationSuccess />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/community" element={<Community />} />
+            </Route>
+
+            {/* Authenticated / onboarding-gated routes */}
+            <Route element={<OnboardingGuard><Layout><Outlet /></Layout></OnboardingGuard>}>
+              <Route path="/onboarding" element={<Onboarding />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/payment-callback" element={<PaymentCallback />} />
+              <Route path="/billing" element={<Billing />} />
+              <Route path="/cv-history" element={<CVHistory />} />
+            </Route>
+
+            <Route path="*" element={<NotFound />} />
+          </Routes>
         </BrowserRouter>
       </TooltipProvider>
     </AuthProvider>

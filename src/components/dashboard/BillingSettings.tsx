@@ -1,10 +1,23 @@
 import { useState } from "react";
 import { format } from "date-fns";
-import { Crown, CreditCard, Calendar, AlertCircle, CheckCircle, XCircle, Sparkles } from "lucide-react";
+import {
+  Crown,
+  CreditCard,
+  Calendar,
+  AlertCircle,
+  CheckCircle,
+  XCircle,
+  Sparkles,
+  Check,
+  RefreshCw,
+  Wand2,
+} from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,15 +29,124 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { useSubscription, useInitializePayment, useCancelSubscription, useIsPremium } from "@/hooks/useSubscription";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  useSubscription,
+  useInitializePayment,
+  useCancelSubscription,
+  useIsPremium,
+} from "@/hooks/useSubscription";
+import { useMonthlyQuota, FREE_MONTHLY_APPLICATIONS } from "@/hooks/useMonthlyQuota";
 import { UpgradeModal } from "@/components/subscription/UpgradeModal";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
 
 export function BillingSettings() {
-  const { data: subscription, isLoading } = useSubscription();
+  const { data: subscription, isLoading, refetch: refetchSubscription } = useSubscription();
   const { isPremium } = useIsPremium();
+  const { data: quota } = useMonthlyQuota();
   const initializePayment = useInitializePayment();
   const cancelSubscription = useCancelSubscription();
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [showRefetch, setShowRefetch] = useState(false);
+
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const [verifyOpen, setVerifyOpen] = useState(false);
+  const [verifyReference, setVerifyReference] = useState("");
+  const [verifyLoading, setVerifyLoading] = useState(false);
+  const [verifyMessage, setVerifyMessage] = useState<{ kind: "success" | "error" | "info"; text: string } | null>(null);
+
+  const handleRefresh = async () => {
+    setShowRefetch(true);
+    try {
+      await queryClient.invalidateQueries({ queryKey: ["subscription"] });
+      await refetchSubscription();
+      toast.success("Subscription status refreshed", {
+        description: "Your latest subscription state has been loaded.",
+      });
+    } finally {
+      setShowRefetch(false);
+    }
+  };
+
+  const handleManualVerify = async () => {
+    const ref = verifyReference.trim();
+    if (!ref) {
+      setVerifyMessage({ kind: "error", text: "Please enter your Paystack payment reference." });
+      return;
+    }
+    setVerifyLoading(true);
+    setVerifyMessage(null);
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) throw new Error("You must be signed in.");
+      const response = await supabase.functions.invoke("paystack-verify-transaction", {
+        body: { reference: ref },
+        headers: {
+          "x-access-token": session.access_token,
+        },
+      });
+      if (response.error) throw new Error(response.error.message || "Verification failed");
+      const result = (response.data || {}) as {
+        verified?: boolean;
+        activated?: boolean;
+        already_active?: boolean;
+        error?: string;
+      };
+      await queryClient.invalidateQueries({ queryKey: ["subscription"] });
+      await refetchSubscription();
+
+      if (result.already_active) {
+        setVerifyMessage({
+          kind: "success",
+          text: "Your subscription is already active. Enjoy the premium benefits!",
+        });
+      } else if (result.activated) {
+        setVerifyMessage({
+          kind: "success",
+          text: "Payment confirmed! 🎉 Your premium benefits are now active.",
+        });
+        toast.success("Premium activated!", {
+          description: "Your payment was confirmed and your benefits are live.",
+        });
+        setTimeout(() => setVerifyOpen(false), 1800);
+      } else if (result.verified && !result.activated) {
+        setVerifyMessage({
+          kind: "info",
+          text:
+            result.error ||
+            "Paystack confirmed your payment, but we couldn't apply the activation yet. Please wait 1-2 minutes and refresh — it usually resolves automatically.",
+        });
+      } else {
+        setVerifyMessage({
+          kind: "error",
+          text:
+            result.error ||
+            "We couldn't verify this reference yet. If you just paid, wait a moment and try again — some gateways take a few seconds to confirm. If the payment actually went through, your subscription will activate automatically.",
+        });
+      }
+    } catch (err) {
+      setVerifyMessage({
+        kind: "error",
+        text: err instanceof Error ? err.message : "Something went wrong during verification.",
+      });
+    } finally {
+      setVerifyLoading(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -43,7 +165,7 @@ export function BillingSettings() {
     if (!subscription) return null;
 
     const status = subscription.subscription_status;
-    
+
     switch (status) {
       case "active":
         return (
@@ -67,49 +189,140 @@ export function BillingSettings() {
           </Badge>
         );
       default:
-        if (subscription.trial_ends_at && new Date(subscription.trial_ends_at) > new Date()) {
-          return (
-            <Badge className="bg-primary/10 text-primary border-primary/30 gap-1">
-              <Sparkles className="h-3 w-3" />
-              Free Trial
-            </Badge>
-          );
-        }
         return (
           <Badge variant="secondary" className="gap-1">
-            <XCircle className="h-3 w-3" />
-            Inactive
+            <Sparkles className="h-3 w-3" />
+            Free Plan
           </Badge>
         );
     }
   };
-
-  const trialDaysRemaining = subscription?.trial_ends_at
-    ? Math.max(0, Math.ceil((new Date(subscription.trial_ends_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
-    : 0;
-
-  const isInTrial = trialDaysRemaining > 0 && subscription?.subscription_status !== "active";
 
   const categoriesCount = subscription?.premium_categories?.length ?? 0;
   const billedCategories = categoriesCount > 0 ? categoriesCount : 1;
   const pricePerCategory = 430;
   const totalPrice = billedCategories * pricePerCategory;
 
+  const showActivateHelp =
+    subscription &&
+    subscription.subscription_status !== "active";
+
   return (
     <div className="space-y-6 max-w-full">
       {/* Current Plan */}
-      <Card className={isPremium ? "border-amber-500/30 bg-gradient-to-br from-amber-50/50 to-transparent dark:from-amber-950/20 max-w-full" : "max-w-full"}>
+      <Card
+        className={
+          isPremium
+            ? "border-amber-500/30 bg-gradient-to-br from-amber-50/50 to-transparent dark:from-amber-950/20 max-w-full"
+            : "max-w-full"
+        }
+      >
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
             <div className="flex items-center gap-2">
-              <Crown className={`h-5 w-5 ${isPremium ? "text-amber-500" : "text-muted-foreground"}`} />
+              <Crown
+                className={`h-5 w-5 ${isPremium ? "text-amber-500" : "text-muted-foreground"}`}
+              />
               <CardTitle>Current Plan</CardTitle>
             </div>
-            {getStatusBadge()}
+            <div className="flex items-center gap-2 flex-wrap">
+              {getStatusBadge()}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleRefresh}
+                disabled={showRefetch}
+              >
+                <RefreshCw
+                  className={`h-3.5 w-3.5 mr-1.5 ${showRefetch ? "animate-spin" : ""}`}
+                />
+                Refresh
+              </Button>
+              {showActivateHelp && (
+                <Dialog open={verifyOpen} onOpenChange={(o) => {
+                  setVerifyOpen(o);
+                  if (!o) {
+                    setVerifyReference("");
+                    setVerifyMessage(null);
+                  }
+                }}>
+                  <DialogTrigger asChild>
+                    <Button type="button" variant="secondary" size="sm" className="gap-1.5">
+                      <Wand2 className="h-3.5 w-3.5" />
+                      I already paid
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Activate your paid subscription</DialogTitle>
+                      <DialogDescription>
+                        If you paid via Paystack but your plan is still showing Free/Past Due, enter
+                        your payment reference below. We'll confirm it immediately and activate your
+                        benefits. You can find the reference in your payment confirmation email from
+                        Paystack, or in your bank/alert narration as <code>REF: xxx</code>.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-3 pt-2">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="paystack-reference">Paystack Reference</Label>
+                        <Input
+                          id="paystack-reference"
+                          placeholder="e.g. y90g7q641v or pay_xxx..."
+                          value={verifyReference}
+                          onChange={(e) => setVerifyReference(e.target.value)}
+                          autoCapitalize="none"
+                          autoCorrect="off"
+                        />
+                      </div>
+                      {verifyMessage && (
+                        <div
+                          className={
+                            "text-sm rounded-md px-3 py-2 border " +
+                            (verifyMessage.kind === "success"
+                              ? "bg-green-500/5 border-green-500/20 text-green-700 dark:text-green-400"
+                              : verifyMessage.kind === "error"
+                                ? "bg-destructive/5 border-destructive/20 text-destructive"
+                                : "bg-yellow-500/5 border-yellow-500/20 text-yellow-700 dark:text-yellow-400")
+                          }
+                        >
+                          {verifyMessage.text}
+                        </div>
+                      )}
+                    </div>
+                    <DialogFooter className="pt-3 flex-col sm:flex-row gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setVerifyOpen(false)}
+                      >
+                        Close
+                      </Button>
+                      <Button
+                        type="button"
+                        onClick={handleManualVerify}
+                        disabled={verifyLoading}
+                        className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white"
+                      >
+                        {verifyLoading ? (
+                          <>
+                            <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                            Verifying…
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle className="h-4 w-4 mr-2" />
+                            Verify & Activate
+                          </>
+                        )}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              )}
+            </div>
           </div>
-          <CardDescription>
-            Manage your NAIJALIFT subscription
-          </CardDescription>
+          <CardDescription>Manage your NAIJALIFT subscription</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {isPremium ? (
@@ -119,7 +332,7 @@ export function BillingSettings() {
                 <div className="text-left">
                   <h3 className="font-semibold text-base sm:text-lg">Premium Lifter</h3>
                   <p className="text-sm text-muted-foreground">
-                    Full access to all features
+                    Unlimited applications + all premium features
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
                     ₦{pricePerCategory} per category • {billedCategories}{" "}
@@ -134,20 +347,6 @@ export function BillingSettings() {
                 </div>
               </div>
 
-              {/* Trial Info */}
-              {isInTrial && (
-                <div className="flex items-center gap-3 p-4 rounded-lg bg-primary/5 border border-primary/20">
-                  <Sparkles className="h-5 w-5 text-primary" />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium">Free Trial Active</p>
-                    <p className="text-xs text-muted-foreground">
-                      {trialDaysRemaining} days remaining • First charge on{" "}
-                      {subscription?.trial_ends_at && format(new Date(subscription.trial_ends_at), "MMM d, yyyy")}
-                    </p>
-                  </div>
-                </div>
-              )}
-
               {/* Billing Details */}
               <div className="space-y-3">
                 <Separator />
@@ -158,7 +357,9 @@ export function BillingSettings() {
                         <Calendar className="h-4 w-4" />
                         Member since
                       </span>
-                      <span>{format(new Date(subscription.subscription_started_at), "MMM d, yyyy")}</span>
+                      <span>
+                        {format(new Date(subscription.subscription_started_at), "MMM d, yyyy")}
+                      </span>
                     </div>
                   )}
                   {subscription?.subscription_ends_at && (
@@ -167,7 +368,9 @@ export function BillingSettings() {
                         <CreditCard className="h-4 w-4" />
                         Next billing date
                       </span>
-                      <span>{format(new Date(subscription.subscription_ends_at), "MMM d, yyyy")}</span>
+                      <span>
+                        {format(new Date(subscription.subscription_ends_at), "MMM d, yyyy")}
+                      </span>
                     </div>
                   )}
                 </div>
@@ -177,7 +380,10 @@ export function BillingSettings() {
               {subscription?.subscription_status === "active" && (
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <Button variant="outline" className="w-full text-destructive hover:text-destructive">
+                    <Button
+                      variant="outline"
+                      className="w-full text-destructive hover:text-destructive"
+                    >
                       Cancel Subscription
                     </Button>
                   </AlertDialogTrigger>
@@ -185,8 +391,9 @@ export function BillingSettings() {
                     <AlertDialogHeader>
                       <AlertDialogTitle>Cancel your subscription?</AlertDialogTitle>
                       <AlertDialogDescription>
-                        You'll lose access to premium features at the end of your current billing period. 
-                        This includes the verified badge, SMS alerts, and early access to opportunities.
+                        You'll lose access to premium features at the end of your current billing
+                        period. This includes the verified badge, SMS alerts, early access to
+                        opportunities, and unlimited monthly applications.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -206,23 +413,72 @@ export function BillingSettings() {
           ) : (
             <>
               {/* Free Plan */}
-              <div className="text-center py-8">
+              <div className="text-center py-6 sm:py-8">
                 <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-muted mb-4">
                   <Crown className="h-8 w-8 text-muted-foreground" />
                 </div>
                 <h3 className="text-lg font-semibold mb-2">You're on the Free Plan</h3>
-                <p className="text-sm text-muted-foreground mb-6 max-w-sm mx-auto">
-                  Upgrade to Premium Lifter to unlock verified badges, SMS alerts, and more exclusive features.
+                <p className="text-sm text-muted-foreground mb-5 max-w-sm mx-auto">
+                  Browse all opportunities and apply to{" "}
+                  <span className="font-semibold text-foreground">
+                    {FREE_MONTHLY_APPLICATIONS} opportunities per month
+                  </span>{" "}
+                  for free. Upgrade for unlimited applications, SMS alerts, and more premium
+                  features.
                 </p>
-                <Button 
+
+                {/* Free usage progress */}
+                <div className="max-w-sm mx-auto mb-6 p-4 rounded-lg bg-muted/60 border border-border/60 text-left">
+                  <div className="flex items-center justify-between text-sm mb-2">
+                    <span className="text-foreground font-medium flex items-center gap-1.5">
+                      <Check className="h-3.5 w-3.5 text-primary" />
+                      Monthly Applications
+                    </span>
+                    {quota ? (
+                      <span className="font-semibold text-foreground">
+                        {FREE_MONTHLY_APPLICATIONS - quota.remaining}/
+                        {FREE_MONTHLY_APPLICATIONS} used
+                      </span>
+                    ) : null}
+                  </div>
+                  <div className="h-2 w-full rounded-full bg-muted">
+                    <div
+                      className="h-2 rounded-full bg-primary transition-all duration-500"
+                      style={{
+                        width: `${
+                          quota
+                            ? Math.min(
+                                100,
+                                (quota.applicationsThisMonth / FREE_MONTHLY_APPLICATIONS) * 100,
+                              )
+                            : 0
+                        }%`,
+                      }}
+                    />
+                  </div>
+                  <p className="text-[11px] text-muted-foreground mt-2">
+                    {quota && quota.isQuotaExceeded
+                      ? `Quota exceeded. Upgrade to apply to more. ` +
+                        (quota.daysUntilReset != null
+                          ? `Resets in ${quota.daysUntilReset} day(s).`
+                          : "")
+                      : quota && quota.daysUntilReset != null
+                        ? `${quota.remaining} free application${
+                            quota.remaining === 1 ? "" : "s"
+                          } remaining — resets in ${quota.daysUntilReset} day(s).`
+                        : "Browse always free. Apply to 5 opportunities each month."}
+                  </p>
+                </div>
+
+                <Button
                   onClick={() => setShowUpgradeModal(true)}
                   className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-lg shadow-amber-500/30"
                 >
                   <Crown className="h-4 w-4 mr-2" />
-                  Upgrade to Premium • from ₦430/month
+                  Upgrade to Premium • ₦{totalPrice.toLocaleString()}/month
                 </Button>
                 <p className="text-xs text-muted-foreground mt-3">
-                  Start with a 30-day free trial
+                  🇳🇬 Paid in Naira • Secure payment by Paystack • Cancel anytime
                 </p>
               </div>
             </>
@@ -234,3 +490,4 @@ export function BillingSettings() {
     </div>
   );
 }
+

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, User, LogOut, LayoutDashboard, Shield, MessageSquare, Rocket } from "lucide-react";
+import { Menu, User, LogOut, LayoutDashboard, Shield, MessageSquare, Rocket, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import {
@@ -28,25 +28,22 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-14 md:h-16 items-center justify-between">
+      <div className="container px-3 sm:px-4 md:px-6 flex h-14 md:h-16 items-center justify-between gap-2 min-w-0">
         {/* Logo */}
-        <Link to="/" className="flex items-center gap-2">
-          <div className="flex h-8 w-8 md:h-9 md:w-9 items-center justify-center rounded-lg bg-primary">
-            <Rocket className="h-4 w-4 md:h-5 md:w-5 text-primary-foreground" />
+        <Link to="/" className="flex items-center gap-1.5 sm:gap-2 min-w-0 shrink-0">
+          <div className="flex h-7 w-7 md:h-9 md:w-9 items-center justify-center rounded-lg bg-primary shrink-0">
+            <Rocket className="h-3.5 w-3.5 md:h-5 md:w-5 text-primary-foreground" />
           </div>
-          <span className="font-display text-lg md:text-xl font-bold text-foreground">NAIJALIFT</span>
-          <span className="px-1.5 py-0.5 text-[10px] font-semibold uppercase rounded bg-primary/10 text-primary border border-primary/20">
-            Beta
-          </span>
+          <span className="font-display text-base sm:text-lg md:text-xl font-bold text-foreground truncate">NAIJALIFT</span>
         </Link>
 
         {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center gap-1">
+        <nav className="hidden md:flex items-center gap-1 shrink-0">
           {navLinks.map((link) => (
             <Link
               key={link.href}
               to={link.href}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              className={`px-3 md:px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 isActive(link.href)
                   ? "bg-primary text-primary-foreground"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted"
@@ -55,10 +52,23 @@ export function Header() {
               {link.label}
             </Link>
           ))}
+          {user && (
+            <Link
+              to="/billing"
+              className={`px-3 md:px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
+                isActive("/billing")
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
+              }`}
+            >
+              <CreditCard className="h-4 w-4" />
+              Billing
+            </Link>
+          )}
           {isAdmin && (
             <Link
               to="/ogahouse"
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
+              className={`px-3 md:px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
                 isActive("/ogahouse")
                   ? "bg-primary text-primary-foreground"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted"
@@ -71,30 +81,36 @@ export function Header() {
         </nav>
 
         {/* Auth Section */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2 shrink-0 min-w-0">
           {user ? (
             <>
               <Link to="/dashboard" className="hidden sm:block">
                 <Button
                   variant={isActive("/dashboard") ? "default" : "outline"}
                   size="sm"
-                  className="gap-2"
+                  className="gap-1.5 sm:gap-2 h-8 sm:h-9 px-2.5 sm:px-3"
                 >
-                  <LayoutDashboard className="h-4 w-4" />
-                  Dashboard
+                  <LayoutDashboard className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  <span className="text-xs sm:text-sm">Dashboard</span>
                 </Button>
               </Link>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="rounded-full">
-                    <User className="h-5 w-5" />
+                  <Button variant="ghost" size="icon" className="rounded-full h-8 w-8 sm:h-9 sm:w-9 shrink-0">
+                    <User className="h-4 w-4 sm:h-5 sm:w-5" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48 bg-popover">
+                <DropdownMenuContent align="end" className="w-52 bg-popover">
                   <DropdownMenuItem asChild>
                     <Link to="/dashboard" className="flex items-center gap-2 cursor-pointer">
                       <LayoutDashboard className="h-4 w-4" />
                       Dashboard
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/billing" className="flex items-center gap-2 cursor-pointer">
+                      <CreditCard className="h-4 w-4" />
+                      Billing
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
@@ -121,7 +137,7 @@ export function Header() {
             </>
           ) : (
             <Link to="/auth">
-              <Button variant="default" size="sm" className="text-sm">
+              <Button variant="default" size="sm" className="text-xs sm:text-sm h-8 sm:h-9 px-3 sm:px-4">
                 Sign In
               </Button>
             </Link>
@@ -129,12 +145,12 @@ export function Header() {
 
           {/* Mobile Menu */}
           <Sheet open={isOpen} onOpenChange={setIsOpen}>
-            <SheetTrigger asChild className="md:hidden">
-              <Button variant="ghost" size="icon">
-                <Menu className="h-5 w-5" />
+            <SheetTrigger asChild className="md:hidden shrink-0">
+              <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-9 sm:w-9">
+                <Menu className="h-4 w-4 sm:h-5 sm:w-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-72 bg-background">
+            <SheetContent side="right" className="w-[80vw] max-w-sm bg-background">
               <nav className="flex flex-col gap-2 mt-8">
                 {navLinks.map((link) => (
                   <Link
@@ -150,6 +166,20 @@ export function Header() {
                     {link.label}
                   </Link>
                 ))}
+                {user && (
+                  <Link
+                    to="/billing"
+                    onClick={() => setIsOpen(false)}
+                    className={`px-4 py-3 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
+                      isActive("/billing")
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                    }`}
+                  >
+                    <CreditCard className="h-4 w-4" />
+                    Billing
+                  </Link>
+                )}
                 {isAdmin && (
                   <Link
                     to="/ogahouse"

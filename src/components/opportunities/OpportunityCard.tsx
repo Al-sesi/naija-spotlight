@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { differenceInDays, format, isPast, parseISO } from "date-fns";
-import { BadgeCheck, Calendar, Clock, MapPin, ExternalLink, Bookmark, BookmarkCheck, GraduationCap, Lock } from "lucide-react";
+import { BadgeCheck, Calendar, Clock, MapPin, ExternalLink, Bookmark, BookmarkCheck, GraduationCap, Lock, Crown, Eye } from "lucide-react";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +8,11 @@ import { Opportunity } from "@/hooks/useOpportunities";
 import { useSaveApplication, useUserApplications, useRemoveApplication } from "@/hooks/useApplications";
 import { useUserBehavior } from "@/hooks/useUserBehavior";
 import { useAuth } from "@/hooks/useAuth";
+import { useMonthlyQuota, FREE_MONTHLY_APPLICATIONS } from "@/hooks/useMonthlyQuota";
+import { useIsPremium } from "@/hooks/useSubscription";
+import { UpgradeModal } from "@/components/subscription/UpgradeModal";
+import { OpportunityDetailModal } from "@/components/opportunities/OpportunityDetailModal";
+import { useState } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -17,6 +22,12 @@ const categoryStyles: Record<string, { bg: string; text: string; border: string;
     text: "text-category-government",
     border: "border-category-government/30",
     label: "Recruitments",
+  },
+  job: {
+    bg: "bg-category-job/10",
+    text: "text-category-job",
+    border: "border-category-job/30",
+    label: "Job",
   },
   recruitment: {
     bg: "bg-category-recruitment/10",
@@ -36,11 +47,17 @@ const categoryStyles: Record<string, { bg: string; text: string; border: string;
     border: "border-category-competition/30",
     label: "Competitions",
   },
+  grant: {
+    bg: "bg-category-grant/10",
+    text: "text-category-grant",
+    border: "border-category-grant/30",
+    label: "Grants",
+  },
   ngo: {
-    bg: "bg-category-ngo/10",
-    text: "text-category-ngo",
-    border: "border-category-ngo/30",
-    label: "NGO Program",
+    bg: "bg-category-grant/10",
+    text: "text-category-grant",
+    border: "border-category-grant/30",
+    label: "Grants",
   },
   tech: {
     bg: "bg-category-tech/10",
@@ -79,6 +96,10 @@ export function OpportunityCard({ opportunity, style }: OpportunityCardProps) {
   const saveApplication = useSaveApplication();
   const removeApplication = useRemoveApplication();
   const { trackView, trackSave, trackApply } = useUserBehavior();
+  const { data: quota, isLoading: isQuotaLoading, incrementQuotaOptimistic } = useMonthlyQuota();
+  const { isPremium } = useIsPremium();
+  const [showUpgrade, setShowUpgrade] = useState(false);
+  const [showDetail, setShowDetail] = useState(false);
 
   const savedApplication = applications?.find(a => a.opportunity_id === opportunity.id);
   const isSaved = !!savedApplication;
@@ -96,6 +117,9 @@ export function OpportunityCard({ opportunity, style }: OpportunityCardProps) {
   const displayDate = deadline || eventDate;
   const isExpired = deadline && isPast(deadline);
   const daysLeft = deadline && !isExpired ? differenceInDays(deadline, new Date()) : null;
+
+  const isQuotaExceeded =
+    !!user && !!quota && !isPremium && quota.isQuotaExceeded;
 
   const handleSave = async () => {
     if (!user) {
@@ -133,16 +157,42 @@ export function OpportunityCard({ opportunity, style }: OpportunityCardProps) {
       return;
     }
 
+    // Free users: 5 applications/month — after that, browse only, upgrade to apply
+    if (!isPremium && quota && quota.isQuotaExceeded) {
+      setShowUpgrade(true);
+      return;
+    }
+
     window.open(opportunity.link, "_blank", "noopener,noreferrer");
     trackApply(opportunity.id);
+    // Optimistic + invalidate to reflect the quota right away
+    incrementQuotaOptimistic();
     if (user && !isSaved) {
-      saveApplication.mutate({ opportunityId: opportunity.id, status: "applied" });
+      saveApplication.mutate(
+        { opportunityId: opportunity.id, status: "applied" },
+        {
+          onError: (err: any) => {
+            const msg = err?.message ?? String(err ?? "");
+            if (msg.toLowerCase().includes("quota") || msg.toLowerCase().includes("exceeded")) {
+              toast.error("Monthly application quota of 5 exceeded. Please upgrade to Premium.");
+              setShowUpgrade(true);
+            } else {
+              toast.error("Could not mark as applied — please try again");
+            }
+          },
+        },
+      );
     }
   };
 
-  const applyDisabled = isExpired || !user || !isEmailConfirmed;
+  const applyDisabled =
+    isExpired ||
+    !user ||
+    !isEmailConfirmed ||
+    (!!user && !isPremium && quota && quota.isQuotaExceeded);
 
   return (
+    <>
     <Card 
       className={cn(
         "group relative overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1 animate-fade-up border-border/50",
@@ -160,15 +210,10 @@ export function OpportunityCard({ opportunity, style }: OpportunityCardProps) {
           </Badge>
           <div className="flex flex-col items-end gap-1">
             {opportunity.is_verified && (
-              <div className="flex items-center gap-1 text-primary" title="Premium Feature: Verified by Naijalift (Free for Beta Users)">
+              <div className="flex items-center gap-1 text-primary" title="Verified by Naijalift">
                 <BadgeCheck className="h-4 w-4 fill-primary text-primary-foreground" />
                 <span className="text-xs font-medium hidden sm:inline">Verified</span>
               </div>
-            )}
-            {opportunity.is_verified && (
-              <span className="text-[10px] text-muted-foreground hidden lg:block">
-                Free for Beta ✨
-              </span>
             )}
           </div>
         </div>
@@ -228,10 +273,30 @@ export function OpportunityCard({ opportunity, style }: OpportunityCardProps) {
         )}
       </CardContent>
 
-      <CardFooter className="pt-0 flex gap-2">
+      <CardFooter className="pt-0 flex flex-col sm:flex-row gap-2">
+        {/* Quota indicator badge for free users */}
+        {user && !isPremium && quota && !isQuotaExceeded && (
+          <div className="sm:hidden flex w-full items-center justify-between text-[11px] text-muted-foreground bg-muted/70 border border-border/70 rounded-md px-2.5 py-1 mb-1">
+            <span>Free plan</span>
+            <span className="font-medium">
+              {quota.remaining}/{FREE_MONTHLY_APPLICATIONS} applies left
+            </span>
+          </div>
+        )}
+
+        {/* View Details button */}
+        <Button
+          variant="secondary"
+          onClick={() => setShowDetail(true)}
+          className="w-full sm:w-auto sm:shrink-0 text-xs sm:text-sm gap-1.5 bg-muted/60 hover:bg-muted border border-border/50"
+        >
+          <Eye className="h-3.5 w-3.5" />
+          <span>View Details</span>
+        </Button>
+
         <Button 
           onClick={handleApply}
-          className="flex-1 text-sm"
+          className={`flex-1 text-sm ${isQuotaExceeded ? "bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white" : ""}`}
           disabled={applyDisabled}
         >
           {!user ? (
@@ -244,8 +309,18 @@ export function OpportunityCard({ opportunity, style }: OpportunityCardProps) {
               <Lock className="h-4 w-4 mr-2" />
               Verify Email
             </>
+          ) : isQuotaExceeded ? (
+            <>
+              <Crown className="h-4 w-4 mr-2" />
+              Upgrade to Apply
+            </>
           ) : (
             <>
+              {user && !isPremium && quota ? (
+                <span className="hidden sm:inline-flex mr-2 items-center text-[11px] px-1.5 py-0.5 rounded bg-white/15">
+                  {quota.remaining}/{FREE_MONTHLY_APPLICATIONS}
+                </span>
+              ) : null}
               Apply Now
               <ExternalLink className="h-4 w-4 ml-2" />
             </>
@@ -266,5 +341,18 @@ export function OpportunityCard({ opportunity, style }: OpportunityCardProps) {
         </Button>
       </CardFooter>
     </Card>
+
+    <UpgradeModal
+      open={showUpgrade}
+      onOpenChange={setShowUpgrade}
+      feature="Unlimited Applications"
+    />
+
+    <OpportunityDetailModal
+      open={showDetail}
+      onOpenChange={setShowDetail}
+      opportunity={opportunity}
+    />
+    </>
   );
 }

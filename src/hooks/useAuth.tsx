@@ -13,7 +13,7 @@ interface AuthContextType {
   loading: boolean;
   isAdmin: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, fullName: string, referralCode?: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: Error | null }>;
   updatePassword: (newPassword: string) => Promise<{ error: Error | null }>;
@@ -112,22 +112,56 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error: normalizeAuthEmailError(error) };
   };
 
-  const signUp = async (email: string, password: string, fullName: string) => {
-    // CRITICAL: Always use production URL for email verification links
+  const signUp = async (email: string, password: string, fullName: string, referralCode?: string) => {
     const redirectUrl = "https://naijalift.space/verification-success";
+    const trimmedRefCode = referralCode?.trim() || "";
 
-    const { error } = await supabase.auth.signUp({
+    // Validate referral code upfront if provided
+    let normalizedReferralCode: string | null = null;
+    if (trimmedRefCode) {
+      const { data: referrer, error: lookupError } = await supabase
+        .from("profiles")
+        .select("referral_code")
+        .eq("referral_code", trimmedRefCode)
+        .maybeSingle();
+
+      if (lookupError) {
+        console.error("Referral code lookup error:", lookupError);
+        return { error: new Error("Failed to validate referral code. Please try again.") };
+      }
+      if (!referrer?.referral_code) {
+        return { error: new Error("Invalid referral code. Please double-check and try again.") };
+      }
+      normalizedReferralCode = referrer.referral_code;
+    }
+
+    const { data: authData, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: {
           full_name: fullName,
+          referred_by: normalizedReferralCode ?? undefined,
         },
         emailRedirectTo: redirectUrl,
       },
     });
 
-    // Send custom welcome email via Resend (non-blocking)
+    // Ensure referred_by is set on the profiles row (the trigger may not copy app_meta_data)
+    if (!error && normalizedReferralCode && authData?.user?.id) {
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .update({
+          referred_by: normalizedReferralCode,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", authData.user.id);
+
+      if (profileError) {
+        console.warn("Failed to attach referral code to profile:", profileError);
+      }
+    }
+
     if (!error) {
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       fetch(`${supabaseUrl}/functions/v1/send-welcome-email`, {
@@ -135,7 +169,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ email, fullName }),
+        body: JSON.stringify({ email, fullName, referred_by: normalizedReferralCode ?? undefined }),
       }).catch((emailError) => {
         console.warn("Welcome email failed (non-critical):", emailError);
       });

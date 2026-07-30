@@ -42,6 +42,75 @@ export type Database = {
         }
         Relationships: []
       }
+      generated_documents: {
+        Row: {
+          id: string
+          user_id: string
+          document_type: string
+          target_role: string
+          company_name: string | null
+          job_title: string | null
+          opportunity_id: string | null
+          cv_content: string | null
+          cover_letter_content: string | null
+          request_snapshot: Json
+          ai_provider: string
+          ai_model: string | null
+          tokens_used: number | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          document_type: string
+          target_role: string
+          company_name?: string | null
+          job_title?: string | null
+          opportunity_id?: string | null
+          cv_content?: string | null
+          cover_letter_content?: string | null
+          request_snapshot?: Json
+          ai_provider?: string
+          ai_model?: string | null
+          tokens_used?: number | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          document_type?: string
+          target_role?: string
+          company_name?: string | null
+          job_title?: string | null
+          opportunity_id?: string | null
+          cv_content?: string | null
+          cover_letter_content?: string | null
+          request_snapshot?: Json
+          ai_provider?: string
+          ai_model?: string | null
+          tokens_used?: number | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "generated_documents_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "opportunities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "generated_documents_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       notification_preferences: {
         Row: {
           created_at: string
@@ -245,6 +314,8 @@ export type Database = {
           trial_ends_at: string | null
           updated_at: string | null
           phone_number: string | null
+          applications_this_month: number
+          quota_reset_at: string | null
           gender: string | null
           age: number | null
           date_of_birth: string | null
@@ -283,6 +354,8 @@ export type Database = {
           trial_ends_at?: string | null
           updated_at?: string | null
           phone_number?: string | null
+          applications_this_month?: number
+          quota_reset_at?: string | null
           gender?: string | null
           age?: number | null
           date_of_birth?: string | null
@@ -321,6 +394,8 @@ export type Database = {
           trial_ends_at?: string | null
           updated_at?: string | null
           phone_number?: string | null
+          applications_this_month?: number
+          quota_reset_at?: string | null
           gender?: string | null
           age?: number | null
           date_of_birth?: string | null
@@ -686,6 +761,8 @@ export type Database = {
         | "internship"
         | "competition"
         | "ngo"
+        | "grant"
+        | "job"
         | "tech"
         | "career"
         | "scholarship"
@@ -830,6 +907,8 @@ export const Constants = {
         "internship",
         "competition",
         "ngo",
+        "grant",
+        "job",
         "tech",
         "career",
         "scholarship",

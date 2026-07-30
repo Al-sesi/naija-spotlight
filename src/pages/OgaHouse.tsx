@@ -4,8 +4,10 @@ import { formatDistanceToNow, format } from "date-fns";
 import { 
   Shield, Plus, Link as LinkIcon, Users, MessageSquare, CheckCircle, XCircle, 
   Trash2, ToggleLeft, Home, FileText, Bell, UserCheck, Menu, X,
-  Megaphone, ChevronRight, Calendar, Send, Smartphone
+  Megaphone, ChevronRight, Calendar, Send, Smartphone, Sparkles,
+  Gift, Copy, Check
 } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -22,8 +24,10 @@ import { useOpportunities, useCreateOpportunity, useDeleteOpportunity, useUpdate
 import { 
   usePendingPosts, useApprovePost, useRejectPost, useRegisteredUsers, 
   useAppInstalls, useTeamMembers, useAddTeamMember, useRemoveTeamMember,
-  AppInstall, TeamMember
+  useGenerateReferralCode, AppInstall, TeamMember, RegisteredUser
 } from "@/hooks/useAdminData";
+import { ReferralStatsTable } from "@/components/admin/ReferralStatsTable";
+import { useReferralStats } from "@/hooks/useReferralStats";
 import { useSiteAlert, useUpdateSiteAlert } from "@/hooks/useSiteAlert";
 import { NIGERIAN_STATES, OPPORTUNITY_TYPES, OpportunityType } from "@/lib/constants";
 import { toast } from "sonner";
@@ -75,14 +79,7 @@ interface AdminPost {
   } | null;
 }
 
-interface AdminUser {
-  id: string;
-  email: string | null;
-  full_name: string | null;
-  created_at: string | null;
-}
-
-type Section = "dashboard" | "add" | "manage" | "posts" | "users" | "team" | "alerts" | "broadcast" | "installs";
+type Section = "dashboard" | "add" | "manage" | "posts" | "users" | "team" | "alerts" | "broadcast" | "installs" | "referrals";
 
 const sidebarItems: { id: Section; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { id: "dashboard", label: "Dashboard", icon: Home },
@@ -90,6 +87,7 @@ const sidebarItems: { id: Section; label: string; icon: React.ComponentType<{ cl
   { id: "manage", label: "Manage Opps", icon: FileText },
   { id: "posts", label: "Review Posts", icon: MessageSquare },
   { id: "users", label: "Users", icon: Users },
+  { id: "referrals", label: "Referrals", icon: Gift },
   { id: "installs", label: "App Installs", icon: Smartphone },
   { id: "team", label: "Ambassadors", icon: UserCheck },
   { id: "alerts", label: "Site Alerts", icon: Megaphone },
@@ -99,8 +97,9 @@ const sidebarItems: { id: Section; label: string; icon: React.ComponentType<{ cl
 export default function OgaHouse() {
   const { user, loading, isAdmin } = useAuth();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [activeSection, setActiveSection] = useState<Section>("dashboard");
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(() => !isMobile);
 
   const { data: opportunities } = useOpportunities({ types: [], states: [], search: "" });
   const createOpportunity = useCreateOpportunity();
@@ -114,6 +113,7 @@ export default function OgaHouse() {
   const { data: teamMembers, isLoading: teamLoading } = useTeamMembers();
   const addTeamMember = useAddTeamMember();
   const removeTeamMember = useRemoveTeamMember();
+  const generateReferralCode = useGenerateReferralCode();
   const { data: siteAlert } = useSiteAlert();
   const updateSiteAlert = useUpdateSiteAlert();
 
@@ -202,8 +202,8 @@ export default function OgaHouse() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.title || !form.provider || !form.category || !form.link || !form.deadline) {
-      toast.error("Please fill in all required fields including deadline");
+    if (!form.title || !form.provider || !form.category || !form.link) {
+      toast.error("Please fill in all required fields");
       return;
     }
 
@@ -307,6 +307,8 @@ export default function OgaHouse() {
           opportunitiesCount={opportunities?.length || 0}
           pendingPostsCount={pendingPosts?.length || 0}
           usersCount={users?.length || 0}
+          premiumUsersCount={users?.filter(u => u.subscription_status === "active").length || 0}
+          installsCount={installs?.length || 0}
           onNavigate={setActiveSection}
         />;
       case "add":
@@ -328,7 +330,22 @@ export default function OgaHouse() {
           rejectPending={rejectPost.isPending}
         />;
       case "users":
-        return <UserManagement users={users || []} isLoading={usersLoading} />;
+        return (
+          <UserManagement
+            users={users || []}
+            isLoading={usersLoading}
+            onGenerateReferral={async (userId) => {
+              const res = await generateReferralCode.mutateAsync(userId);
+              toast.success(
+                res?.regenerated
+                  ? "Referral code regenerated!"
+                  : `Referral code created: ${res.referral_code}`
+              );
+            }}
+          />
+        );
+      case "referrals":
+        return <ReferralStatsTable />;
       case "team":
         return <TeamManagement 
           members={teamMembers || []} 
@@ -531,11 +548,15 @@ function DashboardOverview({
   opportunitiesCount, 
   pendingPostsCount, 
   usersCount,
+  premiumUsersCount,
+  installsCount,
   onNavigate 
 }: { 
   opportunitiesCount: number; 
   pendingPostsCount: number; 
   usersCount: number;
+  premiumUsersCount: number;
+  installsCount: number;
   onNavigate: (section: Section) => void;
 }) {
   return (
@@ -545,7 +566,7 @@ function DashboardOverview({
         <p className="text-muted-foreground">Here's what's happening with NAIJALIFT today.</p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => onNavigate("manage")}>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Total Opportunities</CardTitle>
@@ -582,6 +603,43 @@ function DashboardOverview({
               <Users className="h-8 w-8 text-blue-500" />
               <span className="text-3xl font-bold text-foreground">{usersCount}</span>
             </div>
+          </CardContent>
+        </Card>
+
+        <Card
+          className="cursor-pointer hover:shadow-md transition-shadow bg-gradient-to-br from-amber-50 to-amber-100/60 dark:from-amber-950/30 dark:to-amber-900/20 border-amber-200 dark:border-amber-800"
+          onClick={() => onNavigate("users")}
+        >
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-amber-700 dark:text-amber-300 flex items-center gap-2">
+              <Sparkles className="h-4 w-4" />
+              Premium Users
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-2">
+              <span className="text-3xl font-bold text-foreground">{premiumUsersCount}</span>
+              {usersCount > 0 && (
+                <Badge variant="secondary" className="ml-auto text-xs">
+                  {Math.round((premiumUsersCount / usersCount) * 100)}%
+                </Badge>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => onNavigate("installs")}>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">PWA Installs</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-2">
+              <Smartphone className="h-8 w-8 text-emerald-500" />
+              <span className="text-3xl font-bold text-foreground">{installsCount}</span>
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              {installsCount === 0 ? "No installs tracked yet" : `${installs.filter(i => i.outcome === 'accepted').length} accepted`}
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -690,12 +748,12 @@ function AddOpportunityForm({
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="deadline" className="text-sm">Deadline *</Label>
-              <Input id="deadline" type="date" value={form.deadline} onChange={(e) => setForm({ ...form, deadline: e.target.value })} className="text-sm" required />
-              <p className="text-xs text-muted-foreground">Required. Opportunities expire 7 days after deadline.</p>
+              <Label htmlFor="deadline" className="text-sm">Deadline (Optional)</Label>
+              <Input id="deadline" type="date" value={form.deadline} onChange={(e) => setForm({ ...form, deadline: e.target.value })} className="text-sm" />
+              <p className="text-xs text-muted-foreground">Leave blank for ongoing opportunities without deadlines.</p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="event_date" className="text-sm">Event Date</Label>
+              <Label htmlFor="event_date" className="text-sm">Event Date (Optional)</Label>
               <Input id="event_date" type="date" value={form.event_date} onChange={(e) => setForm({ ...form, event_date: e.target.value })} className="text-sm" />
             </div>
           </div>
@@ -913,67 +971,245 @@ function ReviewPosts({
 }
 
 // User Management Component
-function UserManagement({ users, isLoading }: { users: AdminUser[]; isLoading: boolean }) {
+function UserManagement({
+  users,
+  isLoading,
+  onGenerateReferral,
+}: {
+  users: RegisteredUser[];
+  isLoading: boolean;
+  onGenerateReferral?: (userId: string) => Promise<void>;
+}) {
+  const premiumUsers = users.filter(u => u.subscription_status === "active");
+  const freeUsers = users.filter(u => u.subscription_status !== "active");
+
+  // Get referral stats so we can look up how many referrals each user has
+  const { data: referralStats } = useReferralStats();
+  const statsByUserId = new Map(
+    (referralStats || []).map(s => [s.user_id, s])
+  );
+
+  // Also build a lookup map: code -> referrer name (for "Referred By" display)
+  const referrerByCode = new Map(
+    (referralStats || []).map(s => [s.referral_code, s.ambassador_name])
+  );
+
+  const [generatingId, setGeneratingId] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const buildReferralLink = (code: string) => {
+    const origin = typeof window !== "undefined" ? window.location.origin : "https://naijalift.space";
+    return `${origin}/sign-up?ref=${encodeURIComponent(code)}`;
+  };
+
+  const handleGenerate = async (userId: string) => {
+    if (!onGenerateReferral) return;
+    try {
+      setGeneratingId(userId);
+      await onGenerateReferral(userId);
+    } finally {
+      setGeneratingId(null);
+    }
+  };
+
+  const handleCopyLink = async (user: RegisteredUser) => {
+    if (!user.referral_code) return;
+    try {
+      await navigator.clipboard.writeText(buildReferralLink(user.referral_code));
+      setCopiedId(user.id);
+      toast.success("Referral link copied to clipboard!");
+      setTimeout(() => setCopiedId(null), 1500);
+    } catch {
+      toast.error("Failed to copy. Try again.");
+    }
+  };
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-lg flex items-center gap-2">
-            <Users className="h-5 w-5 text-primary" />
-          Registered Users
-        </CardTitle>
-        <CardDescription>{users.length} users registered</CardDescription>
-      </CardHeader>
-      <CardContent>
-        {isLoading ? (
-          <div className="space-y-2">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="animate-pulse h-12 bg-muted rounded" />
-            ))}
-          </div>
-        ) : !users.length ? (
-          <p className="text-muted-foreground text-center py-8">No users found.</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>User</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Joined</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {users.map((u) => (
-                  <TableRow key={u.id}>
-                    <TableCell className="font-medium">
-                      <div className="flex items-center gap-2">
-                        <Avatar className="h-8 w-8">
-                              <AvatarFallback className="bg-primary/10 text-primary text-sm">
-                            {(u.full_name?.[0] || u.email?.[0] || "U").toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        {u.full_name || "No Name"}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">{u.email}</TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {u.created_at ? format(new Date(u.created_at), "MMM d, yyyy") : "N/A"}
-                    </TableCell>
-                    <TableCell>
-                          <Badge variant="secondary" className="bg-primary/10 text-primary">
-                        <CheckCircle className="h-3 w-3 mr-1" />
-                        Verified
-                      </Badge>
-                    </TableCell>
+    <div className="space-y-6">
+      {/* Premium / Free summary */}
+      <div className="grid gap-3 sm:grid-cols-3">
+        <Card className="bg-gradient-to-br from-amber-50 to-amber-100/60 dark:from-amber-950/30 dark:to-amber-900/20 border-amber-200 dark:border-amber-800">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-amber-700 dark:text-amber-300 flex items-center gap-2">
+              <Sparkles className="h-4 w-4" />
+              Premium Lifter
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-foreground">{premiumUsers.length}</div>
+            <p className="text-xs text-muted-foreground mt-1">Active premium subscribers</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Free Users</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-foreground">{freeUsers.length}</div>
+            <p className="text-xs text-muted-foreground mt-1">Free plan (5 applies / mo)</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total Users</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-foreground">{users.length}</div>
+            <p className="text-xs text-muted-foreground mt-1">Registered accounts</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+              <Users className="h-5 w-5 text-primary" />
+            Registered Users
+          </CardTitle>
+          <CardDescription>{users.length} users · {premiumUsers.length} premium</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="space-y-2">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="animate-pulse h-12 bg-muted rounded" />
+              ))}
+            </div>
+          ) : !users.length ? (
+            <p className="text-muted-foreground text-center py-8">No users found.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>User</TableHead>
+                    <TableHead>Referred By</TableHead>
+                    <TableHead>Referral Code</TableHead>
+                    <TableHead>My Referrals</TableHead>
+                    <TableHead>Joined</TableHead>
+                    <TableHead>Plan</TableHead>
+                    <TableHead className="text-right">Referral Action</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+                </TableHeader>
+                <TableBody>
+                  {users.map((u) => {
+                    const isPremium = u.subscription_status === "active";
+                    const stats = statsByUserId.get(u.id);
+                    const referredByName = u.referred_by ? (referrerByCode.get(u.referred_by) || u.referred_by) : null;
+                    return (
+                      <TableRow key={u.id}>
+                        <TableCell className="font-medium">
+                          <div className="flex items-center gap-2">
+                            <Avatar className="h-8 w-8">
+                                  <AvatarFallback className="bg-primary/10 text-primary text-sm">
+                                {(u.full_name?.[0] || u.email?.[0] || "U").toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex flex-col">
+                              <span className="text-sm">{u.full_name || "No Name"}</span>
+                              <span className="text-xs text-muted-foreground">{u.email}</span>
+                              {isPremium && (
+                                <Badge variant="secondary" className="bg-amber-500/10 text-amber-600 border-0 w-fit mt-0.5 text-[10px] px-1.5 py-0">
+                                  <Sparkles className="h-2.5 w-2.5 mr-1" />
+                                  Premium
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {referredByName ? (
+                            <Badge variant="outline" className="font-normal text-xs">
+                              {referredByName.length > 16 ? referredByName.slice(0, 15) + "…" : referredByName}
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground text-xs">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {u.referral_code ? (
+                            <Badge variant="outline" className="font-mono text-[11px]">
+                              {u.referral_code}
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground text-xs italic">No code</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {stats ? (
+                            <div className="flex flex-col">
+                              <span className="text-sm font-semibold">
+                                {stats.total_referrals} total
+                              </span>
+                              <span className="text-[11px] text-muted-foreground">
+                                <span className="text-green-600 font-medium">{stats.active_subscriptions} premium</span>
+                                {" · "}
+                                {stats.trial_users} free
+                              </span>
+                            </div>
+                          ) : u.referral_code ? (
+                            <span className="text-xs text-muted-foreground">0 referrals</span>
+                          ) : (
+                            <span className="text-muted-foreground text-xs">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground text-sm">
+                          {u.created_at ? format(new Date(u.created_at), "MMM d, yyyy") : "N/A"}
+                        </TableCell>
+                        <TableCell>
+                          {isPremium ? (
+                            <Badge className="bg-gradient-to-r from-amber-500 to-amber-600 text-white border-0 capitalize">
+                              Premium
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="capitalize text-xs">Free</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {u.referral_code ? (
+                            <div className="flex justify-end gap-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleCopyLink(u)}
+                                className="text-xs"
+                              >
+                                {copiedId === u.id ? (
+                                  <>
+                                    <Check className="h-3.5 w-3.5 mr-1 text-green-600" />
+                                    Copied
+                                  </>
+                                ) : (
+                                  <>
+                                    <Copy className="h-3.5 w-3.5 mr-1" />
+                                    Copy Link
+                                  </>
+                                )}
+                              </Button>
+                            </div>
+                          ) : (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleGenerate(u.id)}
+                              disabled={generatingId === u.id || !onGenerateReferral}
+                              className="text-xs bg-primary/5 hover:bg-primary/10 border-primary/20"
+                            >
+                              <Gift className="h-3.5 w-3.5 mr-1 text-primary" />
+                              {generatingId === u.id ? "Generating…" : "Give Ref Link"}
+                            </Button>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 }
 
@@ -1031,8 +1267,8 @@ function TeamManagement({
       <CardDescription>Grant admin, moderator, or ambassador access to a registered user</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleAdd} className="flex gap-4 items-end">
-            <div className="flex-1 space-y-2">
+          <form onSubmit={handleAdd} className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-end">
+            <div className="w-full sm:flex-1 space-y-2">
               <Label htmlFor="email">User Email</Label>
               <Input 
                 id="email" 
@@ -1042,7 +1278,7 @@ function TeamManagement({
                 required 
               />
             </div>
-            <div className="w-[180px] space-y-2">
+            <div className="w-full sm:w-[180px] space-y-2">
               <Label htmlFor="role">Role</Label>
               <Select value={role} onValueChange={setRole}>
                 <SelectTrigger id="role">
@@ -1055,7 +1291,7 @@ function TeamManagement({
                 </SelectContent>
               </Select>
             </div>
-                <Button type="submit" className="bg-primary hover:bg-primary/90" disabled={isAdding}>
+            <Button type="submit" className="w-full sm:w-auto bg-primary hover:bg-primary/90" disabled={isAdding}>
               {isAdding ? "Adding..." : "Add Member"}
             </Button>
           </form>
@@ -1225,7 +1461,7 @@ function SiteAlerts({
               id="alertMessage"
               value={form.message}
               onChange={(e) => setForm({ ...form, message: e.target.value })}
-              placeholder="e.g. 🎉 Welcome to NAIJALIFT Beta! Enjoy free access to all features during our pilot phase."
+              placeholder="e.g. 🎉 New: Jobs category is now live! Browse verified opportunities across Nigeria."
               rows={3}
             />
           </div>

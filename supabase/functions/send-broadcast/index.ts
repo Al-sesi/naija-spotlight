@@ -45,7 +45,7 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("Supabase environment variables are not configured");
     }
 
-    const authHeader = req.headers.get("Authorization");
+    const authHeader = req.headers.get("Authorization") ?? req.headers.get("x-access-token");
     if (!authHeader) {
       return jsonResponse({ error: "Missing authorization header" }, 401);
     }
@@ -100,11 +100,14 @@ const handler = async (req: Request): Promise<Response> => {
       recipients = adminEmails.map(email => ({ email, fullName: "Admin" }));
     } else {
       let query = adminClient.from("profiles").select("email, full_name");
-      
+
       if (audience === "premium") {
-        query = query.eq("plan_type", "premium_lifter");
+        // Only users whose subscription is currently active count as premium
+        query = query.eq("subscription_status", "active");
       } else if (audience === "free") {
-        query = query.is("plan_type", null);
+        // Free = subscription_status is NULL or anything other than 'active'
+        // (covers legacy users with no field populated)
+        query = query.or("subscription_status.is.null,subscription_status.neq.active");
       }
 
       const { data: profiles, error } = await query;
@@ -113,8 +116,8 @@ const handler = async (req: Request): Promise<Response> => {
       if (profiles) {
          const uniqueEmails = new Set<string>();
          profiles.forEach((p: ProfileRecipient) => {
-             if (p.email && !uniqueEmails.has(p.email)) {
-                 uniqueEmails.add(p.email);
+             if (p.email && !uniqueEmails.has(p.email.toLowerCase())) {
+                 uniqueEmails.add(p.email.toLowerCase());
                  recipients.push({ email: p.email, fullName: p.full_name });
              }
          });

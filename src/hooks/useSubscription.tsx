@@ -52,21 +52,19 @@ export function useIsPremium() {
   const { data: subscription, isLoading } = useSubscription();
   const { user } = useAuth();
 
-  const now = new Date();
-
   const isOwner =
     (user?.email || "").toLowerCase() === "naijalift01@gmail.com";
 
   const isPremium =
     isOwner ||
-    (!!subscription &&
-      (subscription.subscription_status === "active" ||
-        (subscription.trial_ends_at ? new Date(subscription.trial_ends_at) > now : false)));
+    (!!subscription && subscription.subscription_status === "active");
 
+  // Note: verification_trial_ends_at kept for optional future expansion of
+  // verification features; monthly application quota is enforced separately.
   const hasVerificationAccess =
     isPremium ||
     (subscription?.verification_trial_ends_at
-      ? new Date(subscription.verification_trial_ends_at) > now
+      ? new Date(subscription.verification_trial_ends_at) > new Date()
       : false);
 
   return { isPremium, hasVerificationAccess, isLoading };

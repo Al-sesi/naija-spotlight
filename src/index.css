@@ -45,7 +45,9 @@
     --category-recruitment: 147 76% 27%; /* Same as government forest green */
     --category-internship: 199 89% 48%; /* Sky Blue */
     --category-competition: 32 95% 44%; /* Deep Orange */
-    --category-ngo: 262 83% 58%;
+    --category-ngo: 262 83% 58%; /* Backward compat — aliases grant below */
+    --category-grant: 262 83% 58%; /* Purple - Grants */
+    --category-job: 160 84% 39%; /* Emerald Green - Jobs */
     --category-tech: 217 91% 60%;
     --category-career: 43 96% 56%;
     --category-scholarship: 280 65% 55%;
@@ -119,16 +121,37 @@
 }
 
 @layer base {
+  html {
+    @apply overflow-x-hidden;
+  }
+
   * {
     @apply border-border;
+    box-sizing: border-box;
   }
 
   body {
-    @apply bg-background text-foreground font-sans antialiased;
+    @apply bg-background text-foreground font-sans antialiased overflow-x-hidden min-h-screen w-full;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-text-size-adjust: 100%;
   }
 
   h1, h2, h3, h4, h5, h6 {
     @apply font-display font-bold tracking-tight;
+  }
+
+  img, picture, video, canvas, svg {
+    @apply block max-w-full;
+  }
+
+  input, button, textarea, select {
+    font: inherit;
+  }
+
+  #root {
+    @apply min-h-screen w-full;
+    isolation: isolate;
   }
 }
 
@@ -171,6 +194,23 @@
 
   .animate-countdown {
     animation: countdown 1s ease-in-out infinite alternate;
+  }
+
+  .scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+
+  .safe-top {
+    padding-top: env(safe-area-inset-top, 0);
   }
 }
 
