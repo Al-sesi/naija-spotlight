@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { format, parseISO } from "date-fns";
-import { Bookmark, ExternalLink, FileText, MapPin, Trash2, Bell, LayoutDashboard, CreditCard, Sparkles, Settings, ArrowRight, Crown, Lock, History, ScrollText, Download, Gift, Copy, Check, Users } from "lucide-react";
+import { Bookmark, ExternalLink, MapPin, Trash2, Bell, LayoutDashboard, CreditCard, Sparkles, Settings, ArrowRight, Crown, Lock, Gift, Copy, Check, Users } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,7 +19,6 @@ import { APPLICATION_STATUSES, ApplicationStatus } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { NotificationSettings } from "@/components/dashboard/NotificationSettings";
 import { NotificationList } from "@/components/notifications/NotificationList";
-import { CVBuilder } from "@/components/dashboard/CVBuilder";
 import { UpgradeModal } from "@/components/subscription/UpgradeModal";
 import { QuotaWelcomeModal } from "@/components/subscription/QuotaWelcomeModal";
 import { useMyReferralStats } from "@/hooks/useReferralStats";
@@ -162,28 +161,12 @@ export default function Dashboard() {
             <span className="sm:hidden">You</span>
           </TabsTrigger>
           <TabsTrigger
-            value="cv-builder"
-            className="flex min-w-[110px] flex-1 items-center justify-center gap-1 text-xs sm:text-sm"
-          >
-            <ScrollText className="h-4 w-4" />
-            <span className="hidden sm:inline">CV Builder</span>
-            <span className="sm:hidden">CV</span>
-          </TabsTrigger>
-          <TabsTrigger
             value="applications"
             className="flex min-w-[110px] flex-1 items-center justify-center gap-1 text-xs sm:text-sm"
           >
             <LayoutDashboard className="h-4 w-4" />
             <span className="hidden sm:inline">Applications</span>
             <span className="sm:hidden">Apps</span>
-          </TabsTrigger>
-          <TabsTrigger
-            value="cv-history"
-            className="flex min-w-[110px] flex-1 items-center justify-center gap-1 text-xs sm:text-sm"
-          >
-            <History className="h-4 w-4" />
-            <span className="hidden sm:inline">CV History</span>
-            <span className="sm:hidden">History</span>
           </TabsTrigger>
           <TabsTrigger
             value="notifications"
@@ -371,60 +354,6 @@ export default function Dashboard() {
               ))}
             </div>
           )}
-        </TabsContent>
-
-        <TabsContent value="cv-builder">
-          <CVBuilder />
-        </TabsContent>
-
-        <TabsContent value="cv-history">
-          <Card className="border-primary/15 bg-gradient-to-br from-primary/5 via-background to-background">
-            <CardContent className="py-8 sm:py-10 px-5 sm:px-8 text-center space-y-5">
-              <div className="mx-auto h-16 w-16 rounded-full bg-gradient-to-br from-primary/20 to-muted flex items-center justify-center shadow-inner">
-                <History className="h-8 w-8 text-primary" />
-              </div>
-              <div className="space-y-2 max-w-xl mx-auto">
-                <h3 className="text-xl sm:text-2xl font-display font-bold">
-                  CV Version History
-                </h3>
-                <p className="text-sm sm:text-base text-muted-foreground">
-                  Every CV and cover letter you generate is saved automatically. View, preview, re-download, or restore any past version with one click.
-                </p>
-              </div>
-              <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
-                <Button asChild size="lg" className="gap-2">
-                  <Link to="/cv-history">
-                    <History className="h-5 w-5" />
-                    Open Full CV History
-                    <ArrowRight className="h-4 w-4" />
-                  </Link>
-                </Button>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 max-w-3xl mx-auto pt-4">
-                <div className="rounded-lg bg-muted/50 border border-border/50 p-3 sm:p-4 text-left">
-                  <FileText className="h-5 w-5 text-primary mb-2" />
-                  <p className="text-xs sm:text-sm font-semibold">All Past Versions</p>
-                  <p className="text-[11px] sm:text-xs text-muted-foreground mt-1">
-                    Browse every AI-generated CV with timestamps.
-                  </p>
-                </div>
-                <div className="rounded-lg bg-muted/50 border border-border/50 p-3 sm:p-4 text-left">
-                  <Download className="h-5 w-5 text-primary mb-2" />
-                  <p className="text-xs sm:text-sm font-semibold">Download PDFs</p>
-                  <p className="text-[11px] sm:text-xs text-muted-foreground mt-1">
-                    Download editable PDFs for any saved version.
-                  </p>
-                </div>
-                <div className="rounded-lg bg-muted/50 border border-border/50 p-3 sm:p-4 text-left">
-                  <ScrollText className="h-5 w-5 text-primary mb-2" />
-                  <p className="text-xs sm:text-sm font-semibold">Restore & Edit</p>
-                  <p className="text-[11px] sm:text-xs text-muted-foreground mt-1">
-                    Load any old version back into the builder.
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
         </TabsContent>
 
         <TabsContent value="applications">

@@ -20,7 +20,6 @@ import ResetPassword from "./pages/ResetPassword";
 import Onboarding from "./pages/Onboarding";
 import PaymentCallback from "./pages/PaymentCallback";
 import Billing from "./pages/Billing";
-import CVHistory from "./pages/CVHistory";
 
 const queryClient = new QueryClient();
 
@@ -57,7 +56,6 @@ const App = () => (
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/payment-callback" element={<PaymentCallback />} />
               <Route path="/billing" element={<Billing />} />
-              <Route path="/cv-history" element={<CVHistory />} />
             </Route>
 
             <Route path="*" element={<NotFound />} />
