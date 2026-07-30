@@ -37,6 +37,5 @@ dist-ssr
 # NOTE: The project-level `supabase/` directory (migrations, functions, config.toml)
 #       is intentionally NOT ignored — it's tracked in git.
 /supabase.exe
-/supabase
 supabase/.temp
 .env*.local
