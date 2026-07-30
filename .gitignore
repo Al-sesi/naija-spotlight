@@ -23,4 +23,19 @@ dist-ssr
 *.sln
 *.sw?
 
+# Env
+.env
+.env.local
+.env.*.local
+
+# Deployment caches
+.vercel
+.output
+.turbo
+
+# Supabase CLI binary (100MB+ - exceeds Vercel limits; use npx instead)
+# NOTE: The project-level `supabase/` directory (migrations, functions, config.toml)
+#       is intentionally NOT ignored — it's tracked in git.
+/supabase.exe
+/supabase
 supabase/.temp
