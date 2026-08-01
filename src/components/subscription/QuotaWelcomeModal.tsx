@@ -249,7 +249,6 @@ export function QuotaWelcomeModal({
               <ul className="space-y-1.5 text-amber-900/80 dark:text-amber-100/80">
                 <li>→ Unlimited applications — every job, scholarship & grant</li>
                 <li>→ AI-powered matching ranked by fit for your profile</li>
-                <li>→ SMS alerts for new opportunities that match you</li>
                 <li>→ Early access before the public sees listings</li>
               </ul>
             </div>
@@ -280,7 +279,7 @@ export function QuotaWelcomeModal({
               className="w-full sm:w-auto order-1 sm:order-2 gap-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-md shadow-amber-500/20"
             >
               <Crown className="h-4 w-4" />
-              Get Unlimited — ₦430/mo
+              Get Unlimited — ₦530/mo
             </Button>
           </DialogFooter>
         </div>

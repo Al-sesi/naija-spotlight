@@ -175,7 +175,7 @@ function PaymentCallback() {
             </h1>
             <p className="text-muted-foreground text-base md:text-lg px-4">
               Your payment was successful and your premium features are now active.
-              Enjoy the verified badge, SMS alerts, and early access to opportunities.
+              Enjoy the verified badge, early access to opportunities, and unlimited applications.
             </p>
           </div>
 

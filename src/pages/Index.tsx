@@ -5,7 +5,6 @@ import {
   Zap, 
   GraduationCap, 
   Briefcase, 
-  Award, 
   Users, 
   CheckCircle2, 
   ArrowRight, 
@@ -14,7 +13,7 @@ import {
   Sparkles,
   Search
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 
 const features = [
   {
@@ -78,9 +77,17 @@ const testimonials = [
 ];
 
 export default function Index() {
-  const { user, session } = useAuth();
-  const isEmailConfirmed = session?.user?.email_confirmed_at != null;
-  const aiMatchingHref = user && isEmailConfirmed ? "/dashboard" : "/auth";
+  const { user, session, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin h-10 w-10 rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+
+  const isLoggedIn = !!(user || session);
 
   return (
     <div className="min-h-screen">
@@ -105,10 +112,17 @@ export default function Index() {
             
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center px-4 sm:px-0">
               <Button asChild size="lg" className="w-full sm:w-auto text-sm sm:text-base h-11 sm:h-12 px-6 sm:px-8">
-                <Link to="/auth">
-                  Get Started Free
-                  <ArrowRight className="ml-2 w-4 h-4 sm:w-5 sm:h-5" />
-                </Link>
+                {isLoggedIn ? (
+                  <Link to="/dashboard">
+                    Go to Dashboard
+                    <ArrowRight className="ml-2 w-4 h-4 sm:w-5 sm:h-5" />
+                  </Link>
+                ) : (
+                  <Link to="/auth">
+                    Get Started Free
+                    <ArrowRight className="ml-2 w-4 h-4 sm:w-5 sm:h-5" />
+                  </Link>
+                )}
               </Button>
               <Button asChild variant="outline" size="lg" className="w-full sm:w-auto text-sm sm:text-base h-11 sm:h-12 px-6 sm:px-8 bg-card">
                 <Link to="/opportunities">
@@ -156,10 +170,17 @@ export default function Index() {
           
           <div className="text-center">
             <Button asChild size="lg" className="w-full sm:w-auto text-sm sm:text-base h-11 sm:h-12 px-6 sm:px-8">
-              <Link to={aiMatchingHref}>
-                Try AI Matching Now
-                <ArrowRight className="ml-2 w-4 h-4 sm:w-5 sm:h-5" />
-              </Link>
+              {isLoggedIn ? (
+                <Link to="/dashboard">
+                  View Your Matches
+                  <ArrowRight className="ml-2 w-4 h-4 sm:w-5 sm:h-5" />
+                </Link>
+              ) : (
+                <Link to="/auth">
+                  Try AI Matching Now
+                  <ArrowRight className="ml-2 w-4 h-4 sm:w-5 sm:h-5" />
+                </Link>
+              )}
             </Button>
           </div>
         </div>
@@ -248,14 +269,23 @@ export default function Index() {
               Ready to Transform Your Future?
             </h2>
             <p className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-2xl mx-auto mb-6 sm:mb-8">
-              Join thousands of Nigerians who are already finding amazing opportunities on NaijaLift. 
-              Create your free account today.
+              {isLoggedIn
+                ? "Welcome back! Head to your dashboard to browse personalized opportunities and track your applications."
+                : "Join thousands of Nigerians who are already finding amazing opportunities on NaijaLift. Create your free account today."
+              }
             </p>
             <Button asChild size="lg" className="w-full sm:w-auto text-sm sm:text-base h-11 sm:h-12 px-6 sm:px-8">
-              <Link to="/auth">
-                Create Free Account
-                <ArrowRight className="ml-2 w-4 h-4 sm:w-5 sm:h-5" />
-              </Link>
+              {isLoggedIn ? (
+                <Link to="/dashboard">
+                  Go to Dashboard
+                  <ArrowRight className="ml-2 w-4 h-4 sm:w-5 sm:h-5" />
+                </Link>
+              ) : (
+                <Link to="/auth">
+                  Create Free Account
+                  <ArrowRight className="ml-2 w-4 h-4 sm:w-5 sm:h-5" />
+                </Link>
+              )}
             </Button>
           </div>
         </div>

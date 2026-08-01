@@ -261,13 +261,13 @@ export default function Opportunities() {
                         <div className="flex items-start gap-2">
                           <Crown className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" />
                           <span className="text-blue-900 dark:text-blue-100">
-                            <strong>Premium — ₦430 / month</strong>
+                            <strong>Premium — ₦530 / month</strong>
                           </span>
                         </div>
                         <ul className="pl-6 space-y-1 text-blue-800/80 dark:text-blue-200/80 text-xs">
                           <li>• Unlimited applications to every job, grant & scholarship</li>
                           <li>• AI opportunity matching ranked for your profile</li>
-                          <li>• SMS alerts & early access to new listings</li>
+                          <li>• Early access to new listings</li>
                         </ul>
                       </div>
 

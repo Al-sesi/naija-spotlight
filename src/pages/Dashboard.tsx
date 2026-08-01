@@ -680,7 +680,7 @@ function ReferralsDashboard({ stats, copiedRef, setCopiedRef }: ReferralsDashboa
               />
             </div>
             <p className="text-xs text-muted-foreground">
-              {premium} of your {total} referrals upgraded to Premium for ₦430/month.
+              {premium} of your {total} referrals upgraded to Premium for ₦530/month.
             </p>
           </CardContent>
         </Card>

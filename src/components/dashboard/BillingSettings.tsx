@@ -200,7 +200,7 @@ export function BillingSettings() {
 
   const categoriesCount = subscription?.premium_categories?.length ?? 0;
   const billedCategories = categoriesCount > 0 ? categoriesCount : 1;
-  const pricePerCategory = 430;
+  const pricePerCategory = 530;
   const totalPrice = billedCategories * pricePerCategory;
 
   const showActivateHelp =
@@ -392,7 +392,7 @@ export function BillingSettings() {
                       <AlertDialogTitle>Cancel your subscription?</AlertDialogTitle>
                       <AlertDialogDescription>
                         You'll lose access to premium features at the end of your current billing
-                        period. This includes the verified badge, SMS alerts, early access to
+                        period. This includes the verified badge, early access to
                         opportunities, and unlimited monthly applications.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
@@ -423,7 +423,7 @@ export function BillingSettings() {
                   <span className="font-semibold text-foreground">
                     {FREE_MONTHLY_APPLICATIONS} opportunities per month
                   </span>{" "}
-                  for free. Upgrade for unlimited applications, SMS alerts, and more premium
+                  for free. Upgrade for unlimited applications and more premium
                   features.
                 </p>
 

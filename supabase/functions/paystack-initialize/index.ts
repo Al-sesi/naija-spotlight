@@ -59,7 +59,7 @@ serve(async (req) => {
 
     const { plan } = await req.json();
 
-    const amount = 43000;
+    const amount = 53000;
 
     const paystackResponse = await fetch("https://api.paystack.co/transaction/initialize", {
       method: "POST",

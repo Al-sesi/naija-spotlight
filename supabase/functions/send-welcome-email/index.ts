@@ -230,8 +230,8 @@ const handler = async (req: Request): Promise<Response> => {
       </div>
 
       <p class="message">
-        Upgrade to <strong>Premium Lifter (₦430/month)</strong> anytime to unlock
-        unlimited applications, SMS alerts, verified profile badge,
+        Upgrade to <strong>Premium Lifter (₦530/month)</strong> anytime to unlock
+        unlimited applications, verified profile badge,
         and priority early access to opportunities.
       </p>
       

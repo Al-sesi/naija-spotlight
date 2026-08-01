@@ -100,11 +100,10 @@ export default function Billing() {
           <ul className="text-sm text-muted-foreground space-y-1.5">
             <li className="flex items-start gap-2"><Check className="h-3.5 w-3.5 mt-0.5 text-primary" /> Unlimited applications every month</li>
             <li className="flex items-start gap-2"><Check className="h-3.5 w-3.5 mt-0.5 text-primary" /> Verified badge on your profile</li>
-            <li className="flex items-start gap-2"><Check className="h-3.5 w-3.5 mt-0.5 text-primary" /> SMS alerts for new opportunities</li>
             <li className="flex items-start gap-2"><Check className="h-3.5 w-3.5 mt-0.5 text-primary" /> Early access before free users</li>
             <li className="flex items-start gap-2"><Check className="h-3.5 w-3.5 mt-0.5 text-primary" /> Priority support & onboarding help</li>
             <li className="flex items-start gap-2"><Check className="h-3.5 w-3.5 mt-0.5 text-primary" /> Unlimited saves to your dashboard</li>
-            <li className="pt-2 text-foreground font-medium">💰 From ₦430/month</li>
+            <li className="pt-2 text-foreground font-medium">💰 From ₦530/month</li>
           </ul>
         </div>
         <div className="p-5 rounded-xl border border-border/70 bg-card/50">
