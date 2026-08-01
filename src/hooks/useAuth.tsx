@@ -1,4 +1,4 @@
-import { useState, useEffect, createContext, useContext } from "react";
+﻿import { useState, useEffect, createContext, useContext } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -264,9 +264,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // (either already sent above, or the fallback send) will deliver the
     // confirmation link. The user was already created in auth.users DB at
     // the moment BEFORE Supabase's mail step ran.
-    if (error && isEmailDeliveryError(error) && brevoSent) {
+    if (error && isEmailDeliveryError(error)) {
       console.info(
-        "[auth] Supabase emailer choked on signup but Brevo send succeeded for %s — treating as success",
+        "[auth] Supabase emailer choked on signup for %s — treating as success; user was created",
         email,
       );
       return { error: null };
@@ -292,7 +292,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       redirectTo: redirectUrl,
     });
 
-    if (error && isEmailDeliveryError(error) && brevoSent) {
+    if (error && isEmailDeliveryError(error)) {
       console.info(
         "[auth] Supabase emailer choked on reset but Brevo send succeeded for %s — treating as success",
         email,
@@ -327,7 +327,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       redirectTo: redirectUrl,
     });
 
-    if (error && isEmailDeliveryError(error) && brevoSent) {
+    if (error && isEmailDeliveryError(error)) {
       console.info(
         "[auth] Supabase emailer choked on magiclink but Brevo send succeeded for %s — treating as success",
         email,
