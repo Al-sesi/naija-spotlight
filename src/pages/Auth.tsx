@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import { z } from "zod";
-import { Mail, Lock, User, ArrowRight, Rocket, Sparkles, Eye, EyeOff } from "lucide-react";
+import { Mail, Lock, User, ArrowRight, Rocket, Sparkles, Eye, EyeOff, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -36,7 +36,8 @@ export default function Auth() {
   const [signupSuccess, setSignupSuccess] = useState(false);
   const [magicLinkSent, setMagicLinkSent] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  
+  const refSetRef = useRef(false);
+
   const defaultTab = location.pathname === "/sign-up" ? "signup" : "signin";
   
   const isEmailConfirmed = session?.user?.email_confirmed_at != null;
@@ -47,14 +48,69 @@ export default function Auth() {
     }
   }, [user, isEmailConfirmed, navigate]);
 
-  // Prefill referral code from ?ref= or ?referral= URL query param
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const ref = params.get("ref") || params.get("referral") || "";
-    if (ref && !formData.referralCode) {
-      setFormData((prev) => ({ ...prev, referralCode: ref }));
-    }
-  }, []);
+    if (refSetRef.current) return;
+    const params = new URLSearchParams(location.search);
+    const rawRef = params.get("ref") || params.get("referral") || params.get("referred_by") || "";
+    if (!rawRef) return;
+
+    const cleaned = rawRef.trim();
+    const isJunk =
+      cleaned.length === 0 ||
+      /^(undefined|null|none|0|false)$/i.test(cleaned) ||
+      cleaned.length < 4;
+
+    if (isJunk) return;
+
+    refSetRef.current = true;
+    const upper = cleaned.toUpperCase();
+    setFormData((prev) => {
+      if (prev.referralCode && prev.referralCode.toUpperCase() === upper) return prev;
+      return { ...prev, referralCode: upper };
+    });
+
+    (async () => {
+      try {
+        const { supabase: sb } = await import("@/integrations/supabase/client");
+        const ua = typeof navigator !== "undefined" ? navigator.userAgent : "";
+        const path = typeof window !== "undefined" ? window.location.pathname + window.location.search : "";
+        const referer = typeof document !== "undefined" ? document.referrer : "";
+
+        const { error: rpcError } = await sb.rpc("record_referral_click", {
+          p_referral_code: upper,
+          p_user_agent: ua.slice(0, 512),
+          p_referer: referer.slice(0, 512),
+          p_landing_path: path.slice(0, 512),
+        });
+
+        if (rpcError) {
+          const { error: insertError } = await sb
+            .from("referral_link_clicks")
+            .insert({
+              referral_code: upper,
+              user_agent: ua.slice(0, 512),
+              referer_header: referer.slice(0, 512),
+              landing_path: path.slice(0, 512),
+            });
+          if (insertError) {
+            await sb
+              .from("referral_tracking_failures")
+              .insert({
+                failure_type: "click_record",
+                referral_code: upper,
+                error_message: `rpc: ${rpcError.message}; insert: ${insertError.message}`,
+                user_agent: ua.slice(0, 512),
+                referer_header: referer.slice(0, 512),
+                raw_url: path.slice(0, 512),
+              })
+              .catch(() => {});
+          }
+        }
+      } catch (e) {
+        console.warn("[auth] Referral click tracking failed (non-critical):", e);
+      }
+    })();
+  }, [location.search]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -346,6 +402,14 @@ export default function Auth() {
                     </Button>
                   </div>
                 </div>
+                {formData.referralCode && (
+                  <div className="rounded-lg border border-green-200 bg-green-50 dark:bg-green-950/30 dark:border-green-800/40 px-3 py-2">
+                    <p className="text-xs text-green-700 dark:text-green-400 flex items-center gap-1.5">
+                      <CheckCircle className="h-3.5 w-3.5" />
+                      Referral code captured: <span className="font-mono font-semibold tracking-wide">{formData.referralCode.toUpperCase()}</span>
+                    </p>
+                  </div>
+                )}
                 <div className="space-y-2">
                   <Label htmlFor="signup-referral" className="text-sm">Referral Code (Optional)</Label>
                   <div className="relative">
@@ -353,12 +417,19 @@ export default function Auth() {
                     <Input
                       id="signup-referral"
                       type="text"
-                      placeholder="Referral Code"
-                      className="pl-10 text-sm"
+                      placeholder="e.g. NLJOHNXYZ2"
+                      className="pl-10 text-sm tracking-wide font-mono uppercase placeholder:normal-case placeholder:font-sans"
                       value={formData.referralCode}
-                      onChange={(e) => setFormData({ ...formData, referralCode: e.target.value })}
+                      onChange={(e) => setFormData({ ...formData, referralCode: e.target.value.toUpperCase() })}
+                      autoComplete="off"
+                      autoCorrect="off"
+                      autoCapitalize="characters"
+                      spellCheck={false}
                     />
                   </div>
+                  <p className="text-[11px] text-muted-foreground">
+                    If someone gave you a referral link, the code is already filled in above.
+                  </p>
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? "Creating account..." : "Create Account"}

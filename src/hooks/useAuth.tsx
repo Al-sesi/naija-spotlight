@@ -1,6 +1,7 @@
-﻿import { useState, useEffect, createContext, useContext } from "react";
+import { useState, useEffect, createContext, useContext } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const SUPABASE_URL =
   (import.meta.env.VITE_SUPABASE_URL as string | undefined) ||
@@ -190,48 +191,111 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signUp = async (email: string, password: string, fullName: string, referralCode?: string) => {
     const redirectUrl = "https://naijalift.space/verification-success";
     const trimmedRefCode = referralCode?.trim() || "";
+    const upperRefCode = trimmedRefCode ? trimmedRefCode.toUpperCase() : "";
 
     let normalizedReferralCode: string | null = null;
-    if (trimmedRefCode) {
-      const { data: referrer, error: lookupError } = await supabase
-        .from("profiles")
-        .select("referral_code")
-        .eq("referral_code", trimmedRefCode)
-        .maybeSingle();
+    let refCodeWasSpecifiedButInvalid = false;
+    let refLookupErrorMsg = "";
+    if (upperRefCode) {
+      try {
+        const { data: referrer, error: lookupError } = await supabase
+          .from("profiles")
+          .select("referral_code")
+          .eq("referral_code", upperRefCode)
+          .maybeSingle();
 
-      if (lookupError) {
-        console.error("Referral code lookup error:", lookupError);
-        return { error: new Error("Failed to validate referral code. Please try again.") };
+        if (lookupError) {
+          console.warn("Referral code lookup failed (non-critical):", lookupError);
+          refLookupErrorMsg = lookupError.message;
+        }
+
+        if (referrer?.referral_code) {
+          normalizedReferralCode = referrer.referral_code;
+        } else {
+          const { data: referrerCi, error: ciError } = await supabase
+            .from("profiles")
+            .select("referral_code")
+            .ilike("referral_code", upperRefCode)
+            .maybeSingle();
+
+          if (!ciError && referrerCi?.referral_code) {
+            normalizedReferralCode = referrerCi.referral_code;
+          } else {
+            console.warn("Referral code not found, removing before signup:", upperRefCode);
+            refCodeWasSpecifiedButInvalid = true;
+            refLookupErrorMsg = refLookupErrorMsg || `Code '${upperRefCode}' not found in profiles`;
+            supabase
+              .from("referral_tracking_failures")
+              .insert({
+                failure_type: "code_validation",
+                referral_code: upperRefCode,
+                error_message: refLookupErrorMsg,
+                user_agent: typeof navigator !== "undefined" ? navigator.userAgent.slice(0, 512) : "",
+                raw_url: typeof window !== "undefined" ? window.location.href.slice(0, 512) : "",
+              })
+              .catch(() => {});
+          }
+        }
+      } catch (e: any) {
+        console.warn("Referral code lookup threw unexpectedly (non-critical):", e);
+        refCodeWasSpecifiedButInvalid = true;
+        refLookupErrorMsg = e?.message || String(e);
+        supabase
+          .from("referral_tracking_failures")
+          .insert({
+            failure_type: "signup_lookup",
+            referral_code: upperRefCode,
+            error_message: refLookupErrorMsg,
+            user_agent: typeof navigator !== "undefined" ? navigator.userAgent.slice(0, 512) : "",
+            raw_url: typeof window !== "undefined" ? window.location.href.slice(0, 512) : "",
+          })
+          .catch(() => {});
       }
-      if (!referrer?.referral_code) {
-        return { error: new Error("Invalid referral code. Please double-check and try again.") };
-      }
-      normalizedReferralCode = referrer.referral_code;
     }
 
-    const { data: authData, error } = await supabase.auth.signUp({
+    const signUpPayload: Parameters<typeof supabase.auth.signUp>[0] = {
       email,
       password,
       options: {
         data: {
           full_name: fullName,
-          referred_by: normalizedReferralCode ?? undefined,
         },
         emailRedirectTo: redirectUrl,
       },
-    });
+    };
 
-    if (normalizedReferralCode && authData?.user?.id) {
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .update({
-          referred_by: normalizedReferralCode,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", authData.user.id);
+    // Only attach referred_by if CONFIRMED valid. Never send "undefined" string literal
+    // or a NULL-looking bogus value — Supabase Auth validates and will BLOCK signup.
+    if (normalizedReferralCode) {
+      (signUpPayload.options!.data as any).referred_by = normalizedReferralCode;
+    }
 
-      if (profileError) {
-        console.warn("Failed to attach referral code to profile:", profileError);
+    let { data, error } = await supabase.auth.signUp(signUpPayload);
+
+    // Safety-net: if signup still fails for referral-related reasons (e.g.
+    // Supabase's internal validation is stricter than our lookup), retry
+    // one more time WITHOUT any referral info so the user still gets an account.
+    if (
+      error &&
+      normalizedReferralCode &&
+      (error.message.toLowerCase().includes("referral") ||
+        (error as any).code?.toLowerCase().includes("referral"))
+    ) {
+      console.warn("Signup rejected due to referral issue — retrying WITHOUT referral code.", error);
+      const retryPayload: Parameters<typeof supabase.auth.signUp>[0] = {
+        email,
+        password,
+        options: {
+          data: { full_name: fullName },
+          emailRedirectTo: redirectUrl,
+        },
+      };
+      const retry = await supabase.auth.signUp(retryPayload);
+      data = retry.data;
+      error = retry.error;
+      normalizedReferralCode = null;
+      if (!error) {
+        toast.success("Account created! (Referral code could not be applied)");
       }
     }
 
@@ -257,6 +321,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }).catch((emailError) => {
         console.warn("Welcome email failed (non-critical):", emailError);
       });
+
+      if (refCodeWasSpecifiedButInvalid && !normalizedReferralCode) {
+        toast.info("Referral code not recognized — your account was created without it.");
+      }
     }
 
     // KEY FIX: If Supabase errored ONLY because its own emailer choked

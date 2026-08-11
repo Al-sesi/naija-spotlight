@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { format, parseISO } from "date-fns";
-import { Bookmark, ExternalLink, MapPin, Trash2, Bell, LayoutDashboard, CreditCard, Sparkles, Settings, ArrowRight, Crown, Lock, Gift, Copy, Check, Users } from "lucide-react";
+import { Bookmark, ExternalLink, MapPin, Trash2, Bell, LayoutDashboard, CreditCard, Sparkles, Settings, ArrowRight, Crown, Lock, Gift, Copy, Check, Users, MousePointerClick, TrendingUp } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -524,6 +524,8 @@ interface ReferralsDashboardProps {
     total_referrals: number;
     active_subscriptions: number;
     trial_users: number;
+    link_clicks: number;
+    click_to_signup_rate: number;
   };
   copiedRef: boolean;
   setCopiedRef: (v: boolean) => void;
@@ -551,6 +553,8 @@ function ReferralsDashboard({ stats, copiedRef, setCopiedRef }: ReferralsDashboa
   const total = stats?.total_referrals || 0;
   const premium = stats?.active_subscriptions || 0;
   const free = stats?.trial_users || 0;
+  const clicks = stats?.link_clicks || 0;
+  const clickRate = stats?.click_to_signup_rate || 0;
 
   return (
     <div className="space-y-6">
@@ -616,7 +620,20 @@ function ReferralsDashboard({ stats, copiedRef, setCopiedRef }: ReferralsDashboa
       </Card>
 
       {/* Stats row */}
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <MousePointerClick className="h-4 w-4 text-purple-500" />
+              Link Clicks
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold font-display">{clicks}</div>
+            <p className="text-xs text-muted-foreground mt-1">people visited your link</p>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
@@ -646,42 +663,61 @@ function ReferralsDashboard({ stats, copiedRef, setCopiedRef }: ReferralsDashboa
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <LayoutDashboard className="h-4 w-4 text-slate-500" />
-              Free / Trial
+              <TrendingUp className="h-4 w-4 text-indigo-500" />
+              Click→Signup
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold font-display">{free}</div>
-            <p className="text-xs text-muted-foreground mt-1">still on the free plan</p>
+            <div className="text-3xl font-bold font-display">{clickRate > 0 ? `${clickRate}%` : "—"}</div>
+            <p className="text-xs text-muted-foreground mt-1">visit to signup rate</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Conversion summary */}
-      {code && total > 0 && (
+      {code && (clicks > 0 || total > 0) && (
         <Card>
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-amber-500" />
-              Your Conversion
+              <TrendingUp className="h-5 w-5 text-indigo-500" />
+              Your Funnel
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Premium conversion rate</span>
-              <span className="font-bold">
-                {total > 0 ? Math.round((premium / total) * 100) : 0}%
-              </span>
+          <CardContent className="space-y-4">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Link visits → Signups</span>
+                <span className="font-bold tabular-nums">
+                  {clicks > 0 ? `${clickRate}%` : "0%"}
+                  <span className="text-muted-foreground font-normal ml-1">({total}/{clicks || 0})</span>
+                </span>
+              </div>
+              <div className="w-full h-2.5 bg-muted rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-indigo-400 to-indigo-600 rounded-full"
+                  style={{ width: `${clicks > 0 ? Math.min(100, clickRate) : 0}%` }}
+                />
+              </div>
             </div>
-            <div className="w-full h-2.5 bg-muted rounded-full overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-amber-400 to-amber-600 rounded-full"
-                style={{ width: `${total > 0 ? Math.min(100, (premium / total) * 100) : 0}%` }}
-              />
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {premium} of your {total} referrals upgraded to Premium for ₦530/month.
-            </p>
+            {total > 0 && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Signups → Premium upgrades</span>
+                  <span className="font-bold tabular-nums">
+                    {total > 0 ? `${Math.round((premium / total) * 100)}%` : "0%"}
+                    <span className="text-muted-foreground font-normal ml-1">({premium}/{total})</span>
+                  </span>
+                </div>
+                <div className="w-full h-2.5 bg-muted rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-amber-400 to-amber-600 rounded-full"
+                    style={{ width: `${total > 0 ? Math.min(100, (premium / total) * 100) : 0}%` }}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {premium} of your {total} referrals upgraded to Premium for ₦530/month.
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}

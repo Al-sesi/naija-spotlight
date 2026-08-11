@@ -3,7 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { CheckCircle, XCircle, ArrowRight, Crown, Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { useSubscription } from "@/hooks/useSubscription";
+import { useSubscription, SubscriptionData } from "@/hooks/useSubscription";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -47,10 +47,33 @@ function PaymentCallback() {
       setErrorMsg("No payment reference found in the URL. Please visit your dashboard to confirm your subscription status, or contact support if you believe this is a mistake.");
       return;
     }
+    if (!user) {
+      // No user yet (hydrating) — abort; when user is loaded, the effect will
+      // re-fire because user?.id is a dep.
+      return;
+    }
 
     let cancelled_ = false;
     let attempts = 0;
-    const maxPollAttempts = 8;
+    const maxPollAttempts = 20;
+    const pollIntervalMs = 1500;
+
+    const buildActiveSubscriptionFromVerify = (
+      verifyResult: VerifyResult
+    ): SubscriptionData => {
+      const now = new Date();
+      const end = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+      return {
+        subscription_status: "active",
+        plan_type: verifyResult.plan_type || "premium_lifter",
+        subscription_started_at: verifyResult.paid_at || now.toISOString(),
+        subscription_ends_at: end.toISOString(),
+        paystack_subscription_code: verifyResult.subscription_code || null,
+        premium_categories: [],
+        trial_ends_at: null,
+        verification_trial_ends_at: null,
+      };
+    };
 
     const verifyTransaction = async (): Promise<VerifyResult | null> => {
       if (!user) return null;
@@ -76,39 +99,75 @@ function PaymentCallback() {
       }
     };
 
-    const pollSubscription = async () => {
-      attempts++;
+    const fetchSubscriptionFresh = async (): Promise<SubscriptionData | null> => {
+      // Bypass React Query cache, hit Supabase directly to avoid stale data.
+      if (!user) return null;
+      try {
+        const { data, error } = await supabase
+          .from("profiles")
+          .select(
+            "subscription_status, plan_type, trial_ends_at, subscription_started_at, subscription_ends_at, paystack_subscription_code, premium_categories, verification_trial_ends_at"
+          )
+          .eq("id", user.id)
+          .single();
+        if (error || !data) return null;
+        const fresh: SubscriptionData = {
+          subscription_status: data.subscription_status,
+          plan_type: data.plan_type,
+          trial_ends_at: data.trial_ends_at,
+          subscription_started_at: data.subscription_started_at,
+          subscription_ends_at: data.subscription_ends_at,
+          paystack_subscription_code: data.paystack_subscription_code,
+          premium_categories: (data as any).premium_categories ?? [],
+          verification_trial_ends_at: (data as any).verification_trial_ends_at ?? null,
+        };
+        // Immediately write to React Query cache so useIsPremium / Billing
+        // / Dashboard see the change WITHOUT having to wait for a refetch.
+        queryClient.setQueryData(["subscription", user.id], fresh);
+        return fresh;
+      } catch (e) {
+        console.error("fetchSubscriptionFresh error:", e);
+        return null;
+      }
+    };
+
+    const markSuccessful = async (verifyResult?: VerifyResult) => {
+      if (cancelled_) return;
+      // If we have the verify result, write an optimistic "active" subscription
+      // object into React Query cache immediately so the entire app reflects
+      // premium status right now — no waiting for any DB read.
+      if (verifyResult) {
+        const optimistic = buildActiveSubscriptionFromVerify(verifyResult);
+        queryClient.setQueryData(["subscription", user!.id], optimistic);
+      }
+      // Always follow up with an actual DB read to guarantee truth.
+      await queryClient.invalidateQueries({ queryKey: ["subscription"] });
       await refetchSubscription();
-      // Note: we pull the live value from the refetch via useQuery cache below.
+      await fetchSubscriptionFresh();
+      setStatus("success");
+      toast.success("Premium activated! 🎉", {
+        description: "Your payment was confirmed. Enjoy your premium benefits.",
+      });
     };
 
     const runFlow = async () => {
       // Step 1: Primary activation path — call paystack-verify-transaction
       const verifyResult = await verifyTransaction();
-      if (verifyResult) {
-        // Always invalidate subscription cache after any verify attempt so
-        // useSubscription() reflects any server-side changes immediately.
-        await queryClient.invalidateQueries({ queryKey: ["subscription"] });
-        await refetchSubscription();
 
-        if (verifyResult.activated && !cancelled_) {
-          setStatus("success");
-          toast.success("Premium activated! 🎉", {
-            description: "Your payment was confirmed. Enjoy your premium benefits.",
-          });
-          return;
-        }
-        if (verifyResult.verified && !verifyResult.activated && !cancelled_) {
-          // Weird edge case: Paystack says success but DB update failed.
-          // Show warning, but fall back to polling in case webhook still saves it.
+      if (verifyResult && verifyResult.activated) {
+        // Activation success on first try — mark immediately
+        await markSuccessful(verifyResult);
+        return;
+      }
+
+      // Edge cases (not activated yet):
+      if (verifyResult) {
+        if (verifyResult.verified && !verifyResult.activated) {
           setErrorMsg(
             verifyResult.error ||
-              "Your payment was confirmed by Paystack, but we couldn't activate your subscription immediately. We'll keep trying — please wait while we retry."
+              "Your payment was confirmed by Paystack. We're activating your premium access right now — this usually takes a few seconds."
           );
-        } else if (verifyResult.error && !verifyResult.verified && !cancelled_) {
-          // Paystack said "not verified" — likely the transaction is still
-          // pending / gateway didn't settle yet. Fallback to polling for the
-          // webhook, with a friendlier message.
+        } else if (verifyResult.error && !verifyResult.verified) {
           setErrorMsg(
             verifyResult.error ||
               "We're still confirming your payment with Paystack. Please wait — most payments settle in under 30 seconds."
@@ -116,19 +175,27 @@ function PaymentCallback() {
         }
       }
 
-      // Step 2: Polling fallback for up to ~20 more seconds for the webhook
-      // or eventual-consistency cache to activate the user.
+      // Step 2: Polling fallback (up to ~30s at 1.5s intervals)
+      // Even if primary verify says "not yet", a parallel webhook may activate
+      // the user at any time, so we re-read the profiles row directly each poll.
       const pollAndCheck = async () => {
         if (cancelled_) return;
-        await pollSubscription();
-        // Pull latest value from query cache + subscription hook via refetch closure
-        await refetchSubscription();
-        if (subscription?.subscription_status === "active") {
-          setStatus("success");
+        attempts++;
+        const fresh = await fetchSubscriptionFresh();
+        if (fresh && fresh.subscription_status === "active") {
+          await markSuccessful();
           return;
         }
+        // Retry verify every 3rd poll — Paystack's settlement can lag by a few seconds
+        if (attempts % 3 === 0) {
+          const retry = await verifyTransaction();
+          if (retry && retry.activated) {
+            await markSuccessful(retry);
+            return;
+          }
+        }
         if (attempts < maxPollAttempts) {
-          setTimeout(pollAndCheck, 2500);
+          setTimeout(pollAndCheck, pollIntervalMs);
         } else {
           setStatus("failed");
           if (!errorMsg) {
@@ -140,7 +207,6 @@ function PaymentCallback() {
         }
       };
 
-      // First poll check immediately, then schedule repeats.
       await pollAndCheck();
     };
 

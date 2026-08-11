@@ -22,8 +22,12 @@ import {
   ChevronRight,
   Gift,
   UserPlus,
+  MousePointerClick,
+  AlertTriangle,
+  TrendingUp,
+  X,
 } from "lucide-react";
-import { useReferralStats, ReferralStat } from "@/hooks/useReferralStats";
+import { useReferralStats, ReferralStat, useReferralTrackingFailures } from "@/hooks/useReferralStats";
 import { useRegisteredUsers, useGenerateReferralCode, RegisteredUser } from "@/hooks/useAdminData";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -46,6 +50,7 @@ interface ReferredUserDetail {
 export function ReferralStatsTable() {
   const { data: stats, isLoading: statsLoading } = useReferralStats();
   const { data: allUsers, isLoading: usersLoading } = useRegisteredUsers();
+  const { data: failures } = useReferralTrackingFailures(true);
   const generateReferralCode = useGenerateReferralCode();
 
   const [sortConfig, setSortConfig] = useState<{ key: keyof ReferralStat; direction: 'asc' | 'desc' }>({
@@ -55,8 +60,8 @@ export function ReferralStatsTable() {
   const [searchTerm, setSearchTerm] = useState("");
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [expandedUserId, setExpandedUserId] = useState<string | null>(null);
+  const [showFailures, setShowFailures] = useState(true);
 
-  // New-referral-code form state
   const [selectedUserId, setSelectedUserId] = useState<string>("");
   const [generateLoading, setGenerateLoading] = useState(false);
 
@@ -106,7 +111,6 @@ export function ReferralStatsTable() {
     }
   };
 
-  // Helper: get all referred users for a given referrer's code
   const getReferredUsersForCode = (code: string): ReferredUserDetail[] => {
     if (!allUsers) return [];
     return allUsers
@@ -121,7 +125,6 @@ export function ReferralStatsTable() {
       }));
   };
 
-  // Users who don't have a referral code yet (for the "Generate" dropdown)
   const usersWithoutCode: RegisteredUser[] =
     allUsers?.filter((u) => !u.referral_code) ?? [];
 
@@ -141,14 +144,44 @@ export function ReferralStatsTable() {
     return <div className="p-8 text-center">Loading referral data...</div>;
   }
 
-  // Summary aggregates
   const totalReferrers = stats?.length || 0;
   const totalReferrals = stats?.reduce((s, r) => s + r.total_referrals, 0) || 0;
   const totalActiveSubs = stats?.reduce((s, r) => s + r.active_subscriptions, 0) || 0;
+  const totalClicks = stats?.reduce((s, r) => s + r.link_clicks, 0) || 0;
+  const activeFailures = failures && failures.length > 0 ? failures.length : 0;
 
   return (
     <div className="space-y-6">
-      {/* Quick-actions card: generate a referral code for any user */}
+      {activeFailures > 0 && showFailures && (
+        <Card className="border-red-300 bg-gradient-to-r from-red-50 via-amber-50 to-orange-50 dark:from-red-950/30 dark:via-amber-950/20 dark:to-orange-950/20 dark:border-red-800/50">
+          <CardContent className="py-4 px-5">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <h4 className="font-semibold text-red-800 dark:text-red-300 text-sm">
+                      {activeFailures} referral tracking issue{activeFailures !== 1 ? 's' : ''} detected in the last 24 hours
+                    </h4>
+                    <p className="text-xs text-red-700/80 dark:text-red-400/80 mt-0.5">
+                      Monitor the tracking failures table below to identify downtime causes.
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 w-7 p-0 shrink-0"
+                    onClick={() => setShowFailures(false)}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <Card className="border-primary/20 bg-gradient-to-br from-primary/5 via-background to-background">
         <CardHeader className="pb-3">
           <CardTitle className="text-lg flex items-center gap-2">
@@ -219,8 +252,7 @@ export function ReferralStatsTable() {
         </CardContent>
       </Card>
 
-      {/* Summary Cards */}
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
@@ -236,13 +268,29 @@ export function ReferralStatsTable() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <MousePointerClick className="h-4 w-4 text-purple-500" />
+              Link Clicks
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold">{totalClicks}</div>
+            <p className="text-xs text-muted-foreground mt-1">All-time referral link visits</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
               <Users className="h-4 w-4 text-blue-500" />
               Total Signups Via Referral
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold">{totalReferrals}</div>
-            <p className="text-xs text-muted-foreground mt-1">All-time referred users</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {totalClicks > 0
+                ? `${Math.round((totalReferrals / totalClicks) * 100)}% click-to-signup`
+                : "0% click-to-signup"}
+            </p>
           </CardContent>
         </Card>
         <Card className="bg-gradient-to-br from-amber-50 to-amber-100/60 dark:from-amber-950/30 dark:to-amber-900/20 border-amber-200 dark:border-amber-800">
@@ -288,38 +336,49 @@ export function ReferralStatsTable() {
               {sortedData.length} of {totalReferrers} shown
             </div>
           </div>
-          <div className="rounded-md border">
+          <div className="rounded-md border overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-[36px]"></TableHead>
                   <TableHead className="w-[300px]">Referrer</TableHead>
                   <TableHead>
-                    <Button variant="ghost" onClick={() => handleSort('total_referrals')} className="font-bold">
-                      Total Referrals
+                    <Button variant="ghost" onClick={() => handleSort('link_clicks')} className="font-bold text-purple-600">
+                      Clicks
                       <ArrowUpDown className="ml-2 h-4 w-4" />
                     </Button>
                   </TableHead>
                   <TableHead>
+                    <Button variant="ghost" onClick={() => handleSort('total_referrals')} className="font-bold">
+                      Signups
+                      <ArrowUpDown className="ml-2 h-4 w-4" />
+                    </Button>
+                  </TableHead>
+                  <TableHead>
+                    <Button variant="ghost" onClick={() => handleSort('click_to_signup_rate')} className="font-bold text-indigo-600">
+                      <TrendingUp className="mr-1 h-4 w-4" />
+                      Click→Signup
+                    </Button>
+                  </TableHead>
+                  <TableHead>
                     <Button variant="ghost" onClick={() => handleSort('active_subscriptions')} className="font-bold text-green-600">
-                      Premium Subs
+                      Premium
                       <ArrowUpDown className="ml-2 h-4 w-4" />
                     </Button>
                   </TableHead>
                   <TableHead>
                     <Button variant="ghost" onClick={() => handleSort('trial_users')} className="font-bold text-blue-600">
-                      Free / Trial
+                      Free
                       <ArrowUpDown className="ml-2 h-4 w-4" />
                     </Button>
                   </TableHead>
-                  <TableHead className="text-right">Conversion</TableHead>
-                  <TableHead className="text-right">Referral Link</TableHead>
+                  <TableHead className="text-right w-[110px]">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {sortedData.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="h-24 text-center">
+                    <TableCell colSpan={8} className="h-24 text-center">
                       No referrers yet. Use the panel above to generate a referral code for a user.
                     </TableCell>
                   </TableRow>
@@ -356,34 +415,38 @@ export function ReferralStatsTable() {
                         </TableCell>
                         <TableCell className="py-3">
                           <div className="flex items-center gap-2">
-                            <Users className="h-4 w-4 text-muted-foreground" />
-                            <span className="font-bold">{stat.total_referrals}</span>
+                            <MousePointerClick className="h-4 w-4 text-purple-500" />
+                            <span className="font-bold tabular-nums">{stat.link_clicks}</span>
                           </div>
                         </TableCell>
                         <TableCell className="py-3">
                           <div className="flex items-center gap-2">
+                            <Users className="h-4 w-4 text-muted-foreground" />
+                            <span className="font-bold tabular-nums">{stat.total_referrals}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="py-3">
+                          <Badge variant="outline" className={cn(
+                            stat.click_to_signup_rate >= 20
+                              ? "bg-indigo-50 text-indigo-700 border-indigo-200"
+                              : ""
+                          )}>
+                            {stat.click_to_signup_rate > 0
+                              ? `${stat.click_to_signup_rate}%`
+                              : <span className="text-muted-foreground">—</span>}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="py-3">
+                          <div className="flex items-center gap-2">
                             <CreditCard className="h-4 w-4 text-green-600" />
-                            <span className="font-bold text-green-700">{stat.active_subscriptions}</span>
+                            <span className="font-bold tabular-nums text-green-700">{stat.active_subscriptions}</span>
                           </div>
                         </TableCell>
                         <TableCell className="py-3">
                           <div className="flex items-center gap-2">
                             <Clock className="h-4 w-4 text-blue-600" />
-                            <span className="font-bold text-blue-700">{stat.trial_users}</span>
+                            <span className="font-bold tabular-nums text-blue-700">{stat.trial_users}</span>
                           </div>
-                        </TableCell>
-                        <TableCell className="text-right py-3">
-                          {stat.total_referrals > 0 
-                            ? (
-                              <Badge variant="outline" className={cn(
-                                stat.active_subscriptions / stat.total_referrals >= 0.3
-                                  ? "bg-green-50 text-green-700 border-green-200"
-                                  : ""
-                              )}>
-                                {Math.round((stat.active_subscriptions / stat.total_referrals) * 100)}%
-                              </Badge>
-                            ) 
-                            : <span className="text-muted-foreground">0%</span>}
                         </TableCell>
                         <TableCell className="text-right py-3">
                           <Button
@@ -403,7 +466,7 @@ export function ReferralStatsTable() {
                             ) : (
                               <Fragment>
                                 <Copy className="h-3.5 w-3.5 mr-1" />
-                                Copy Link
+                                Link
                               </Fragment>
                             )}
                           </Button>
@@ -415,9 +478,9 @@ export function ReferralStatsTable() {
 
                     const detailRow = (
                       <TableRow key={`${stat.user_id}-detail`} className="bg-muted/20">
-                        <TableCell colSpan={7} className="py-4 px-6">
+                        <TableCell colSpan={8} className="py-4 px-6">
                           <div className="space-y-3">
-                            <div className="flex items-center justify-between">
+                            <div className="flex items-center justify-between flex-wrap gap-2">
                               <h4 className="font-semibold text-sm flex items-center gap-2">
                                 <Users className="h-4 w-4 text-primary" />
                                 People Referred By {stat.ambassador_name}
@@ -425,6 +488,18 @@ export function ReferralStatsTable() {
                                   {referredUsers.length} user{referredUsers.length !== 1 ? "s" : ""}
                                 </Badge>
                               </h4>
+                              <div className="text-xs text-muted-foreground flex items-center gap-3">
+                                <span className="flex items-center gap-1">
+                                  <MousePointerClick className="h-3 w-3 text-purple-500" />
+                                  {stat.link_clicks} link clicks
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <TrendingUp className="h-3 w-3 text-indigo-500" />
+                                  {stat.click_to_signup_rate > 0
+                                    ? `${stat.click_to_signup_rate}% click→signup`
+                                    : "No clicks yet"}
+                                </span>
+                              </div>
                             </div>
                             {referredUsers.length === 0 ? (
                               <div className="text-center py-6 text-sm text-muted-foreground">
@@ -505,6 +580,56 @@ export function ReferralStatsTable() {
           </div>
         </CardContent>
       </Card>
+
+      {failures && failures.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <AlertTriangle className="h-5 w-5 text-amber-600" />
+              Recent Tracking Failures (Last 24h)
+              <Badge variant="destructive" className="text-xs">{failures.length}</Badge>
+            </CardTitle>
+            <CardDescription>
+              These are automatically recorded when referral link tracking or signup lookup fails.
+              Investigate to prevent referral attribution loss.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="rounded-md border overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Time</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Referral Code</TableHead>
+                    <TableHead>Error</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {failures.map((f) => (
+                    <TableRow key={f.id}>
+                      <TableCell className="text-xs whitespace-nowrap text-muted-foreground">
+                        {format(new Date(f.created_at), "MMM d, HH:mm")}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="text-[10px] uppercase">
+                          {f.failure_type}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="font-mono text-xs">
+                        {f.referral_code || "—"}
+                      </TableCell>
+                      <TableCell className="text-xs max-w-md truncate" title={f.error_message || ""}>
+                        {f.error_message || "—"}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

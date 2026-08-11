@@ -335,12 +335,23 @@ export default function OgaHouse() {
             users={users || []}
             isLoading={usersLoading}
             onGenerateReferral={async (userId) => {
-              const res = await generateReferralCode.mutateAsync(userId);
-              toast.success(
-                res?.regenerated
-                  ? "Referral code regenerated!"
-                  : `Referral code created: ${res.referral_code}`
-              );
+              try {
+                const res = await generateReferralCode.mutateAsync(userId);
+                toast.success(
+                  res?.regenerated
+                    ? "Referral code regenerated!"
+                    : `Referral code created: ${res.referral_code}`
+                );
+              } catch (err) {
+                const msg = err instanceof Error ? err.message : "Failed to generate referral code";
+                // Append remediation hint for permission errors so the admin doesn't miss it
+                const hint =
+                  msg.toLowerCase().includes("permission") || msg.toLowerCase().includes("migration")
+                    ? ` — run "20260810020000_fix_admin_referral_rls_and_roles.sql" in Supabase SQL Editor, then sign out and back in.`
+                    : "";
+                toast.error(`Failed to create referral link: ${msg}${hint}`);
+                throw err; // re-throw so local loading state resets
+              }
             }}
           />
         );
@@ -1007,6 +1018,9 @@ function UserManagement({
     try {
       setGeneratingId(userId);
       await onGenerateReferral(userId);
+    } catch (err) {
+      // Toast already shown in caller — just log + ensure loading stops
+      console.warn("handleGenerate failed for user", userId, err);
     } finally {
       setGeneratingId(null);
     }

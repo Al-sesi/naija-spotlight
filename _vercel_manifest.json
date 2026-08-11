@@ -1,0 +1,117 @@
+﻿[
+    {
+        "file":  "favicon.ico",
+        "size":  8981,
+        "sha":  "2286690b8b5cd650abef549a367d26cb32d5fe21"
+    },
+    {
+        "file":  "index.html",
+        "size":  1516,
+        "sha":  "0f3b1a813be3c51a771d1cb448caa25ffc7fa747"
+    },
+    {
+        "file":  "logo.jpg",
+        "size":  8981,
+        "sha":  "2286690b8b5cd650abef549a367d26cb32d5fe21"
+    },
+    {
+        "file":  "placeholder.svg",
+        "size":  3253,
+        "sha":  "ddc7d9ff1d2e3615f892ead918090e044e0afc6d"
+    },
+    {
+        "file":  "robots.txt",
+        "size":  174,
+        "sha":  "84b541ad2ac3769230dd79747493d192ea4f7a94"
+    },
+    {
+        "file":  "site.webmanifest",
+        "size":  427,
+        "sha":  "5ad6cbbcc1500265c7251b78ccabeae714101ae2"
+    },
+    {
+        "file":  "_redirects",
+        "size":  47,
+        "sha":  "e5b73ad0b4d48527e5d08a697e10461181a64efe"
+    },
+    {
+        "file":  "assets/html2canvas.esm-CBrSDip1.js",
+        "size":  202301,
+        "sha":  "ef0719d90ba002786a21922c5b7d472539d0b749"
+    },
+    {
+        "file":  "assets/index-ASeolDUH.css",
+        "size":  90027,
+        "sha":  "15cf321d11ed76eb2ac2afd77ea472950ccb88bf"
+    },
+    {
+        "file":  "assets/index-BuoKVZ8_.js",
+        "size":  1401552,
+        "sha":  "f4df32eb1cd884661568dace8b4530c8854d0c12"
+    },
+    {
+        "file":  "assets/index-CX7wj-sQ.js",
+        "size":  906434,
+        "sha":  "35305e9e45b5c03073c921ebf0d6bcfca2606815"
+    },
+    {
+        "file":  "assets/index-CxXID92a.css",
+        "size":  95337,
+        "sha":  "6fe9a23de331b32cf6c69696837ae76f031dafa2"
+    },
+    {
+        "file":  "assets/index-D1FKbM6O.js",
+        "size":  1377035,
+        "sha":  "33308c1301f4046c153209f03ba8dc29e20bc7d1"
+    },
+    {
+        "file":  "assets/index-D7zsXX5r.js",
+        "size":  1382848,
+        "sha":  "59131fddc5606f5fe8b9c7926d6510d95bee8307"
+    },
+    {
+        "file":  "assets/index-DEUXn_9B.js",
+        "size":  1419523,
+        "sha":  "2b754589f72ddc1525dfbb90c45f93b845024eeb"
+    },
+    {
+        "file":  "assets/index-DGl9DUf9.css",
+        "size":  93555,
+        "sha":  "b1e6718de47987b003bb7db2336b73d88b829f49"
+    },
+    {
+        "file":  "assets/index-ieYak6l5.css",
+        "size":  94089,
+        "sha":  "47cbcda17fbd39ea5d26ad4e2b5bf7b178a49aa2"
+    },
+    {
+        "file":  "assets/index-VlcqFCz5.css",
+        "size":  101902,
+        "sha":  "e4b34c3eb0c07755a657efa4195b48f39eb0bdd7"
+    },
+    {
+        "file":  "assets/index.es-BGxHW3sv.js",
+        "size":  150842,
+        "sha":  "83cf9155e1573d95895e00832f611b17e7d0104d"
+    },
+    {
+        "file":  "assets/index.es-DpOopJKs.js",
+        "size":  150842,
+        "sha":  "379f5080aebf1762fd3cd32c917ed0bbc10723db"
+    },
+    {
+        "file":  "assets/index.es-D_JmKLTs.js",
+        "size":  150842,
+        "sha":  "1017d281dd50dfecc68eb7f405c90869436e6c52"
+    },
+    {
+        "file":  "assets/index.es-FCs4cdLt.js",
+        "size":  150842,
+        "sha":  "83edb0e827a286021c515c9a537a5465baa98ee3"
+    },
+    {
+        "file":  "assets/purify.es-Jn2rvFN8.js",
+        "size":  28911,
+        "sha":  "74576345f8aa9806b8118a03a676baa777c7876c"
+    }
+]

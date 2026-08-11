@@ -36,15 +36,16 @@ export interface RegisteredUser {
 }
 
 // Helper to generate a human-readable referral code
+// IMPORTANT: Always returns ALL UPPERCASE so it matches the DB format
+// (handle_new_user trigger normalizes referred_by to UPPER before lookup)
 function generateReferralCode(fullName?: string | null, email?: string | null): string {
-  // Build a base from name or email
   let base = "";
   if (fullName) {
     base = fullName
       .normalize("NFD")
       .replace(/[\u0300-\u036f]/g, "")
       .replace(/[^a-zA-Z0-9]/g, "")
-      .toLowerCase();
+      .toUpperCase();
   }
   if (!base && email) {
     const emailName = email.split("@")[0] || "";
@@ -52,18 +53,18 @@ function generateReferralCode(fullName?: string | null, email?: string | null): 
       .normalize("NFD")
       .replace(/[\u0300-\u036f]/g, "")
       .replace(/[^a-zA-Z0-9]/g, "")
-      .toLowerCase();
+      .toUpperCase();
   }
-  if (!base) base = "naija";
-  if (base.length > 10) base = base.slice(0, 10);
+  if (!base) base = "NLUSER";
+  if (base.length > 8) base = base.slice(0, 8);
 
-  // 4 random uppercase chars/numbers (excluding confusing ones)
   const chars = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
   let suffix = "";
   for (let i = 0; i < 4; i++) {
     suffix += chars.charAt(Math.floor(Math.random() * chars.length));
   }
-  return `${base}${suffix}`;
+  const prefix = base.startsWith("NL") ? "" : "NL";
+  return `${prefix}${base}${suffix}`;
 }
 
 export interface AppInstall {
@@ -382,6 +383,20 @@ export function useRegisteredUsers(options?: { enabled?: boolean }) {
   });
 }
 
+function isRlsOrPermissionError(err: unknown): boolean {
+  const msg = (err instanceof Error ? err.message : String(err ?? "")).toLowerCase();
+  return (
+    msg.includes("42501") ||
+    msg.includes("permission") ||
+    msg.includes("policy") ||
+    msg.includes("only admins") ||
+    msg.includes("row level security") ||
+    msg.includes("rls") ||
+    msg.includes("update or delete on table") ||
+    msg.includes("violates")
+  );
+}
+
 export function useGenerateReferralCode() {
   const queryClient = useQueryClient();
 
@@ -389,7 +404,6 @@ export function useGenerateReferralCode() {
     mutationFn: async (userId: string) => {
       if (!userId) throw new Error("User ID is required to generate referral code");
 
-      // First, look up the user's name/email to build a pretty code
       const { data: user, error: fetchError } = await supabase
         .from("profiles")
         .select("full_name, email, referral_code")
@@ -399,12 +413,10 @@ export function useGenerateReferralCode() {
       if (fetchError) throw fetchError;
       if (!user) throw new Error("User not found");
 
-      // If user already has a code, just return it (no-op)
       if (user.referral_code) {
         return { referral_code: user.referral_code, regenerated: false };
       }
 
-      // Try generating a unique code, retry up to 5 times on collision
       let code = "";
       for (let attempt = 0; attempt < 5; attempt++) {
         code = generateReferralCode(user.full_name, user.email);
@@ -415,23 +427,46 @@ export function useGenerateReferralCode() {
           .maybeSingle();
 
         if (!existing) break;
-        // Collision — generate another
         code = "";
       }
       if (!code) {
-        // Final fallback: fully random
         code = "NL" + Math.random().toString(36).slice(2, 8).toUpperCase();
       }
 
-      const { error: updateError } = await supabase
+      const { data: written, error: updateError } = await supabase
         .from("profiles")
         .update({
           referral_code: code,
           updated_at: new Date().toISOString(),
         })
-        .eq("id", userId);
+        .eq("id", userId)
+        .select("referral_code")
+        .maybeSingle();
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        if (isRlsOrPermissionError(updateError)) {
+          throw new Error(
+            "Permission denied. Run migration `20260810020000_fix_admin_referral_rls_and_roles.sql` in Supabase SQL Editor to fix admin RLS policies, then sign out and back in."
+          );
+        }
+        throw updateError;
+      }
+
+      if (!written?.referral_code) {
+        const { data: verify } = await supabase
+          .from("profiles")
+          .select("referral_code")
+          .eq("id", userId)
+          .maybeSingle();
+
+        if (verify?.referral_code !== code) {
+          throw new Error(
+            "Referral code was not saved. This usually means RLS policies blocked the update. " +
+              "Run migration `20260810020000_fix_admin_referral_rls_and_roles.sql` in the Supabase SQL Editor."
+          );
+        }
+      }
+
       return { referral_code: code, regenerated: false };
     },
     onSuccess: async () => {
