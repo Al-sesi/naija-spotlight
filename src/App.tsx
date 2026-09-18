@@ -9,6 +9,7 @@ import { VerificationRedirectGuard } from "@/components/auth/VerificationRedirec
 import { OnboardingGuard } from "@/components/auth/OnboardingGuard";
 import Index from "./pages/Index";
 import Opportunities from "./pages/Opportunities";
+import OpportunityDetail from "./pages/OpportunityDetail";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Community from "./pages/Community";
@@ -41,6 +42,7 @@ const App = () => (
             <Route element={<Layout><Outlet /></Layout>}>
               <Route path="/" element={<Index />} />
               <Route path="/opportunities" element={<Opportunities />} />
+              <Route path="/opportunities/:id" element={<OpportunityDetail />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/sign-up" element={<Auth />} />
               <Route path="/signin" element={<Auth />} />

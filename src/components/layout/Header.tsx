@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, User, LogOut, LayoutDashboard, Shield, MessageSquare, Rocket, CreditCard } from "lucide-react";
+import { Menu, User, LogOut, LayoutDashboard, Shield, MessageSquare, Rocket, CreditCard, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import {
@@ -11,6 +11,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/hooks/useAuth";
+
+const WHATSAPP_GROUP_LINK = "https://chat.whatsapp.com/DKZf3TXtrOdHUlwwo3vKST?s=cl&p=a&mlu=4&ilr=4";
 
 const navLinks = [
   { href: "/", label: "Home" },
@@ -82,6 +84,17 @@ export function Header() {
 
         {/* Auth Section */}
         <div className="flex items-center gap-1 sm:gap-2 shrink-0 min-w-0">
+          <a
+            href={WHATSAPP_GROUP_LINK}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hidden sm:inline-flex items-center justify-center h-8 w-8 sm:h-9 sm:w-9 rounded-full bg-[#25D366] text-white hover:bg-[#1ebe5a] hover:scale-105 transition-all duration-200 shadow-sm"
+            aria-label="Join our WhatsApp group"
+            title="Join our WhatsApp Community"
+          >
+            <MessageCircle className="h-4 w-4 sm:h-5 sm:w-5 fill-white/20" />
+          </a>
+
           {user ? (
             <>
               <Link to="/dashboard" className="hidden sm:block">
@@ -152,6 +165,15 @@ export function Header() {
             </SheetTrigger>
             <SheetContent side="right" className="w-[80vw] max-w-sm bg-background">
               <nav className="flex flex-col gap-2 mt-8">
+                <a
+                  href={WHATSAPP_GROUP_LINK}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-semibold bg-[#25D366] text-white hover:bg-[#1ebe5a] transition-colors mb-2"
+                >
+                  <MessageCircle className="h-5 w-5 fill-white/20" />
+                  Join WhatsApp Community
+                </a>
                 {navLinks.map((link) => (
                   <Link
                     key={link.href}

@@ -25,6 +25,7 @@ import { useMyReferralStats } from "@/hooks/useReferralStats";
 import { useQuotaWelcomeModal } from "@/hooks/useQuotaWelcomeModal";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { AdBanner } from "@/components/ads/AdBanner";
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -40,6 +41,7 @@ export default function Dashboard() {
   const { data: myRefStats } = useMyReferralStats(user?.id);
   const [showUpgradeFromRec, setShowUpgradeFromRec] = useState(false);
   const [copiedRef, setCopiedRef] = useState(false);
+  const [adUpgradeOpen, setAdUpgradeOpen] = useState(false);
 
   const {
     modalOpen: quotaModalOpen,
@@ -147,6 +149,16 @@ export default function Dashboard() {
               </p>
             </CardContent>
           </Card>
+        </div>
+      )}
+
+      {/* Inline banner ad for free users */}
+      {!isPremium && (
+        <div className="mb-5 sm:mb-6 max-w-3xl">
+          <AdBanner
+            slot="banner-728x90"
+            onUpgradeClick={() => setAdUpgradeOpen(true)}
+          />
         </div>
       )}
 
@@ -512,6 +524,12 @@ export default function Dashboard() {
       onOpenChange={onQuotaModalChange}
       quota={quota ?? null}
       onUpgrade={handleQuotaUpgrade}
+    />
+
+    <UpgradeModal
+      open={adUpgradeOpen}
+      onOpenChange={setAdUpgradeOpen}
+      feature="Ad-Free Experience"
     />
     </>
   );

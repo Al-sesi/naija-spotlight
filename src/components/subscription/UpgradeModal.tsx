@@ -19,7 +19,7 @@ interface UpgradeModalProps {
 const PREMIUM_FEATURES = [
   { icon: Sparkles, label: "AI Opportunity Matching", description: "Personalized picks ranked for your profile" },
   { icon: CheckCircle, label: "Unlimited Applications", description: "Apply to every opportunity, no limits" },
-  { icon: Shield, label: "Verified Badge", description: "Stand out in the community" },
+  { icon: Shield, label: "100% Ad-Free", description: "Browse without any sponsored banners or ads" },
   { icon: Zap, label: "Early Access", description: "Get notified before others" },
   { icon: Sparkles, label: "Priority Support", description: "Dedicated help when needed" },
 ];

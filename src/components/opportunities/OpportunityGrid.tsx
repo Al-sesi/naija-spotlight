@@ -3,13 +3,31 @@ import { OpportunityCard } from "./OpportunityCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SearchX, Clock, Sparkles } from "lucide-react";
 import { isPast, parseISO } from "date-fns";
+import { AdBanner } from "@/components/ads/AdBanner";
+import { Fragment } from "react";
 
 interface OpportunityGridProps {
   opportunities: Opportunity[] | undefined;
   isLoading: boolean;
+  onUpgradeClick?: () => void;
 }
 
-export function OpportunityGrid({ opportunities, isLoading }: OpportunityGridProps) {
+const ADS_EVERY_N_CARDS = 6;
+
+function interleaveAds(opps: Opportunity[], onUpgradeClick?: () => void) {
+  if (opps.length === 0) return [] as any[];
+  const result: any[] = [];
+  for (let i = 0; i < opps.length; i++) {
+    result.push({ type: "opp", opp: opps[i], index: i });
+    const positionFromOne = i + 1;
+    if (positionFromOne % ADS_EVERY_N_CARDS === 0 && positionFromOne !== opps.length) {
+      result.push({ type: "ad", key: `ad-${i}` });
+    }
+  }
+  return result;
+}
+
+export function OpportunityGrid({ opportunities, isLoading, onUpgradeClick }: OpportunityGridProps) {
   if (isLoading) {
     return (
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
@@ -106,12 +124,20 @@ export function OpportunityGrid({ opportunities, isLoading }: OpportunityGridPro
       {/* Active opportunities */}
       {activeOpportunities.length > 0 && (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
-          {activeOpportunities.map((opportunity, index) => (
-            <OpportunityCard 
-              key={opportunity.id} 
-              opportunity={opportunity} 
-              style={{ animationDelay: `${index * 0.05}s` }}
-            />
+          {interleaveAds(activeOpportunities, onUpgradeClick).map((item, i) => (
+            <Fragment key={item.type === "opp" ? item.opp.id : item.key}>
+              {item.type === "opp" ? (
+                <OpportunityCard
+                  opportunity={item.opp}
+                  style={{ animationDelay: `${item.index * 0.05}s` }}
+                />
+              ) : (
+                <AdBanner
+                  slot="in-feed-native"
+                  onUpgradeClick={onUpgradeClick}
+                />
+              )}
+            </Fragment>
           ))}
         </div>
       )}

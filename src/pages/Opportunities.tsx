@@ -15,6 +15,8 @@ import { useMonthlyQuota, FREE_MONTHLY_APPLICATIONS } from "@/hooks/useMonthlyQu
 import { useInitializePayment } from "@/hooks/useSubscription";
 import { useQuotaWelcomeModal } from "@/hooks/useQuotaWelcomeModal";
 import { QuotaWelcomeModal } from "@/components/subscription/QuotaWelcomeModal";
+import { UpgradeModal } from "@/components/subscription/UpgradeModal";
+import { AdBanner } from "@/components/ads/AdBanner";
 
 const quickCategories: { type: OpportunityType | "grant_legacy"; label: string; icon: any; aliasFor?: OpportunityType[] }[] = [
   { type: "job", label: "Jobs", icon: Briefcase },
@@ -34,6 +36,7 @@ export default function Opportunities() {
   const [selectedStates, setSelectedStates] = useState<string[]>([]);
   const [filterOpen, setFilterOpen] = useState(false);
   const [alertDismissed, setAlertDismissed] = useState(false);
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
 
   const { data: opportunities, isLoading } = useOpportunities({
     types: selectedTypes,
@@ -156,6 +159,15 @@ export default function Opportunities() {
 
       {/* Main Content */}
       <section className="container px-4 sm:px-6 py-4 sm:py-6 md:py-8">
+        {/* Top banner ad - below hero, above feed */}
+        {!isPremium && (
+          <div className="mb-5 md:mb-6 max-w-4xl mx-auto">
+            <AdBanner
+              slot="banner-728x90"
+              onUpgradeClick={() => setUpgradeOpen(true)}
+            />
+          </div>
+        )}
         <div className="flex gap-4 lg:gap-6 lg:gap-8 flex-col lg:flex-row">
           {/* Desktop Filter Sidebar */}
           <div className={cn(
@@ -169,6 +181,14 @@ export default function Opportunities() {
               onStateChange={setSelectedStates}
               onClearFilters={clearFilters}
             />
+            {!isPremium && (
+              <div className="mt-6 sticky top-4">
+                <AdBanner
+                  slot="medium-rectangle-300x250"
+                  onUpgradeClick={() => setUpgradeOpen(true)}
+                />
+              </div>
+            )}
           </div>
 
           {/* Feed */}
@@ -231,7 +251,11 @@ export default function Opportunities() {
                     : undefined,
                 }}
               >
-                <OpportunityGrid opportunities={opportunities} isLoading={isLoading} />
+                <OpportunityGrid
+                  opportunities={opportunities}
+                  isLoading={isLoading}
+                  onUpgradeClick={() => setUpgradeOpen(true)}
+                />
               </div>
 
               {/* Blue-tinted paywall overlay for exhausted free users */}
@@ -308,6 +332,13 @@ export default function Opportunities() {
         onOpenChange={onModalChange}
         quota={quota ?? null}
         onUpgrade={handleQuotaUpgrade}
+      />
+
+      {/* Upsell modal triggered from ads */}
+      <UpgradeModal
+        open={upgradeOpen}
+        onOpenChange={setUpgradeOpen}
+        feature="Ad-Free Browsing"
       />
     </div>
   );

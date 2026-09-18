@@ -11,7 +11,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useMonthlyQuota, FREE_MONTHLY_APPLICATIONS } from "@/hooks/useMonthlyQuota";
 import { useIsPremium } from "@/hooks/useSubscription";
 import { UpgradeModal } from "@/components/subscription/UpgradeModal";
-import { OpportunityDetailModal } from "@/components/opportunities/OpportunityDetailModal";
+import { Link } from "react-router-dom";
 import { useState } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -99,7 +99,6 @@ export function OpportunityCard({ opportunity, style }: OpportunityCardProps) {
   const { data: quota, isLoading: isQuotaLoading, incrementQuotaOptimistic } = useMonthlyQuota();
   const { isPremium } = useIsPremium();
   const [showUpgrade, setShowUpgrade] = useState(false);
-  const [showDetail, setShowDetail] = useState(false);
 
   const savedApplication = applications?.find(a => a.opportunity_id === opportunity.id);
   const isSaved = !!savedApplication;
@@ -192,7 +191,6 @@ export function OpportunityCard({ opportunity, style }: OpportunityCardProps) {
     (!!user && !isPremium && quota && quota.isQuotaExceeded);
 
   return (
-    <>
     <Card 
       className={cn(
         "group relative overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1 animate-fade-up border-border/50",
@@ -200,7 +198,12 @@ export function OpportunityCard({ opportunity, style }: OpportunityCardProps) {
       )}
       style={style}
     >
-      <CardHeader className="pb-3">
+      <Link
+        to={`/opportunities/${opportunity.id}`}
+        className="block absolute inset-0 z-0"
+        aria-label={`View details for ${opportunity.title}`}
+      />
+      <CardHeader className="pb-3 relative z-10">
         <div className="flex items-start justify-between gap-2">
           <Badge 
             variant="outline" 
@@ -223,7 +226,7 @@ export function OpportunityCard({ opportunity, style }: OpportunityCardProps) {
         <p className="text-sm text-muted-foreground">{opportunity.provider}</p>
       </CardHeader>
 
-      <CardContent className="pb-3 space-y-3">
+      <CardContent className="pb-3 space-y-3 relative z-10">
         {opportunity.description && (
           <p className="text-sm text-muted-foreground line-clamp-2">{opportunity.description}</p>
         )}
@@ -273,7 +276,7 @@ export function OpportunityCard({ opportunity, style }: OpportunityCardProps) {
         )}
       </CardContent>
 
-      <CardFooter className="pt-0 flex flex-col sm:flex-row gap-2">
+      <CardFooter className="pt-0 flex flex-col sm:flex-row gap-2 relative z-10">
         {/* Quota indicator badge for free users */}
         {user && !isPremium && quota && !isQuotaExceeded && (
           <div className="sm:hidden flex w-full items-center justify-between text-[11px] text-muted-foreground bg-muted/70 border border-border/70 rounded-md px-2.5 py-1 mb-1">
@@ -287,16 +290,18 @@ export function OpportunityCard({ opportunity, style }: OpportunityCardProps) {
         {/* View Details button */}
         <Button
           variant="secondary"
-          onClick={() => setShowDetail(true)}
-          className="w-full sm:w-auto sm:shrink-0 text-xs sm:text-sm gap-1.5 bg-muted/60 hover:bg-muted border border-border/50"
+          asChild
+          className="w-full sm:w-auto sm:shrink-0 text-xs sm:text-sm gap-1.5 bg-muted/60 hover:bg-muted border border-border/50 relative z-20"
         >
-          <Eye className="h-3.5 w-3.5" />
-          <span>View Details</span>
+          <Link to={`/opportunities/${opportunity.id}`}>
+            <Eye className="h-3.5 w-3.5" />
+            <span>View Details</span>
+          </Link>
         </Button>
 
         <Button 
           onClick={handleApply}
-          className={`flex-1 text-sm ${isQuotaExceeded ? "bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white" : ""}`}
+          className={`flex-1 text-sm relative z-20 ${isQuotaExceeded ? "bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white" : ""}`}
           disabled={applyDisabled}
         >
           {!user ? (
@@ -331,7 +336,7 @@ export function OpportunityCard({ opportunity, style }: OpportunityCardProps) {
           size="icon"
           onClick={handleSave}
           disabled={!user || !isEmailConfirmed}
-          className={cn(isSaved && "text-primary border-primary")}
+          className={cn(isSaved && "text-primary border-primary", "relative z-20")}
         >
           {isSaved ? (
             <BookmarkCheck className="h-4 w-4" />
@@ -347,12 +352,5 @@ export function OpportunityCard({ opportunity, style }: OpportunityCardProps) {
       onOpenChange={setShowUpgrade}
       feature="Unlimited Applications"
     />
-
-    <OpportunityDetailModal
-      open={showDetail}
-      onOpenChange={setShowDetail}
-      opportunity={opportunity}
-    />
-    </>
   );
 }

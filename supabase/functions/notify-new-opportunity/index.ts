@@ -3,6 +3,11 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 
+const OWNER_EMAILS = new Set([
+  "abdulmajeedsesiadam@gmail.com",
+  "naijalift01@gmail.com",
+]);
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -30,6 +35,7 @@ interface ProfileRow {
   id: string;
   email: string | null;
   full_name: string | null;
+  subscription_status: string | null;
   email_scholarships: boolean | null;
   email_government: boolean | null;
   email_grants: boolean | null;
@@ -345,7 +351,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     const { data: profiles, error: profilesError } = await supabase
       .from("profiles")
-      .select("id, email, full_name");
+      .select("id, email, full_name, subscription_status");
 
     if (profilesError) {
       throw profilesError;
@@ -385,6 +391,7 @@ const handler = async (req: Request): Promise<Response> => {
         id: row.id,
         email: row.email,
         full_name: row.full_name,
+        subscription_status: row.subscription_status,
         email_scholarships: p?.email_scholarships ?? true,
         email_government: p?.email_government ?? true,
         email_grants: p?.email_grants ?? true,
@@ -398,6 +405,9 @@ const handler = async (req: Request): Promise<Response> => {
         if (!p.email) return false;
         const lowerEmail = p.email.toLowerCase();
         if (uniqueEmails.has(lowerEmail)) return false;
+        const isOwner = OWNER_EMAILS.has(lowerEmail);
+        const isPremium = isOwner || p.subscription_status === "active";
+        if (!isPremium) return false;
         const optedIn = Boolean(p[prefColumn]);
         if (!optedIn) return false;
         uniqueEmails.add(lowerEmail);

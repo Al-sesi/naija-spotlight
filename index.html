@@ -20,6 +20,56 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@NAIJALIFT" />
 
+    <!--
+      Google AdSense — Auto Ads (RECOMMENDED for NAIJALIFT)
+      ---------------------------------------------------------------------
+      Google Auto Ads automatically picks the best ad slots, sizes, and
+      positions across the whole page. This is the DEFAULT for NAIJALIFT.
+      It needs ONLY the publisher ID — no manual ad slot IDs required.
+
+      Mode is set via env var:
+          VITE_ADSENSE_MODE=auto       (default — recommended)
+          VITE_ADSENSE_MODE=manual     (if you want per-slot control)
+
+      Pub ID is set via:
+          VITE_ADSENSE_PUB_ID=2262462453475038
+
+      Set both in:
+        - .env.local / .env (local dev)
+        - Vercel project env vars (Production + Preview)
+
+      If you are in MANUAL mode and want manual per-slot ad units, set:
+          VITE_ADSLOT_FEED_NATIVE
+          VITE_ADSLOT_BANNER_728x90
+          VITE_ADSLOT_BANNER_320x50
+          VITE_ADSLOT_MEDIUM_RECT
+          VITE_ADSLOT_STICKY_BOTTOM
+
+      Notes:
+      - The `enable_page_level_ads: true` call below is REQUIRED for Auto Ads.
+      - `crossorigin="anonymous"` is required for AdSense's `client=ca-pub-…`.
+      - In manual mode, the page-level snippet is still useful as it prefetches
+        the AdSense engine for manual `<ins class="adsbygoogle">` units.
+    -->
+    <script>
+      window.__NAIJALIFT_ADSENSE_PUB_ID__ =
+        ("%VITE_ADSENSE_PUB_ID%".trim() === "" ? "2262462453475038" : "%VITE_ADSENSE_PUB_ID%".trim());
+      window.__NAIJALIFT_ADSENSE_MODE__ =
+        ("%VITE_ADSENSE_MODE%".trim() === "" ? "auto" : "%VITE_ADSENSE_MODE%".trim().toLowerCase());
+    </script>
+    <script
+      async
+      crossorigin="anonymous"
+      src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-%VITE_ADSENSE_PUB_ID%"
+      onerror="(window.adsbygoogle = window.adsbygoogle || []).__adsense_load_failed = true"
+    ></script>
+    <script>
+      (window.adsbygoogle = window.adsbygoogle || []).push({
+        google_ad_client: "ca-pub-" + window.__NAIJALIFT_ADSENSE_PUB_ID__,
+        enable_page_level_ads: window.__NAIJALIFT_ADSENSE_MODE__ === "auto",
+        overlays: { bottom: true }
+      });
+    </script>
   </head>
 
   <body>
