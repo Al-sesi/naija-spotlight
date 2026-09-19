@@ -64,11 +64,17 @@
       onerror="(window.adsbygoogle = window.adsbygoogle || []).__adsense_load_failed = true"
     ></script>
     <script>
-      (window.adsbygoogle = window.adsbygoogle || []).push({
-        google_ad_client: "ca-pub-" + window.__NAIJALIFT_ADSENSE_PUB_ID__,
-        enable_page_level_ads: window.__NAIJALIFT_ADSENSE_MODE__ === "auto",
-        overlays: { bottom: true }
-      });
+      (function () {
+        var w = window;
+        w.__naijalift_ads__ = w.__naijalift_ads__ || { scriptAttached: true, scriptReady: false, waiting: [], pageLevelPushed: false };
+        if (w.__naijalift_ads__.pageLevelPushed) return;
+        w.__naijalift_ads__.pageLevelPushed = true;
+        (w.adsbygoogle = w.adsbygoogle || []).push({
+          google_ad_client: "ca-pub-" + w.__NAIJALIFT_ADSENSE_PUB_ID__,
+          enable_page_level_ads: w.__NAIJALIFT_ADSENSE_MODE__ === "auto",
+          overlays: { bottom: true }
+        });
+      })();
     </script>
   </head>
 

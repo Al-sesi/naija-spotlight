@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useCallback, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Json } from "@/integrations/supabase/types";
@@ -16,6 +17,11 @@ export function useUserBehavior() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
+  const userRef = useRef(user);
+  useEffect(() => {
+    userRef.current = user;
+  }, [user]);
+
   const trackBehavior = useMutation({
     mutationFn: async ({
       opportunityId,
@@ -27,13 +33,13 @@ export function useUserBehavior() {
       metadata?: Json;
     }) => {
       void metadata;
-
-      if (!user) {
+      const currentUser = userRef.current;
+      if (!currentUser) {
         return;
       }
 
       const { error } = await supabase.from("user_behavior").insert({
-        user_id: user.id,
+        user_id: currentUser.id,
         opportunity_id: opportunityId,
         action_type: behaviorType,
       });
@@ -46,41 +52,52 @@ export function useUserBehavior() {
       return behaviorType;
     },
     onSuccess: (behaviorType) => {
-      if (behaviorType !== "view" && user?.id) {
-        queryClient.invalidateQueries({ queryKey: ["opportunity-matching", user.id] });
+      const currentUser = userRef.current;
+      if (behaviorType !== "view" && currentUser?.id) {
+        void queryClient.invalidateQueries({ queryKey: ["opportunity-matching", currentUser.id] });
       }
     },
   });
 
-  const trackView = (opportunityId: string, metadata?: Json) => {
-    if (user) {
-      trackBehavior.mutate({ opportunityId, behaviorType: "view", metadata });
-    }
-  };
+  const mutateRef = useRef(trackBehavior.mutate);
+  useEffect(() => {
+    mutateRef.current = trackBehavior.mutate;
+  }, [trackBehavior.mutate]);
 
-  const trackSave = (opportunityId: string, metadata?: Json) => {
-    if (user) {
-      trackBehavior.mutate({ opportunityId, behaviorType: "save", metadata });
-    }
-  };
+  const stableMutate = useCallback((
+    opportunityId: string, behaviorType: BehaviorType, metadata?: Json) => {
+    mutateRef.current({ opportunityId, behaviorType, metadata });
+  }, []);
 
-  const trackApply = (opportunityId: string, metadata?: Json) => {
-    if (user) {
-      trackBehavior.mutate({ opportunityId, behaviorType: "apply", metadata });
+  const trackView = useCallback((opportunityId: string, metadata?: Json) => {
+    if (userRef.current) {
+      stableMutate(opportunityId, "view", metadata);
     }
-  };
+  }, [stableMutate]);
 
-  const trackClick = (opportunityId: string, metadata?: Json) => {
-    if (user) {
-      trackBehavior.mutate({ opportunityId, behaviorType: "click", metadata });
+  const trackSave = useCallback((opportunityId: string, metadata?: Json) => {
+    if (userRef.current) {
+      stableMutate(opportunityId, "save", metadata);
     }
-  };
+  }, [stableMutate]);
 
-  const trackIgnore = (opportunityId: string, metadata?: Json) => {
-    if (user) {
-      trackBehavior.mutate({ opportunityId, behaviorType: "ignore", metadata });
+  const trackApply = useCallback((opportunityId: string, metadata?: Json) => {
+    if (userRef.current) {
+      stableMutate(opportunityId, "apply", metadata);
     }
-  };
+  }, [stableMutate]);
+
+  const trackClick = useCallback((opportunityId: string, metadata?: Json) => {
+    if (userRef.current) {
+      stableMutate(opportunityId, "click", metadata);
+    }
+  }, [stableMutate]);
+
+  const trackIgnore = useCallback((opportunityId: string, metadata?: Json) => {
+    if (userRef.current) {
+      stableMutate(opportunityId, "ignore", metadata);
+    }
+  }, [stableMutate]);
 
   return {
     trackView,

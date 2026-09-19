@@ -97,7 +97,6 @@ export default function OpportunityDetail() {
       }
 
       setOpportunity(data as Opportunity);
-      trackView(data.id);
       setLoading(false);
     };
 
@@ -106,7 +105,13 @@ export default function OpportunityDetail() {
     return () => {
       cancelled = true;
     };
-  }, [id, trackView]);
+  }, [id]);
+
+  useEffect(() => {
+    if (opportunity?.id) {
+      trackView(opportunity.id);
+    }
+  }, [opportunity?.id, trackView]);
 
   const savedApplication = applications?.find(a => a.opportunity_id === opportunity?.id);
   const isSaved = !!savedApplication;
@@ -214,7 +219,7 @@ export default function OpportunityDetail() {
 
   if (loading) {
     return (
-      <div className="container py-8 md:py-12 max-w-3xl">
+      <div className="container min-h-[70vh] py-8 md:py-12 max-w-3xl">
         <div className="flex items-center gap-2 mb-6">
           <Skeleton className="h-9 w-24" />
         </div>
@@ -232,8 +237,8 @@ export default function OpportunityDetail() {
             <Skeleton className="h-20 w-full rounded-lg" />
           </div>
           <Skeleton className="h-40 w-full rounded-lg" />
-          <div className="flex gap-2">
-            <Skeleton className="h-11 w-40 rounded-md" />
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-2">
+            <Skeleton className="h-11 w-full sm:w-40 rounded-md shrink-0" />
             <Skeleton className="h-11 flex-1 rounded-md" />
           </div>
         </div>
@@ -243,7 +248,7 @@ export default function OpportunityDetail() {
 
   if (notFound || !opportunity) {
     return (
-      <div className="container py-16 md:py-24 text-center max-w-lg">
+      <div className="container min-h-[70vh] py-16 md:py-24 text-center max-w-lg">
         <div className="mx-auto mb-6 rounded-full bg-muted p-5 w-fit">
           <FileText className="h-10 w-10 text-muted-foreground" />
         </div>
@@ -268,7 +273,7 @@ export default function OpportunityDetail() {
   const createdAt = opportunity.created_at ? parseISO(opportunity.created_at) : null;
 
   return (
-    <div className="container py-6 md:py-10 max-w-3xl">
+    <div className="container min-h-[70vh] py-6 md:py-10 max-w-3xl">
       {/* Back / Breadcrumb */}
       <div className="flex items-center gap-2 mb-5 text-sm">
         <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="gap-1.5 -ml-2">

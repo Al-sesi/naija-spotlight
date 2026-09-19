@@ -106,7 +106,6 @@ export function OpportunityCard({ opportunity, style }: OpportunityCardProps) {
   useEffect(() => {
     trackView(opportunity.id);
   }, [opportunity.id, trackView]);
-
   // Check if email is confirmed
   const isEmailConfirmed = session?.user?.email_confirmed_at != null;
 
@@ -191,13 +190,14 @@ export function OpportunityCard({ opportunity, style }: OpportunityCardProps) {
     (!!user && !isPremium && quota && quota.isQuotaExceeded);
 
   return (
-    <Card 
-      className={cn(
-        "group relative overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1 animate-fade-up border-border/50",
-        isExpired && "opacity-60"
-      )}
-      style={style}
-    >
+    <>
+      <Card 
+        className={cn(
+          "group relative overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1 animate-fade-up border-border/50",
+          isExpired && "opacity-60"
+        )}
+        style={style}
+      >
       <Link
         to={`/opportunities/${opportunity.id}`}
         className="block absolute inset-0 z-0"
@@ -352,5 +352,6 @@ export function OpportunityCard({ opportunity, style }: OpportunityCardProps) {
       onOpenChange={setShowUpgrade}
       feature="Unlimited Applications"
     />
+    </>
   );
 }

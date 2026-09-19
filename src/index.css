@@ -197,7 +197,9 @@
   }
 
   .animate-countdown {
-    animation: countdown 1s ease-in-out infinite alternate;
+    animation: countdownPulse 1.8s ease-in-out infinite;
+    transform: translateZ(0);
+    will-change: box-shadow, opacity;
   }
 
   .scrollbar-none {
@@ -260,12 +262,14 @@
   }
 }
 
-@keyframes countdown {
-  from {
-    transform: scale(1);
+@keyframes countdownPulse {
+  0%, 100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 hsl(var(--destructive) / 0%);
   }
-  to {
-    transform: scale(1.02);
+  50% {
+    opacity: 0.92;
+    box-shadow: 0 0 0 6px hsl(var(--destructive) / 12%);
   }
 }
 

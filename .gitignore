@@ -39,3 +39,6 @@ dist-ssr
 /supabase.exe
 supabase/.temp
 .env*.local
+
+.trae_deploy_vercel.ps1
+

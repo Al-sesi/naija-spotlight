@@ -1,4 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { useIsPremium } from "./useSubscription";
@@ -87,7 +88,7 @@ export function useMonthlyQuota() {
   });
 
   /** Call this immediately after a user successfully applies to an opportunity */
-  function incrementQuotaOptimistic() {
+  const incrementQuotaOptimistic = useCallback(() => {
     queryClient.setQueryData<MonthlyQuota | null>(
       ["monthly-quota", user?.id],
       (prev) => {
@@ -105,13 +106,13 @@ export function useMonthlyQuota() {
     );
     void queryClient.invalidateQueries({ queryKey: ["monthly-quota"] });
     void queryClient.invalidateQueries({ queryKey: ["user-profile"] });
-  }
+  }, [queryClient, user?.id]);
 
-  return {
+  return useMemo(() => ({
     data,
     isLoading,
     incrementQuotaOptimistic,
     refetch: rest.refetch,
     ...rest,
-  };
+  }), [data, isLoading, incrementQuotaOptimistic, rest.refetch, rest]);
 }

@@ -99,13 +99,14 @@ type AdsGlobalState = {
   scriptAttached: boolean;
   scriptReady: boolean;
   waiting: Array<() => void>;
+  pageLevelPushed?: boolean;
 };
 
 function getAdsGlobals(): AdsGlobalState {
   const w = window as unknown as Record<string, unknown>;
   let state = w[ADS_GLOBALS_KEY] as AdsGlobalState | undefined;
   if (!state) {
-    state = { scriptAttached: false, scriptReady: false, waiting: [] };
+    state = { scriptAttached: false, scriptReady: false, waiting: [], pageLevelPushed: false };
     w[ADS_GLOBALS_KEY] = state;
   }
   return state;
@@ -153,10 +154,24 @@ function syncAdsGlobalsFromDom(): void {
   }
 }
 
-function ensureAdSenseScript(pubId: string): Promise<void> {
+function ensureAdSenseScript(pubId: string, opts?: { mode?: AdsenseMode }): Promise<void> {
+  const mode = opts?.mode ?? getEffectiveMode();
   const g = getAdsGlobals();
   const anyWin = window as unknown as { adsbygoogle?: unknown[] & { __adsense_load_failed?: boolean } };
   anyWin.adsbygoogle = anyWin.adsbygoogle || [];
+
+  if (mode === "auto") {
+    syncAdsGlobalsFromDom();
+    if (g.scriptReady) return Promise.resolve();
+    return new Promise((resolve) => {
+      g.waiting.push(resolve);
+      const maxWait = window.setTimeout(() => resolve(), 3000);
+      window.setTimeout(() => {
+        if (window.clearTimeout) window.clearTimeout(maxWait);
+      }, 3010);
+      void maxWait;
+    });
+  }
 
   if (!g.scriptAttached) {
     syncAdsGlobalsFromDom();
@@ -242,6 +257,7 @@ export function AdBanner({
   useEffect(() => {
     if (isPremium || isLoading || dismissed) return;
     if (useHouseAd) return;
+    if (MODE === "auto") return;
     if (!manualAdReady) return;
     if (!adRef.current) return;
 
@@ -261,7 +277,7 @@ export function AdBanner({
       }
     };
 
-    ensureAdSenseScript(PUB_ID).then(() => {
+    ensureAdSenseScript(PUB_ID, { mode: MODE }).then(() => {
       if (cancelled) return;
       requestAnimationFrame(() => {
         requestAnimationFrame(() => doPush());
